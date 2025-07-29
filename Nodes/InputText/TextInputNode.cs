@@ -126,9 +126,18 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 		InitializeComponentEvents();
 		
 		CollisionNode.AddEvent(AddonEventType.InputReceived, InputComplete);
-	}
+        CollisionNode.AddEvent(AddonEventType.FocusStart, _ => OnFocused?.Invoke());
+        CollisionNode.AddEvent(AddonEventType.FocusStop, _ => OnUnfocused?.Invoke());
+    }
 
-	private AtkTextInputEventInterfaceVirtualTable* virtualTable;
+    public Action? OnFocused;
+
+    public Action? OnUnfocused;
+
+    private void FocusStart(AddonEventData obj)
+        => OnFocused?.Invoke();
+
+    private AtkTextInputEventInterfaceVirtualTable* virtualTable;
 	
 	public delegate void TextInputVirtualFuncDelegate(AtkTextInput.AtkTextInputEventInterface* listener, ushort* numEvents);
 
@@ -184,11 +193,10 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 		}
 	}
 	
-	private void InputComplete(AddonEventData data) {
-		OnInputComplete?.Invoke(SeString.Parse(Component->UnkText1));
-	}
+	private void InputComplete(AddonEventData data)
+        => OnInputComplete?.Invoke(SeString.Parse(Component->UnkText1));
 
-	public override float Width {
+    public override float Width {
 		get => base.Width;
 		set {
 			BackgroundNode.Width = value;
@@ -270,9 +278,10 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 			.Build());
 		
 		CursorNode.AddTimeline(new TimelineBuilder()
-			.BeginFrameSet(1, 19)
-			.AddEmptyFrame(1)
-			.EndFrameSet()
-			.Build());
+           .BeginFrameSet(1, 15)
+           .AddLabel(1, 101, AtkTimelineJumpBehavior.Start, 0)
+           .AddLabel(15, 0, AtkTimelineJumpBehavior.LoopForever, 101)
+           .EndFrameSet()
+           .Build());
 	}
 }

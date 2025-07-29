@@ -26,8 +26,8 @@ public unsafe class PartsList : IList<Part>, IDisposable {
 
     public void Dispose() {
         if (!isDisposed) {
-            foreach (var part in parts) {
-                part.Dispose();
+            foreach (var part in parts.ToList()) {
+                Remove(part);
             }
         
             NativeMemoryHelper.UiFree(InternalPartsList);

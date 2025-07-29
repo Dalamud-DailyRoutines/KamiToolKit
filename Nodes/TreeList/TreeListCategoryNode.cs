@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Text.SeStringHandling;
@@ -91,27 +92,30 @@ public class TreeListCategoryNode : ResNode {
 		BuildTimelines();
 
 		CollisionNode.SetEventFlags();
-		CollisionNode.AddEvent(AddonEventType.MouseOver, _ => Timeline?.StartAnimation(IsCollapsed ? 2 : 9));
-		CollisionNode.AddEvent(AddonEventType.MouseOut, _ => Timeline?.StartAnimation(IsCollapsed ? 1 : 8));
+		CollisionNode.AddEvent(AddonEventType.MouseOver, _ => Timeline?.PlayAnimation(IsCollapsed ? 2 : 9));
+		CollisionNode.AddEvent(AddonEventType.MouseOut, _ => Timeline?.PlayAnimation(IsCollapsed ? 1 : 8));
 		CollisionNode.AddEvent(AddonEventType.MouseClick, _ => {
 			IsCollapsed = !IsCollapsed;
 			UpdateCollapsed();
-		});
+            OnToggle?.Invoke(!IsCollapsed);
+        });
 	}
 
 	private bool InternalIsCollapsed { get; set; }
+
+    public Action<bool>? OnToggle;
 
 	public bool IsCollapsed {
 		get => InternalIsCollapsed;
 		set {
 			InternalIsCollapsed = value;
 			UpdateCollapsed();
-			Timeline?.StartAnimation(IsCollapsed ? 1 : 8);
+			Timeline?.PlayAnimation(IsCollapsed ? 1 : 8);
 		}
 	}
 	
 	private void UpdateCollapsed() {
-		Timeline?.StartAnimation(IsCollapsed ? 1 : 8);
+		Timeline?.PlayAnimation(IsCollapsed ? 1 : 8);
 		ChildContainer.IsVisible = !IsCollapsed;
 		Height = IsCollapsed ? BackgroundNode.Height : ChildContainer.Height + BackgroundNode.Height;
 		ParentTreeListNode?.RefreshLayout();
@@ -121,6 +125,8 @@ public class TreeListCategoryNode : ResNode {
 		ChildContainer.Height = 0.0f;
 
 		foreach (var child in children) {
+            if (!child.IsVisible) continue;
+            
 			child.Y = ChildContainer.Height;
 			child.Width = ChildContainer.Width;
 		
@@ -164,6 +170,10 @@ public class TreeListCategoryNode : ResNode {
 			LabelNode.Width = value - 23.0f;
 			ChildContainer.Width = value;
 			CollisionNode.Width = value;
+
+            foreach (var node in children) {
+                node.Width = value;
+            }
 		}
 	}
 

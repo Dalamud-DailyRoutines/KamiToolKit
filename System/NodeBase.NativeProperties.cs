@@ -40,16 +40,24 @@ public abstract unsafe partial class NodeBase {
         }
     }
     
+    protected virtual void OnSizeChanged() { }
+    
     public virtual float Width {
         get => InternalResNode->GetWidth();
-        set => InternalResNode->SetWidth((ushort)value);
+        set {
+            InternalResNode->SetWidth((ushort)value);
+            OnSizeChanged();
+        }
     }
 
     public virtual float Height {
         get => InternalResNode->GetHeight();
-        set => InternalResNode->SetHeight((ushort) value);
+        set {
+            InternalResNode->SetHeight((ushort)value);
+            OnSizeChanged();
+        }
     }
-    
+
     [JsonProperty] public virtual Vector2 Size {
         get => new(Width, Height);
         set {
@@ -165,6 +173,11 @@ public abstract unsafe partial class NodeBase {
         internal set => InternalResNode->DrawFlags = value;
     }
 
+    public int Priority {
+        get => InternalResNode->GetPriority();
+        set => InternalResNode->SetPriority((ushort)value);
+    }
+
     protected virtual NodeType NodeType {
         get => InternalResNode->GetNodeType();
         set => InternalResNode->Type = value;
@@ -172,9 +185,8 @@ public abstract unsafe partial class NodeBase {
 
     public virtual int ChildCount => InternalResNode->ChildCount;
 
-    public void MarkDirty() {
-        DrawFlags |= 1;
-    }
+    public void MarkDirty()
+        => VisitChildren(InternalResNode, pointer => pointer.Value->DrawFlags |= 1);
 
     public bool CheckCollision(short x, short y)
         => InternalResNode->CheckCollisionAtCoords(x, y, true);

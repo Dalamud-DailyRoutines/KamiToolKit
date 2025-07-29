@@ -38,7 +38,17 @@ public abstract unsafe partial class NodeBase {
 	}
 
 	internal void AttachNode(AtkComponentNode* targetNode, NodePosition position = NodePosition.AfterAllSiblings) {
-		NodeLinker.AttachNode(InternalResNode, targetNode->Component->UldManager.RootNode, position);
+		void* attachTarget = position switch {
+			NodePosition.AfterTarget => targetNode,
+			NodePosition.BeforeTarget => targetNode,
+			NodePosition.AfterAllSiblings => targetNode->Component->UldManager.RootNode,
+			NodePosition.BeforeAllSiblings => targetNode->Component->UldManager.RootNode,
+			NodePosition.AsLastChild => targetNode->Component->UldManager.RootNode,
+			NodePosition.AsFirstChild => targetNode->Component->UldManager.RootNode,
+			_ => throw new ArgumentOutOfRangeException(nameof(position), position, null),
+		};
+		
+		NodeLinker.AttachNode(InternalResNode, (AtkResNode*) attachTarget, position);
 		UpdateNative();
 	}
 
@@ -80,12 +90,7 @@ public abstract unsafe partial class NodeBase {
 	private void UpdateNative() {
 		if (InternalResNode is null) return;
 
-		// Mark this and children as IsDirty to trigger a redraw
-		VisitChildren(InternalResNode, pointer => {
-			if (pointer.Value is not null) {
-				pointer.Value->DrawFlags |= 1;
-			}
-		});
+		MarkDirty();
 
 		if (ParentUldManager is null) {
 			ParentUldManager = GetUldManagerForNode(InternalResNode);
