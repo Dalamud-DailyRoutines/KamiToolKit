@@ -53,7 +53,6 @@ public abstract unsafe class DropDownNode<T, TU> : SimpleComponentNode where T :
             IsVisible = true,
             Text = "Demo",
             TextFlags = TextFlags.Emboss,
-            TextFlags2 = (TextFlags2)132,
         };
 
         LabelNode.AttachNode(this);
