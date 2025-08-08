@@ -28,6 +28,20 @@ public class CastBarProgressBarNode : SimpleComponentNode {
         };
         
         BackgroundImageNode.AttachNode(this);
+        
+        BorderImageNode = new SimpleNineGridNode {
+            NodeId             = 4,
+            Size               = new Vector2(160.0f, 20.0f),
+            TextureSize        = new Vector2(160.0f, 20.0f),
+            TextureCoordinates = new Vector2(0.0f,   0.0f),
+            NodeFlags          = NodeFlags.Visible,
+            PartsRenderType    = 4,
+            LeftOffset         = 15,
+            RightOffset        = 15,
+            TexturePath        = "ui/uld/Parameter_Gauge.tex",
+        };
+        
+        BorderImageNode.AttachNode(this);
 
         ProgressNode = new SimpleNineGridNode {
             NodeId = 3,
@@ -44,20 +58,6 @@ public class CastBarProgressBarNode : SimpleComponentNode {
         };
         
         ProgressNode.AttachNode(this);
-
-        BorderImageNode = new SimpleNineGridNode {
-            NodeId = 4,
-            Size = new Vector2(160.0f, 20.0f),
-            TextureSize = new Vector2(160.0f, 20.0f),
-            TextureCoordinates = new Vector2(0.0f, 0.0f),
-            NodeFlags = NodeFlags.Visible,
-            PartsRenderType = 4,
-            LeftOffset = 15,
-            RightOffset = 15,
-            TexturePath = "ui/uld/Parameter_Gauge.tex",
-        };
-        
-        BorderImageNode.AttachNode(this);
     }
 
     public float Progress {
