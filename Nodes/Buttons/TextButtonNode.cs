@@ -7,7 +7,7 @@ namespace KamiToolKit.Nodes;
 public unsafe class TextButtonNode : ButtonBase {
 
 	public readonly TextNode LabelNode;
-	public readonly NineGridNode BackgroundNode;
+	public readonly SimpleNineGridNode BackgroundNode;
 
 	public TextButtonNode() {
 		Data->Nodes[0] = 3;

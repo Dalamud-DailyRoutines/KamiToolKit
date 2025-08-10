@@ -7,8 +7,8 @@ namespace KamiToolKit.Nodes;
 /// </summary>
 public class IconButtonNode : ButtonBase {
 
-	public readonly IconImageNode ImageNode;
-	public readonly NineGridNode BackgroundNode;
+	public readonly IconImageNode      ImageNode;
+	public readonly SimpleNineGridNode BackgroundNode;
 
 	public IconButtonNode() {
 		BackgroundNode = new SimpleNineGridNode {
