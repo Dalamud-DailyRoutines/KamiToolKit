@@ -133,9 +133,7 @@ public unsafe class Part : IDisposable {
     }
 
     private string GetThemePathModifier() => AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType switch {
-        1 => "uld/light",
-        2 => "uld/third",
-        3 => "uld/fourth",
+        not 0 => $"uld/img{AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType:00}",
         _ => "uld",
     };
 
