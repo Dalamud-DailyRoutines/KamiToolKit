@@ -25,6 +25,19 @@ public unsafe class CastBarProgressBarNode : SimpleComponentNode {
             IsVisible = true,
         };
         BackgroundImageNode.AttachNode(this);
+
+        ProgressNode = new SimpleNineGridNode {
+            NodeId = 3,
+            TexturePath = "ui/uld/Parameter_Gauge.tex",
+            TextureSize = new Vector2(160.0f, 20.0f),
+            TextureCoordinates = new Vector2(0.0f, 40.0f),
+            MultiplyColor = new Vector3(90.0f, 75.0f, 75.0f) / 255.0f,
+            AddColor = KnownColor.Yellow.Vector().AsVector3Color() / 255.0f,
+            LeftOffset = 10,
+            RightOffset = 10,
+            IsVisible = true,
+        };
+        ProgressNode.AttachNode(this);
         
         BorderImageNode = new SimpleNineGridNode {
             NodeId = 4,
@@ -36,19 +49,6 @@ public unsafe class CastBarProgressBarNode : SimpleComponentNode {
             IsVisible = true,
         };
         BorderImageNode.AttachNode(this);
-        
-        ProgressNode = new SimpleNineGridNode {
-            NodeId             = 3,
-            TexturePath        = "ui/uld/Parameter_Gauge.tex",
-            TextureSize        = new Vector2(160.0f, 20.0f),
-            TextureCoordinates = new Vector2(0.0f,   40.0f),
-            MultiplyColor      = new Vector3(90.0f, 75.0f, 75.0f)            / 255.0f,
-            AddColor           = KnownColor.Yellow.Vector().AsVector3Color() / 255.0f,
-            LeftOffset         = 10,
-            RightOffset        = 10,
-            IsVisible          = true,
-        };
-        ProgressNode.AttachNode(this);
     }
 
     public float Progress {
