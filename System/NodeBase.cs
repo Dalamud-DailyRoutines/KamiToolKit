@@ -71,7 +71,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
     private bool IsNodeValid() {
         if (InternalResNode is null) return false;
         if (InternalResNode->VirtualTable is null) return false;
-        if ((nint)InternalResNode->VirtualTable == Experimental.Instance.AtkEventListenerVirtualTable) return false;
+        if (InternalResNode->VirtualTable == AtkEventTarget.StaticVirtualTablePointer) return false;
 
         return true;
     }
@@ -93,27 +93,25 @@ public abstract unsafe class NodeBase<T> : NodeBase where T : unmanaged, ICreata
 
     protected NodeBase(NodeType nodeType) {
         Log.Verbose($"Creating new node {GetType()}");
-        InternalNode = NativeMemoryHelper.Create<T>();
+        Node = NativeMemoryHelper.Create<T>();
         InternalResNode->Type = nodeType;
         InternalResNode->NodeId = NodeIdBase + CurrentOffset++;
 
-        if (InternalNode is null) {
+        if (Node is null) {
             throw new Exception($"Unable to allocate memory for {typeof(T)}");
         }
 
         CreatedNodes.Add(this);
     }
 
-    internal T* InternalNode { get; private set; }
+    public T* Node { get; private set; }
 
-    internal sealed override AtkResNode* InternalResNode => (AtkResNode*)InternalNode;
-
-    public static explicit operator T*(NodeBase<T> node) => (T*)node.InternalResNode;
+    internal sealed override AtkResNode* InternalResNode => (AtkResNode*)Node;
 
     protected override void Dispose(bool disposing) {
         if (disposing) {
             InternalResNode->Destroy(true);
-            InternalNode = null;
+            Node = null;
         }
     }
 }

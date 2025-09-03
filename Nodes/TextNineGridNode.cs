@@ -45,9 +45,14 @@ public unsafe class TextNineGridNode : ComponentNode<AtkComponentTextNineGrid, A
         InitializeComponentEvents();
     }
 
-    public SeString Label {
+    public SeString SeString {
         get => TextNode.String;
         set => Component->SetText(value.ToString());
+    }
+
+    public string String {
+        get => TextNode.String;
+        set => TextNode.String = value;
     }
 
     public int Number {

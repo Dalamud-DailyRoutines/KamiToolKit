@@ -46,7 +46,6 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             Offsets = new Vector4(10.0f),
             Size = new Vector2(152.0f, 28.0f),
         };
-
         BackgroundNode.AttachNode(this);
 
         FocusNode = new SimpleNineGridNode {
@@ -59,7 +58,6 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             Size = new Vector2(152.0f, 28.0f),
             IsVisible = true,
         };
-
         FocusNode.AttachNode(this);
 
         TextLimitsNode = new TextNode {
@@ -71,7 +69,6 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             AlignmentType = (AlignmentType)21,
             NodeFlags = NodeFlags.AnchorBottom | NodeFlags.AnchorRight | NodeFlags.Enabled | NodeFlags.EmitsEvents,
         };
-
         TextLimitsNode.AttachNode(this);
 
         CurrentTextNode = new TextNode {
@@ -81,14 +78,16 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             AlignmentType = AlignmentType.TopLeft,
             NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.AnchorBottom | NodeFlags.AnchorRight | NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents,
             TextFlags = TextFlags.AutoAdjustNodeSize,
+            TextColor = ColorHelper.GetColor(1),
         };
-
         CurrentTextNode.AttachNode(this);
 
         SelectionListNode = new TextInputSelectionListNode {
-            NodeId = 4, Position = new Vector2(0.0f, 22.0f), Size = new Vector2(186.0f, 208.0f), NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.Enabled | NodeFlags.EmitsEvents,
+            NodeId = 4, 
+            Position = new Vector2(0.0f, 22.0f), 
+            Size = new Vector2(186.0f, 208.0f), 
+            NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.Enabled | NodeFlags.EmitsEvents,
         };
-
         SelectionListNode.AttachNode(this);
 
         CursorNode = new CursorNode {
@@ -98,7 +97,6 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             OriginY = 4.0f,
             NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents,
         };
-
         CursorNode.AttachNode(this);
 
         Data->Nodes[0] = CurrentTextNode.NodeId;
@@ -167,9 +165,14 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         set => Data->Flags2 = value;
     }
 
-    public SeString String {
+    public SeString SeString {
         get => SeString.Parse(Component->UnkText1);
         set => Component->SetText(value.ToString());
+    }
+
+    public string String {
+        get => Component->UnkText1.ToString();
+        set => Component->SetText(value);
     }
 
     private void FocusStart(AddonEventData obj)

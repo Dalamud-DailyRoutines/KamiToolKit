@@ -25,6 +25,8 @@ public abstract partial class NativeAddon : IDisposable {
         }
 
         isDisposed = true;
+
+        DisposeExtras();
     }
 
     ~NativeAddon() {

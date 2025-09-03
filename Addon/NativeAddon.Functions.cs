@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 
@@ -12,6 +13,10 @@ public abstract unsafe partial class NativeAddon {
     protected virtual void OnUpdate(AtkUnitBase* addon) { }
     protected virtual void OnHide(AtkUnitBase* addon) { }
     protected virtual void OnFinalize(AtkUnitBase* addon) { }
+    protected virtual void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) { }
+    protected virtual void OnRefresh(AtkUnitBase* addon, Span<AtkValue> atkValues) { }
+
+    private bool isSetup;
 
     private void Initialize(AtkUnitBase* thisPtr) {
         Log.Verbose($"[{InternalName}] Initialize");
@@ -31,6 +36,7 @@ public abstract unsafe partial class NativeAddon {
         AtkUnitBase.StaticVirtualTablePointer->OnSetup(addon, valueCount, values);
 
         OnSetup(addon);
+        isSetup = true;
     }
 
     private void Show(AtkUnitBase* addon, bool silenceOpenSoundEffect, uint unsetShowHideFlags) {
@@ -61,6 +67,7 @@ public abstract unsafe partial class NativeAddon {
         Log.Verbose($"[{InternalName}] Hide");
 
         OnHide(addon);
+        SaveAddonConfig();
 
         AtkUnitBase.StaticVirtualTablePointer->Hide(addon, unkBool, callHideCallback, setShowHideFlags);
     }
@@ -81,6 +88,7 @@ public abstract unsafe partial class NativeAddon {
         }
 
         AtkUnitBase.StaticVirtualTablePointer->Finalizer(InternalAddon);
+        isSetup = false;
     }
 
     private AtkEventListener* Destructor(AtkUnitBase* addon, byte flags) {
@@ -99,5 +107,24 @@ public abstract unsafe partial class NativeAddon {
         }
 
         return result;
+    }
+
+    private void RequestedUpdate(AtkUnitBase* thisPtr, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) {
+        Log.Verbose($"[{InternalName}] RequestedUpdate");
+
+        // Prevent calls to OnRequestedUpdate before Setup is completed. The game will try to call this after Show but before Setup
+        if (isSetup) {
+            OnRequestedUpdate(thisPtr, numberArrayData, stringArrayData);
+        }
+        
+        AtkUnitBase.StaticVirtualTablePointer->OnRequestedUpdate(InternalAddon, numberArrayData, stringArrayData);
+    }
+
+    private bool Refresh(AtkUnitBase* thisPtr, uint valueCount, AtkValue* values) {
+        Log.Verbose($"[{InternalName}] Refresh");
+        
+        OnRefresh(thisPtr, new Span<AtkValue>(values, (int)valueCount));
+        
+        return AtkUnitBase.StaticVirtualTablePointer->OnRefresh(InternalAddon,  valueCount, values);
     }
 }

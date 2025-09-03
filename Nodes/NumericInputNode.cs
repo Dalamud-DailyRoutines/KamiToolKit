@@ -3,7 +3,6 @@ using System.Numerics;
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
 
 namespace KamiToolKit.Nodes;
@@ -30,7 +29,6 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             Offsets = new Vector4(10.0f),
             IsVisible = true,
         };
-
         BackgroundNode.AttachNode(this);
 
         AddButton = new TextureButtonNode {
@@ -41,7 +39,6 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             Size = new Vector2(28.0f, 28.0f),
             IsVisible = true,
         };
-
         AddButton.AttachNode(this);
 
         SubtractButton = new TextureButtonNode {
@@ -52,7 +49,6 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             Size = new Vector2(28.0f, 28.0f),
             IsVisible = true,
         };
-
         SubtractButton.AttachNode(this);
 
         ValueTextNode = new TextNode {
@@ -62,9 +58,8 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             FontSize = 12,
             AlignmentType = AlignmentType.Top,
             IsVisible = true,
-            Text = "999",
+            String = "999",
         };
-
         ValueTextNode.AttachNode(this);
 
         FocusBorderNode = new SimpleNineGridNode {
@@ -75,7 +70,6 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             Position = new Vector2(-3.0f, -2.0f),
             Offsets = new Vector4(10.0f),
         };
-
         FocusBorderNode.AttachNode(this);
 
         CursorNode = new CursorNode {
@@ -101,7 +95,7 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
 
     public int Value {
         get => Component->Value;
-        set => Experimental.Instance.AtkComponentNumericInputSetValueCallback?.Invoke(Component, value, true, false);
+        set => Component->InnerSetValue(value, true, false);
     }
 
     public int Min {

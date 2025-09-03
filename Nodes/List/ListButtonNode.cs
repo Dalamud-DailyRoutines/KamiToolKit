@@ -20,7 +20,6 @@ public unsafe class ListButtonNode : ButtonBase {
             LeftOffset = 16,
             RightOffset = 1,
         };
-
         HoverBackgroundNode.AttachNode(this);
 
         SelectedBackgroundNode = new SimpleNineGridNode {
@@ -30,7 +29,6 @@ public unsafe class ListButtonNode : ButtonBase {
             LeftOffset = 16,
             RightOffset = 1,
         };
-
         SelectedBackgroundNode.AttachNode(this);
 
         LabelNode = new TextNode {
@@ -41,9 +39,8 @@ public unsafe class ListButtonNode : ButtonBase {
             FontSize = 14,
             AlignmentType = AlignmentType.Left,
             IsVisible = true,
-            Text = "Label Not Set",
+            String = "Label Not Set",
         };
-
         LabelNode.AttachNode(this);
 
         LoadTimelines();
@@ -57,8 +54,13 @@ public unsafe class ListButtonNode : ButtonBase {
     }
 
     public SeString Label {
-        get => LabelNode.Text;
-        set => LabelNode.Text = value;
+        get => LabelNode.SeString;
+        set => LabelNode.SeString = value;
+    }
+
+    public string String {
+        get => LabelNode.String;
+        set => LabelNode.String = value;
     }
 
     protected override void OnSizeChanged() {

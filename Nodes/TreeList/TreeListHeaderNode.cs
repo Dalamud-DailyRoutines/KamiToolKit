@@ -20,7 +20,6 @@ public class TreeListHeaderNode : ResNode {
             LeftOffset = 25.0f,
             RightOffset = 20.0f,
         };
-
         DecorationNode.AttachNode(this);
 
         LabelNode = new TextNode {
@@ -31,13 +30,17 @@ public class TreeListHeaderNode : ResNode {
             FontSize = 12,
             FontType = FontType.Axis,
         };
-
         LabelNode.AttachNode(this);
     }
 
-    public SeString Label {
-        get => LabelNode.Text;
-        set => LabelNode.Text = value;
+    public SeString SeString {
+        get => LabelNode.SeString;
+        set => LabelNode.SeString = value;
+    }
+
+    public string String {
+        get => LabelNode.String;
+        set => LabelNode.String = value;
     }
 
     protected override void OnSizeChanged() {

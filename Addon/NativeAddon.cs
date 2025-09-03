@@ -51,6 +51,8 @@ public abstract unsafe partial class NativeAddon {
 
         Log.Verbose($"[{InternalName}] Beginning Native Addon Allocation");
 
+        InitializeExtras();
+
         InternalAddon = NativeMemoryHelper.Create<AtkUnitBase>();
 
         RegisterVirtualTable();
@@ -58,7 +60,9 @@ public abstract unsafe partial class NativeAddon {
         InternalAddon->Flags1A2 |= 0b0100_0000; // don't save/load AddonConfig
 
         RootNode = new ResNode {
-            NodeId = 1, NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.Fill | NodeFlags.Focusable | NodeFlags.EmitsEvents,
+            NodeId = 1, 
+            NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft | NodeFlags.Visible | 
+                        NodeFlags.Enabled | NodeFlags.Fill | NodeFlags.Focusable | NodeFlags.EmitsEvents,
         };
 
         WindowNode = new WindowNode();

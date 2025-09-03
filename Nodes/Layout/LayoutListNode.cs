@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.System;
 using Newtonsoft.Json;
 
@@ -12,9 +14,13 @@ public abstract class LayoutListNode : SimpleComponentNode {
 
     protected readonly List<NodeBase> NodeList = [];
 
+    public IEnumerable<T> GetNodes<T>() where T : NodeBase => NodeList.OfType<T>();
+
+    public IReadOnlyList<NodeBase> Nodes => NodeList;
+
     protected virtual uint ListBaseId => 1;
 
-    public int MaxNodes { get; set; } = 100;
+    public int MaxNodes { get; set; }
 
     [JsonProperty] public bool ClipListContents {
         get => NodeFlags.HasFlag(NodeFlags.Clip);
@@ -38,33 +44,45 @@ public abstract class LayoutListNode : SimpleComponentNode {
 
     public void AddNode(params NodeBase[] items) {
         foreach (var node in items) {
-            AddNode(node);
+            AddNode(node, true);
         }
+        
+        RecalculateLayout();
     }
 
-    public virtual void AddNode(NodeBase node) {
+    public virtual void AddNode(NodeBase node, bool suppressRecalculateLayout = false) {
         NodeList.Add(node);
 
         node.AttachNode(this);
         node.NodeId = (uint)NodeList.Count + ListBaseId;
 
         if (MaxNodes >= 1 && NodeList.Count >= MaxNodes) {
-            RemoveNode(NodeList.First());
+            var firstNode = NodeList.First();
+            node.NodeId = firstNode.NodeId;
+            RemoveNode(firstNode);
         }
 
-        RecalculateLayout();
+        if (!suppressRecalculateLayout) {
+            RecalculateLayout();
+        }
     }
 
     public void RemoveNode(params NodeBase[] items) {
         foreach (var node in items) {
-            RemoveNode(node);
+            RemoveNode(node, true);
         }
+        
+        RecalculateLayout();
     }
 
-    public virtual void RemoveNode(NodeBase node) {
+    public virtual void RemoveNode(NodeBase node, bool suppressRecalculateLayout = false) {
         node.DetachNode();
         NodeList.Remove(node);
-        RecalculateLayout();
+        node.Dispose();
+
+        if (!suppressRecalculateLayout) {
+            RecalculateLayout();
+        }
     }
 
     public void AddDummy(float size = 0.0f) {
@@ -81,6 +99,41 @@ public abstract class LayoutListNode : SimpleComponentNode {
         }
 
         NodeList.Clear();
+        RecalculateLayout();
+    }
+
+    public delegate TU CreateNewNode<in T, out TU>(T data) where TU : NodeBase;
+
+    public delegate T GetDataFromNode<out T, in TU>(TU node) where TU : NodeBase;
+    
+    public bool SyncWithListData<T, TU>(IEnumerable<T> dataList, GetDataFromNode<T?,TU> getDataFromNode, CreateNewNode<T, TU> createNodeMethod) where TU : NodeBase {
+        var nodesOfType = GetNodes<TU>().ToList();
+        var anythingChanged = false;
+        
+        var nodesToRemove = nodesOfType.Where(node => !dataList.Any(dataEntry => Equals(dataEntry, getDataFromNode(node)))).ToList();
+        
+        Log.Excessive($"Removing: {nodesToRemove.Count} Nodes");
+        foreach (var node in nodesToRemove) {
+            RemoveNode(node, true);
+            anythingChanged = true;
+        }
+        
+        var dataToAdd = dataList.Where(data => !nodesOfType.Any(node => Equals(data, getDataFromNode(node)))).ToList();
+        var selectedData = dataToAdd.Select(data => createNodeMethod(data)).ToList();
+        
+        Log.Excessive($"Adding: {dataToAdd.Count} Nodes");
+        foreach (var newNode in selectedData) {
+            AddNode(newNode, true);
+            anythingChanged = true;
+        }
+        
+        RecalculateLayout();
+        
+        return anythingChanged;
+    }
+
+    public void ReorderNodes(Comparison<NodeBase> comparison) {
+        NodeList.Sort(comparison);
         RecalculateLayout();
     }
 }

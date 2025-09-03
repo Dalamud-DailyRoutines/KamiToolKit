@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using KamiToolKit.Classes;
 
 namespace KamiToolKit.Nodes;
 
@@ -8,14 +9,13 @@ public class CircleButtonNode : ButtonBase {
 
     public CircleButtonNode() {
         ImageNode = new SimpleImageNode {
+            NodeId = 2,
             TexturePath = "ui/uld/CircleButtons.tex",
             TextureSize = new Vector2(24.0f, 24.0f),
             TextureCoordinates = new Vector2(0.0f, 112.0f),
             IsVisible = true,
-            WrapMode = 2,
-            ImageNodeFlags = 0,
+            WrapMode = WrapMode.Stretch,
         };
-
         ImageNode.AttachNode(this);
 
         LoadTimelines();
@@ -39,7 +39,7 @@ public class CircleButtonNode : ButtonBase {
         ImageNode.Size = Size;
     }
 
-    private UldTextureInfo GetTextureCoordinateForIcon(ButtonIcon icon) => icon switch {
+    private static UldTextureInfo GetTextureCoordinateForIcon(ButtonIcon icon) => icon switch {
         ButtonIcon.GearCog => new UldTextureInfo(0.0f, 0.0f, 28.0f, 28.0f),
         ButtonIcon.Filter => new UldTextureInfo(28.0f, 0.0f, 28.0f, 28.0f),
         ButtonIcon.Sort => new UldTextureInfo(56.0f, 0.0f, 28.0f, 28.0f),

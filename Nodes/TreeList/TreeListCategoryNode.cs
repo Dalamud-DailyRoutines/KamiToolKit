@@ -27,7 +27,6 @@ public class TreeListCategoryNode : ResNode {
         CollisionNode = new CollisionNode {
             Height = 28.0f, IsVisible = true,
         };
-
         CollisionNode.AttachNode(this);
 
         BackgroundNode = new SimpleNineGridNode {
@@ -41,25 +40,28 @@ public class TreeListCategoryNode : ResNode {
             RightOffset = 12.0f,
             BottomOffset = 12.0f,
         };
-
         BackgroundNode.AttachNode(this);
 
         CollapseArrowNode = new ImageNode {
             Position = new Vector2(0.0f, 1.0f),
             Size = new Vector2(24.0f, 24.0f),
             IsVisible = true,
-            ImageNodeFlags = 0,
             PartId = 1,
         };
 
         CollapseArrowNode.AddPart(new Part {
-            TexturePath = "ui/uld/ListItemB.tex", TextureCoordinates = new Vector2(0.0f, 0.0f), Size = new Vector2(24.0f, 24.0f), Id = 0,
+            TexturePath = "ui/uld/ListItemB.tex", 
+            TextureCoordinates = new Vector2(0.0f, 0.0f), 
+            Size = new Vector2(24.0f, 24.0f), 
+            Id = 0,
         });
 
         CollapseArrowNode.AddPart(new Part {
-            TexturePath = "ui/uld/ListItemB.tex", TextureCoordinates = new Vector2(24.0f, 0.0f), Size = new Vector2(24.0f, 24.0f), Id = 1,
+            TexturePath = "ui/uld/ListItemB.tex", 
+            TextureCoordinates = new Vector2(24.0f, 0.0f), 
+            Size = new Vector2(24.0f, 24.0f), 
+            Id = 1,
         });
-
         CollapseArrowNode.AttachNode(this);
 
         LabelNode = new TextNode {
@@ -68,17 +70,15 @@ public class TreeListCategoryNode : ResNode {
             FontSize = 14,
             Height = 28.0f,
             AlignmentType = AlignmentType.Left,
-            TextColor = ColorHelper.GetColor(1),
-            TextOutlineColor = ColorHelper.GetColor(2),
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(7),
             IsVisible = true,
         };
-
         LabelNode.AttachNode(this);
 
         ChildContainer = new ResNode {
             Position = new Vector2(0.0f, 24.0f + VerticalPadding), IsVisible = true,
         };
-
         ChildContainer.AttachNode(this);
 
         BuildTimelines();
@@ -108,9 +108,14 @@ public class TreeListCategoryNode : ResNode {
 
     public float VerticalPadding { get; set; } = 4.0f;
 
-    public SeString Label {
-        get => LabelNode.Text;
-        set => LabelNode.Text = value;
+    public SeString SeString {
+        get => LabelNode.SeString;
+        set => LabelNode.SeString = value;
+    }
+
+    public string String {
+        get => LabelNode.String;
+        set => LabelNode.String = value;
     }
 
     private void UpdateCollapsed() {
@@ -138,7 +143,7 @@ public class TreeListCategoryNode : ResNode {
 
     public void AddHeader(SeString label) {
         var newHeaderNode = new TreeListHeaderNode {
-            Size = new Vector2(Width, 24.0f), Label = label, IsVisible = true,
+            Size = new Vector2(Width, 24.0f), SeString = label, IsVisible = true,
         };
 
         AddNode(newHeaderNode);
