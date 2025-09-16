@@ -6,6 +6,7 @@ using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
@@ -16,7 +17,7 @@ namespace KamiToolKit.Nodes;
 
 public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldComponentDataTextInput> {
 
-    public delegate void TextInputVirtualFuncDelegate(AtkTextInput.AtkTextInputEventInterface* listener, ushort* numEvents);
+    public delegate void TextInputVirtualFuncDelegate(AtkTextInput.AtkTextInputEventInterface* listener, TextSelectionInfo* numEvents);
 
     public readonly NineGridNode BackgroundNode;
     public readonly TextNode CurrentTextNode;
@@ -24,12 +25,13 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     public readonly NineGridNode FocusNode;
     public readonly TextInputSelectionListNode SelectionListNode;
     public readonly TextNode TextLimitsNode;
+    public readonly TextNode PlaceholderTextNode;
 
     public Action? OnFocused;
 
     public Action? OnUnfocused;
 
-    private delegate* unmanaged<AtkTextInput.AtkTextInputEventInterface*, ushort*, void> originalFunction;
+    private delegate* unmanaged<AtkTextInput.AtkTextInputEventInterface*, TextSelectionInfo*, void> originalFunction;
     private TextInputVirtualFuncDelegate? pinnedFunction;
 
     private AtkTextInputEventInterfaceVirtualTable* virtualTable;
@@ -99,6 +101,13 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         };
         CursorNode.AttachNode(this);
 
+        PlaceholderTextNode = new TextNode {
+            Position = new Vector2(10.0f, 6.0f),
+            IsVisible = true,
+            TextColor = ColorHelper.GetColor(3),
+        };
+        PlaceholderTextNode.AttachNode(this);
+
         Data->Nodes[0] = CurrentTextNode.NodeId;
         Data->Nodes[1] = BackgroundNode.NodeId;
         Data->Nodes[2] = CursorNode.NodeId;
@@ -116,19 +125,12 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         Data->Nodes[14] = SelectionListNode.BackgroundNode.NodeId;
         Data->Nodes[15] = TextLimitsNode.NodeId;
 
-        Data->CandidateColor = new ByteColor {
-            R = 66,
-        };
-        Data->IMEColor = new ByteColor {
-            R = 67,
-        };
+        Data->CandidateColor = new ByteColor { R = 66 }; 
+        Data->IMEColor = new ByteColor { R = 67 };
         Data->FocusColor = KnownColor.Black.Vector().ToByteColor();
 
-        // Flags1 = TextInputFlags1.EnableIME | TextInputFlags1.AllowUpperCase | TextInputFlags1.AllowLowerCase | TextInputFlags1.EnableDictionary;
-        // Flags2 = TextInputFlags2.AllowNumberInput | TextInputFlags2.AllowSymbolInput;
-
-        Flags1 = (TextInputFlags1)212;
-        Flags2 = (TextInputFlags2)3;
+        Flags = TextInputFlags.EnableIme | TextInputFlags.AllowUpperCase | TextInputFlags.AllowLowerCase | 
+                TextInputFlags.EnableDictionary | TextInputFlags.AllowNumberInput | TextInputFlags.AllowSymbolInput;
 
         LoadTimelines();
 
@@ -137,8 +139,27 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         InitializeComponentEvents();
 
         CollisionNode.AddEvent(AddonEventType.InputReceived, InputComplete);
-        CollisionNode.AddEvent(AddonEventType.FocusStart, _ => OnFocused?.Invoke());
-        CollisionNode.AddEvent(AddonEventType.FocusStop, _ => OnUnfocused?.Invoke());
+
+        CollisionNode.AddEvent(AddonEventType.FocusStart, _ => {
+            PlaceholderTextNode.IsVisible = false;
+            OnFocused?.Invoke();
+        });
+        
+        CollisionNode.AddEvent(AddonEventType.FocusStop, _ => {
+            OnUnfocused?.Invoke();
+            if (!PlaceholderString.IsNullOrEmpty() && String.IsNullOrEmpty()) {
+                PlaceholderTextNode.IsVisible = true;
+                PlaceholderTextNode.String = PlaceholderString;
+            }
+        });
+    }
+
+    protected override void Dispose(bool disposing) {
+        if (disposing) {
+            NativeMemoryHelper.Free(virtualTable, 0x8 * 10);
+
+            base.Dispose(disposing);
+        }
     }
 
     public Action<SeString>? OnInputReceived { get; set; }
@@ -155,28 +176,39 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         set => TextLimitsNode.IsVisible = value;
     }
 
-    public TextInputFlags1 Flags1 {
-        get => Data->Flags1;
-        set => Data->Flags1 = value;
-    }
-
-    public TextInputFlags2 Flags2 {
-        get => Data->Flags2;
-        set => Data->Flags2 = value;
+    public TextInputFlags Flags {
+        get => (TextInputFlags) ((byte)Data->Flags1 | (byte)Data->Flags2 << 8);
+        set {
+            Data->Flags1 = (TextInputFlags1)((ushort)value & 0xFF);
+            Data->Flags2 = (TextInputFlags2)((ushort)value >> 8);
+        }
     }
 
     public SeString SeString {
         get => SeString.Parse(Component->UnkText1);
-        set => Component->SetText(value.ToString());
+        set {
+            Component->SetText(value.ToString());
+            PlaceholderTextNode.IsVisible = PlaceholderString is not null && value.ToString().IsNullOrEmpty();
+        }
     }
 
     public string String {
         get => Component->UnkText1.ToString();
-        set => Component->SetText(value);
+        set {
+            Component->SetText(value);
+            PlaceholderTextNode.IsVisible = PlaceholderString is not null && value.IsNullOrEmpty() && !FocusNode.IsVisible;
+        }
     }
 
-    private void FocusStart(AddonEventData obj)
-        => OnFocused?.Invoke();
+    public string? PlaceholderString {
+        get;
+        set {
+            field = value;
+            PlaceholderTextNode.String = value ?? string.Empty;
+        }
+    }
+
+    public bool AutoSelectAll { get; set; }
 
     private void SetupVirtualTable() {
 
@@ -188,28 +220,32 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
         eventInterface->VirtualTable = virtualTable;
 
-        pinnedFunction = OnInputChanged;
+        pinnedFunction = OnCursorChanged;
 
-        originalFunction = virtualTable->OnInputReceived;
-        virtualTable->OnInputReceived = (delegate* unmanaged<AtkTextInput.AtkTextInputEventInterface*, ushort*, void>)Marshal.GetFunctionPointerForDelegate(pinnedFunction);
+        originalFunction = virtualTable->UpdateCursor;
+        virtualTable->UpdateCursor = (delegate* unmanaged<AtkTextInput.AtkTextInputEventInterface*, TextSelectionInfo*, void>)Marshal.GetFunctionPointerForDelegate(pinnedFunction);
     }
+    
+    private void OnCursorChanged(AtkTextInput.AtkTextInputEventInterface* listener, TextSelectionInfo* numEvents) {
+        var applySelectAll = !FocusNode.IsVisible && AutoSelectAll;
 
-    private void OnInputChanged(AtkTextInput.AtkTextInputEventInterface* listener, ushort* numEvents) {
+        if (applySelectAll) {
+            numEvents->SelectionStart = 0;
+            numEvents->SelectionEnd = numEvents->StringLength;
+        }
+
         originalFunction(listener, numEvents);
+
+        if (applySelectAll) {
+            Marshal.WriteInt16((nint)AtkStage.Instance()->AtkInputManager->TextInput, 222, 0);
+            Marshal.WriteInt16((nint)AtkStage.Instance()->AtkInputManager->TextInput, 224, (short)numEvents->StringLength);
+        }
 
         try {
             OnInputReceived?.Invoke(SeString.Parse(Component->UnkText1));
         }
         catch (Exception e) {
             Log.Exception(e);
-        }
-    }
-
-    protected override void Dispose(bool disposing) {
-        if (disposing) {
-            NativeMemoryHelper.Free(virtualTable, 0x8 * 10);
-
-            base.Dispose(disposing);
         }
     }
 
@@ -221,6 +257,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
         BackgroundNode.Size = Size;
         FocusNode.Size = Size;
+        PlaceholderTextNode.Size = Size;
         TextLimitsNode.Size = new Vector2(Width + 18.0f, Height - 9.0f);
         CurrentTextNode.Size = new Vector2(Width - 20.0f, Height - 10.0f);
     }
@@ -274,6 +311,14 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
     [StructLayout(LayoutKind.Explicit, Size = 0x8 * 5)]
     public struct AtkTextInputEventInterfaceVirtualTable {
-        [FieldOffset(8)] public delegate* unmanaged<AtkTextInput.AtkTextInputEventInterface*, ushort*, void> OnInputReceived;
+        [FieldOffset(8)] public delegate* unmanaged<AtkTextInput.AtkTextInputEventInterface*, TextSelectionInfo*, void> UpdateCursor;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x8)]
+    public struct TextSelectionInfo {
+        [FieldOffset(0x0)] public bool CharacterAdded;
+        [FieldOffset(0x2)] public ushort SelectionStart;
+        [FieldOffset(0x4)] public ushort SelectionEnd;
+        [FieldOffset(0x6)] public ushort StringLength;
     }
 }

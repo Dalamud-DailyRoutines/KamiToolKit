@@ -24,13 +24,14 @@ public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unma
         componentBase->Initialize();
 
         CollisionNode = new CollisionNode {
-            NodeId = 1, LinkedComponent = componentBase, NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision | NodeFlags.RespondToMouse | NodeFlags.Focusable | NodeFlags.EmitsEvents,
+            NodeId = 1,
+            LinkedComponent = componentBase,
+            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision | NodeFlags.RespondToMouse | NodeFlags.Focusable | NodeFlags.EmitsEvents,
         };
 
         CollisionNode.InternalResNode->ParentNode = InternalResNode;
 
         componentBase->OwnerNode = Node;
-        componentBase->AtkResNode = CollisionNode.InternalResNode;
         componentBase->ComponentFlags = 1;
 
         ref var uldManager = ref componentBase->UldManager;

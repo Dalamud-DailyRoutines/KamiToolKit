@@ -29,8 +29,13 @@ public abstract unsafe partial class NodeBase : IDisposable {
         if (!isDisposed) {
             Log.Verbose($"Disposing node {GetType()}");
 
+            ClearFocus();
+
             // Automatically dispose any fields/properties that are managed nodes.
-            VisitChildren(node => node?.Dispose());
+            VisitChildren(node => {
+                ClearFocus();
+                node?.Dispose();
+            });
 
             TryForceDetach(false);
 
@@ -46,6 +51,31 @@ public abstract unsafe partial class NodeBase : IDisposable {
         }
 
         isDisposed = true;
+    }
+
+    /// <summary>
+    ///     If our node is focused via AtkInputManager, change the focus to be the windows root node instead.
+    /// </summary>
+    private void ClearFocus() {
+        if (InternalResNode is null) return;
+        
+        var inputManager = AtkStage.Instance()->AtkInputManager;
+        if (inputManager is null) return;
+        
+        foreach (var focusEntry in inputManager->FocusList) {
+            if (focusEntry.AtkEventListener is null) continue;
+            if (focusEntry.AtkEventTarget is null) continue;
+
+            // Potentially Explosive, may need to consider checking if this is an AtkUnitBase
+            var addon = (AtkUnitBase*)focusEntry.AtkEventListener;
+            if (addon->RootNode is null) continue;
+
+            // If this focus entry has our custom node focused, redirect the focus to RootNode
+            if (focusEntry.AtkEventTarget == InternalResNode) {
+                Log.Debug($"Custom Node was focused during dispose, Addon: {addon->NameString}, unfocusing node.");
+                Experimental.Instance.SetFocus?.Invoke(inputManager, addon->RootNode, addon, focusEntry.Unk10);
+            }
+        }
     }
 
     /// <summary>
@@ -86,7 +116,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
         return true;
     }
 
-    public static explicit operator AtkResNode*(NodeBase node) => node.InternalResNode;
+    public static implicit operator AtkResNode*(NodeBase node) => node.InternalResNode;
 }
 
 public abstract unsafe class NodeBase<T> : NodeBase where T : unmanaged, ICreatable {

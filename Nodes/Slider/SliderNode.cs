@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Numerics;
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
@@ -13,6 +14,7 @@ public unsafe class SliderNode : ComponentNode<AtkComponentSlider, AtkUldCompone
     public readonly SliderBackgroundButtonNode SliderBackgroundButtonNode;
     public readonly SliderForegroundButtonNode SliderForegroundButtonNode;
     public readonly TextNode ValueNode;
+    public readonly TextNode FloatValueNode;
 
     public SliderNode() {
         SetInternalComponentType(ComponentType.Slider);
@@ -49,9 +51,21 @@ public unsafe class SliderNode : ComponentNode<AtkComponentSlider, AtkUldCompone
             IsVisible = true,
             FontType = FontType.Axis,
             FontSize = 12,
-            AlignmentType = AlignmentType.Left,
+            AlignmentType = AlignmentType.TopLeft,
+            TextFlags = TextFlags.AutoAdjustNodeSize,
         };
         ValueNode.AttachNode(this);
+
+        FloatValueNode = new TextNode {
+            NodeId = 6,
+            Size = new Vector2(24.0f, 16.0f),
+            IsVisible = false,
+            FontType = FontType.Axis,
+            FontSize = 12,
+            AlignmentType = AlignmentType.TopLeft,
+            TextFlags = TextFlags.AutoAdjustNodeSize,
+        };
+        FloatValueNode.AttachNode(this);
 
         Data->Step = 1;
         Data->Min = 0;
@@ -77,17 +91,14 @@ public unsafe class SliderNode : ComponentNode<AtkComponentSlider, AtkUldCompone
 
     public Action<int>? OnValueChanged { get; set; }
 
-    public required int Min {
-        get => Component->MinValue;
+    public required Range Range {
+        get => Data->Min .. Data->Max;
         set {
-            Component->SetMinValue(value);
-            Component->SetValue(value);
-        }
-    }
+            Component->SetMaxValue(value.End.Value);
+            Component->SetMinValue(value.Start.Value);
 
-    public required int Max {
-        get => Component->MaxValue;
-        set => Component->SetMaxValue(value);
+            Value = Math.Clamp(Value, value.Start.Value, value.End.Value);
+        }
     }
 
     public int Step {
@@ -97,24 +108,56 @@ public unsafe class SliderNode : ComponentNode<AtkComponentSlider, AtkUldCompone
 
     public int Value {
         get => Component->Value;
-        set => Component->SetValue(value);
+        set {
+            Component->SetValue(value);
+            UpdateFormattedText();
+        }
+    }
+
+    public int DecimalPlaces {
+        get;
+        set {
+            field = value;
+            UpdateFormattedText();
+        }
     }
 
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
 
-        SliderBackgroundButtonNode.Size = new Vector2(Width - 24.0f, Height);
-        ProgressTextureNode.Size = new Vector2(Width, Height / 2.0f - 1.0f);
-        ProgressTextureNode.Y = Height / 4.0f;
-        ValueNode.Position = new Vector2(Width - 24.0f, Height / 4.0f);
-        SliderForegroundButtonNode.Size = new Vector2(Height / 2.0f, Height / 2.0f - 1.0f);
-        SliderForegroundButtonNode.Y = Height / 4.0f;
+        SliderBackgroundButtonNode.Size = new Vector2(Width - 18.0f, Height / 2.0f);
+        SliderBackgroundButtonNode.Position = new Vector2(0.0f, 4.0f);
+
+        ProgressTextureNode.Size = new Vector2(0.0f, Height / 2.0f - 1.0f);
+        ProgressTextureNode.Position = new Vector2(0.0f, 4.0f);
+
+        SliderForegroundButtonNode.Size = new Vector2(Height - 4.0f, Height - 4.0f);
+        SliderForegroundButtonNode.Position = new Vector2(0.0f, 0.0f);
+
+        ValueNode.Size = new Vector2(0.0f, Height);
+        ValueNode.Position = new Vector2(Width - 18.0f, 0.0f);
+        
+        FloatValueNode.Size = new Vector2(0.0f, Height);
+        FloatValueNode.Position = new Vector2(Width - 18.0f, 0.0f);
 
         Component->SliderSize = (short)Width;
     }
 
     private void ValueChangedHandler(AddonEventData obj) {
         OnValueChanged?.Invoke(Value);
+        UpdateFormattedText();
+    }
+
+    private void UpdateFormattedText() {
+        if (DecimalPlaces is not 0) {
+            var formatInfo = new NumberFormatInfo {
+                NumberDecimalDigits = DecimalPlaces,
+            };
+            
+            FloatValueNode.IsVisible = true;
+            FloatValueNode.String = string.Format(formatInfo, "{0:F}", Value / MathF.Pow(10, DecimalPlaces));
+            ValueNode.FontSize = 0;
+        }
     }
 
     private void BuildTimelines() {

@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Dalamud.Game.Addon.Events;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -7,7 +8,7 @@ using KamiToolKit.Classes.TimelineBuilding;
 
 namespace KamiToolKit.Nodes;
 
-public abstract unsafe class DropDownNode<T, TU> : SimpleComponentNode where T : ListNode<TU>, new() {
+public abstract class DropDownNode<T, TU> : SimpleComponentNode where T : ListNode<TU>, new() {
 
     public readonly NineGridNode BackgroundNode;
     public readonly ImageNode CollapseArrowNode;
@@ -110,11 +111,19 @@ public abstract unsafe class DropDownNode<T, TU> : SimpleComponentNode where T :
         OptionListNode.Position = new Vector2(4.0f, Height - 3.0f);
     }
 
-    public void Toggle() {
+    public Action<bool>? OnCollapseToggled { get; set; }
+    public Action? OnUncollapsed { get; set; }
+    public Action? OnCollapsed { get; set; }
+
+    public bool IsEnabled { get; set; } = true;
+    
+    public unsafe void Toggle() {
+        if (!IsEnabled) return;
+
         IsCollapsed = !IsCollapsed;
         Timeline?.PlayAnimation(IsCollapsed ? 4 : 11);
         OptionListNode.Toggle(!IsCollapsed);
-
+        
         var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(InternalResNode);
         if (parentAddon is not null) {
 
@@ -131,6 +140,14 @@ public abstract unsafe class DropDownNode<T, TU> : SimpleComponentNode where T :
             else {
                 OptionListNode.ReattachNode(this);
             }
+        }
+
+        OnCollapseToggled?.Invoke(IsCollapsed);
+        if (IsCollapsed) {
+            OnCollapsed?.Invoke();
+        }
+        else {
+            OnUncollapsed?.Invoke();
         }
     }
 
