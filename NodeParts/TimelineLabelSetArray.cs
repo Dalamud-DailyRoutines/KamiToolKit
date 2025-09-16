@@ -8,44 +8,44 @@ namespace KamiToolKit.NodeParts;
 
 public unsafe class TimelineLabelSetArray : IDisposable {
 
-	internal AtkTimelineLabelSet* InternalLabelSetArray = null;
-	
-	public uint Count { get; private set; }
+    internal AtkTimelineLabelSet* InternalLabelSetArray = null;
 
-	private List<TimelineLabelSet> labelSets = [];
+    private List<TimelineLabelSet> labelSets = [];
 
-	public void Dispose() {
-		foreach (var labelSet in labelSets) {
-			labelSet.Dispose();
-		}
-    
-		NativeMemoryHelper.UiFree(InternalLabelSetArray, Count);
-		InternalLabelSetArray = null;
-	}
+    public uint Count { get; private set; }
 
-	private void Resync() {
-		// Free existing array, we will completely rebuild it
-		if (InternalLabelSetArray is not null) {
-			NativeMemoryHelper.UiFree(InternalLabelSetArray, Count);
-			InternalLabelSetArray = null;
-		}
+    public List<TimelineLabelSet> LabelSets {
+        get => labelSets;
+        set {
+            labelSets = value;
+            Resync();
+        }
+    }
 
-		// Allocate new array
-		InternalLabelSetArray = NativeMemoryHelper.UiAlloc<AtkTimelineLabelSet>(labelSets.Count);
+    public void Dispose() {
+        foreach (var labelSet in labelSets) {
+            labelSet.Dispose();
+        }
 
-		// Copy all Animations into it
-		foreach (var index in Enumerable.Range(0, labelSets.Count)) {
-			InternalLabelSetArray[index] = *labelSets[index].InternalLabelSet;
-		}
+        NativeMemoryHelper.UiFree(InternalLabelSetArray, Count);
+        InternalLabelSetArray = null;
+    }
 
-		Count = (uint) labelSets.Count;
-	}
+    private void Resync() {
+        // Free existing array, we will completely rebuild it
+        if (InternalLabelSetArray is not null) {
+            NativeMemoryHelper.UiFree(InternalLabelSetArray, Count);
+            InternalLabelSetArray = null;
+        }
 
-	public List<TimelineLabelSet> LabelSets {
-		get => labelSets;
-		set {
-			labelSets = value;
-			Resync();
-		}
-	}
+        // Allocate new array
+        InternalLabelSetArray = NativeMemoryHelper.UiAlloc<AtkTimelineLabelSet>(labelSets.Count);
+
+        // Copy all Animations into it
+        foreach (var index in Enumerable.Range(0, labelSets.Count)) {
+            InternalLabelSetArray[index] = *labelSets[index].InternalLabelSet;
+        }
+
+        Count = (uint)labelSets.Count;
+    }
 }

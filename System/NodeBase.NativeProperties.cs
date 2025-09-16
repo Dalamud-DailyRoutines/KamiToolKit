@@ -39,9 +39,7 @@ public abstract unsafe partial class NodeBase {
             ScreenY = value.Y;
         }
     }
-    
-    protected virtual void OnSizeChanged() { }
-    
+
     public virtual float Width {
         get => InternalResNode->GetWidth();
         set {
@@ -75,7 +73,7 @@ public abstract unsafe partial class NodeBase {
         get => InternalResNode->GetScaleY();
         set => InternalResNode->SetScaleY(value);
     }
-    
+
     [JsonProperty] public virtual Vector2 Scale {
         get => new(ScaleX, ScaleY);
         set => InternalResNode->SetScale(value.X, value.Y);
@@ -117,24 +115,6 @@ public abstract unsafe partial class NodeBase {
         set => InternalResNode->NodeFlags = value;
     }
 
-    public void AddFlags(params NodeFlags[] flags) {
-        foreach (var flag in flags) {
-            AddFlags(flag);
-        }
-    }
-    
-    public void AddFlags(NodeFlags flags)
-        => NodeFlags |= flags;
-
-    public void RemoveFlags(params NodeFlags[] flags) {
-        foreach (var flag in flags) {
-            RemoveFlags(flag);
-        }
-    }
-
-    public void RemoveFlags(NodeFlags flags)
-        => NodeFlags &= ~flags;
-
     [JsonProperty] public virtual Vector4 Color {
         get => InternalResNode->Color.ToVector4();
         set => InternalResNode->Color = value.ToByteColor();
@@ -142,11 +122,11 @@ public abstract unsafe partial class NodeBase {
 
     public virtual float Alpha {
         get => InternalResNode->Color.A;
-        set => InternalResNode->SetAlpha((byte) (value * 255.0f));
+        set => InternalResNode->SetAlpha((byte)(value * 255.0f));
     }
 
     [JsonProperty] public virtual Vector3 AddColor {
-        get => new Vector3(InternalResNode->AddRed, InternalResNode->AddGreen, InternalResNode->AddBlue) /  255.0f;
+        get => new Vector3(InternalResNode->AddRed, InternalResNode->AddGreen, InternalResNode->AddBlue) / 255.0f;
         set {
             InternalResNode->AddRed = (short)(value.X * 255);
             InternalResNode->AddGreen = (short)(value.Y * 255);
@@ -162,7 +142,7 @@ public abstract unsafe partial class NodeBase {
             InternalResNode->MultiplyBlue = (byte)(value.Z * 255);
         }
     }
-    
+
     public uint NodeId {
         get => InternalResNode->NodeId;
         set => InternalResNode->NodeId = value;
@@ -185,6 +165,26 @@ public abstract unsafe partial class NodeBase {
 
     public virtual int ChildCount => InternalResNode->ChildCount;
 
+    protected virtual void OnSizeChanged() { }
+
+    public void AddFlags(params NodeFlags[] flags) {
+        foreach (var flag in flags) {
+            AddFlags(flag);
+        }
+    }
+
+    public void AddFlags(NodeFlags flags)
+        => NodeFlags |= flags;
+
+    public void RemoveFlags(params NodeFlags[] flags) {
+        foreach (var flag in flags) {
+            RemoveFlags(flag);
+        }
+    }
+
+    public void RemoveFlags(NodeFlags flags)
+        => NodeFlags &= ~flags;
+
     public void MarkDirty()
         => VisitChildren(InternalResNode, pointer => pointer.Value->DrawFlags |= 1);
 
@@ -192,5 +192,5 @@ public abstract unsafe partial class NodeBase {
         => InternalResNode->CheckCollisionAtCoords(x, y, true);
 
     public bool CheckCollision(AtkEventData* eventData)
-        => CheckCollision(eventData->MouseData.PosX,  eventData->MouseData.PosY);
+        => CheckCollision(eventData->MouseData.PosX, eventData->MouseData.PosY);
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using KamiToolKit.Classes;
 using Lumina.Excel;
 
@@ -7,27 +6,35 @@ namespace KamiToolKit.Nodes;
 
 public class LuminaListNode<T> : ListNode<T> where T : struct, IExcelRow<T> {
 
-	public Func<T, string>? LabelFunction {
-		get; set { field = value;
-			ResolveOptions();
-		}
-	}
+    public delegate string GetLabel(T excelRow);
 
-	public Func<T, bool>? FilterFunction {
-		get; set { field = value;
-			ResolveOptions();
-		}
-	}
+    public delegate bool ShouldShow(T excelRow);
+    
+    public GetLabel? LabelFunction {
+        get;
+        set {
+            field = value;
+            ResolveOptions();
+        }
+    }
 
-	private void ResolveOptions() {
-		if (LabelFunction is null) return;
-		if (FilterFunction is null) return;
-		
-		Options = DalamudInterface.Instance.DataManager.GetExcelSheet<T>()
-			.Where(FilterFunction)
-			.ToList();
-	}
+    public ShouldShow? FilterFunction {
+        get;
+        set {
+            field = value;
+            ResolveOptions();
+        }
+    }
 
-	protected override string GetLabelForOption(T option)
-		=> LabelFunction?.Invoke(option) ?? "ERROR: Label Function Not Found";
+    private void ResolveOptions() {
+        if (LabelFunction is null) return;
+        if (FilterFunction is null) return;
+
+        Options = DalamudInterface.Instance.DataManager.GetExcelSheet<T>()
+            .Where(row => FilterFunction(row))
+            .ToList();
+    }
+
+    protected override string GetLabelForOption(T option)
+        => LabelFunction?.Invoke(option) ?? "ERROR: Label Function Not Found";
 }

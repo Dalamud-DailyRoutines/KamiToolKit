@@ -8,12 +8,13 @@ using KamiToolKit.Classes;
 namespace KamiToolKit.NodeParts;
 
 /// <summary>
-/// Wrapper around a AtkUldPartsList, manages adding and removing multiple parts more easily.
+///     Wrapper around a AtkUldPartsList, manages adding and removing multiple parts more easily.
 /// </summary>
 public unsafe class PartsList : IList<Part>, IDisposable {
 
-    internal AtkUldPartsList* InternalPartsList;
     private readonly List<Part> parts = [];
+
+    internal AtkUldPartsList* InternalPartsList;
 
     private bool isDisposed;
 
@@ -23,19 +24,6 @@ public unsafe class PartsList : IList<Part>, IDisposable {
         InternalPartsList->Parts = null;
         InternalPartsList->PartCount = 0;
         InternalPartsList->Id = 0;
-    }
-
-    public void Dispose() {
-        if (!isDisposed) {
-            foreach (var part in parts.ToList()) {
-                Remove(part);
-            }
-        
-            NativeMemoryHelper.UiFree(InternalPartsList);
-            InternalPartsList = null;
-        }
-
-        isDisposed = true;
     }
 
     public uint PartCount {
@@ -48,29 +36,36 @@ public unsafe class PartsList : IList<Part>, IDisposable {
         set => InternalPartsList->Id = value;
     }
 
+    public void Dispose() {
+        if (!isDisposed) {
+            foreach (var part in parts.ToList()) {
+                Remove(part);
+            }
+
+            NativeMemoryHelper.UiFree(InternalPartsList);
+            InternalPartsList = null;
+        }
+
+        isDisposed = true;
+    }
+
     public IEnumerator<Part> GetEnumerator()
         => parts.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    public void Add(params Part[] items) {
-        foreach (var part in items) {
-            Add(part);
-        }
-    }
-    
     public void Add(Part item) {
         NativeMemoryHelper.ResizeArray(ref InternalPartsList->Parts, PartCount, PartCount + 1);
-        
+
         // Add new part on end of buffer
         InternalPartsList->Parts[PartCount] = *item.InternalPart;
-        
+
         // Now that we have the data copied into the new array, update the pointer and free old memory
         var allocatedPart = item.InternalPart;
         item.InternalPart = &InternalPartsList->Parts[PartCount];
         NativeMemoryHelper.UiFree(allocatedPart);
-        
+
         // Update Parts List
         PartCount++;
         parts.Add(item);
@@ -89,21 +84,21 @@ public unsafe class PartsList : IList<Part>, IDisposable {
 
     public bool Remove(Part item) {
         if (!Contains(item)) return false;
-        
+
         // Make new buffer to fit new part
         var newBuffer = NativeMemoryHelper.UiAlloc<AtkUldPart>(PartCount - 1);
 
-        foreach (var index in Enumerable.Range(0, (int) PartCount)) {
-            
+        foreach (var index in Enumerable.Range(0, (int)PartCount)) {
+
             // If this is the item we want to remove, skip.
             if (&InternalPartsList->Parts[index] == item.InternalPart) continue;
-            
+
             newBuffer[index] = InternalPartsList->Parts[index];
         }
 
         // Free the old buffer
         NativeMemoryHelper.UiFree(InternalPartsList->Parts, PartCount);
-        
+
         // Remove the item from the stored collection
         PartCount--;
         parts.Remove(item);
@@ -132,6 +127,12 @@ public unsafe class PartsList : IList<Part>, IDisposable {
         set {
             parts[index] = value;
             InternalPartsList->Parts[index] = *value.InternalPart;
+        }
+    }
+
+    public void Add(params Part[] items) {
+        foreach (var part in items) {
+            Add(part);
         }
     }
 }

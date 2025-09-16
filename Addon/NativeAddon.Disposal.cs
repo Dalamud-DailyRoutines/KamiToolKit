@@ -6,41 +6,36 @@ namespace KamiToolKit.Addon;
 
 public abstract partial class NativeAddon : IDisposable {
 
-	private static readonly List<NativeAddon> CreatedAddons = [];
+    private static readonly List<NativeAddon> CreatedAddons = [];
 
-	private bool isDisposed;
-	
-	~NativeAddon() => Dispose(false);
+    private bool isDisposed;
 
-	protected virtual void Dispose(bool disposing) {
-		if (disposing) {
-			Dispose();
-		}
-	}
+    public virtual void Dispose() {
+        if (!isDisposed) {
+            Log.Debug($"Disposing addon {GetType()}");
 
-	public void Dispose() {
-		if (!isDisposed) {
-			Log.Debug($"Disposing addon {GetType()}");
+            Close();
 
-			Close();
+            // Close will remove this node automatically on AtkUnitBase.Finalize,
+            // However, this is after the plugin unloads,
+            // and will trigger a warning in auto-dispose if we don't remove this now.
+            CreatedAddons.Remove(this);
 
-			// Close will remove this node automatically on AtkUnitBase.Finalize,
-			// However, this is after the plugin unloads,
-			// and will trigger a warning in auto-dispose if we don't remove this now.
-			CreatedAddons.Remove(this);
+            GC.SuppressFinalize(this);
+        }
 
-			GC.SuppressFinalize(this);
-		}
-        
-		isDisposed = true;
-	}
+        isDisposed = true;
+        DisposeExtras();
+    }
 
-	internal static void DisposeAddons() {
-		foreach (var addon in CreatedAddons.ToArray()) {
-			Log.Warning($"Addon {addon.GetType()} was not disposed properly please ensure you call dispose at an appropriate time.");
-			Log.Debug($"Automatically disposing addon {addon.GetType()} as a safety measure.");
-			
-			addon.Dispose();
-		}
-	}
+    ~NativeAddon() => Dispose();
+
+    internal static void DisposeAddons() {
+        foreach (var addon in CreatedAddons.ToArray()) {
+            Log.Warning($"Addon {addon.GetType()} was not disposed properly please ensure you call dispose at an appropriate time.");
+            Log.Debug($"Automatically disposing addon {addon.GetType()} as a safety measure.");
+
+            addon.Dispose();
+        }
+    }
 }

@@ -5,28 +5,28 @@ namespace KamiToolKit.Nodes;
 
 public class TextDropDownNode : DropDownNode<TextListNode, string> {
 
-	public TextDropDownNode() {
-		OptionListNode.OnOptionSelected += OptionSelectedHandler;
-	}
+    public TextDropDownNode() {
+        OptionListNode.OnOptionSelected += OptionSelectedHandler;
+    }
 
-	public Action<string>? OnOptionSelected { get; set; }
-	
-	private void OptionSelectedHandler(string option) {
-		OnOptionSelected?.Invoke(option);
-		UpdateLabel(option);
-		Toggle();
-	}
+    public Action<string>? OnOptionSelected { get; set; }
 
-	public required List<string>? Options {
-		get => OptionListNode.Options;
-		set {
-			OptionListNode.Options = value;
-			OptionListNode.SelectDefaultOption();
-			UpdateLabel(OptionListNode.SelectedOption);
-		}
-	}
+    public required List<string>? Options { // todo: Investigate why changing this after init, explodes.
+        get => OptionListNode.Options;
+        set {
+            OptionListNode.Options = value;
+            OptionListNode.SelectDefaultOption();
+            UpdateLabel(OptionListNode.SelectedOption);
+        }
+    }
 
-	protected override void UpdateLabel(string? option) {
-		LabelNode.Text = option ?? "ERROR: Invalid Default Option";
-	}
+    private void OptionSelectedHandler(string option) {
+        OnOptionSelected?.Invoke(option);
+        UpdateLabel(option);
+        Toggle();
+    }
+
+    protected override void UpdateLabel(string? option) {
+        LabelNode.String = option ?? "ERROR: Invalid Default Option";
+    }
 }

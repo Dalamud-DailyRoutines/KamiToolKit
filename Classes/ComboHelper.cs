@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
 
 namespace KamiToolKit.Classes;
 
@@ -17,13 +17,13 @@ public static class ComboHelper {
                         var intRefValue = Convert.ToInt32(refValue);
                         var intFlagValue = Convert.ToInt32(enumValue);
                         var result = intRefValue | intFlagValue;
-                        refValue = (T) Enum.ToObject(refValue.GetType(), result);
+                        refValue = (T)Enum.ToObject(refValue.GetType(), result);
                     }
                     else {
                         var intRefValue = Convert.ToInt32(refValue);
                         var intFlagValue = Convert.ToInt32(enumValue);
                         var result = intRefValue & ~intFlagValue;
-                        refValue = (T) Enum.ToObject(refValue.GetType(), result);
+                        refValue = (T)Enum.ToObject(refValue.GetType(), result);
                     }
 
                     return true;
@@ -52,7 +52,7 @@ internal static class EnumExtensions {
                 }
             }
         }
-        
+
         return value.ToString();
     }
 }

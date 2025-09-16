@@ -6,15 +6,28 @@ using KamiToolKit.NodeParts;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// A simple image node that allows you to load an IDalamudTextureWrap texture into a native image node.
-/// This node creates a single <see cref="Part"/>
+///     A simple image node that allows you to load an IDalamudTextureWrap texture into a native image node.
+///     This node creates a single <see cref="Part" />
 /// </summary>
-/// <remarks>This node is not intended to be used with multiple <see cref="Part"/>'s.</remarks>
+/// <remarks>This node is not intended to be used with multiple <see cref="Part" />'s.</remarks>
 public class ImGuiImageNode : SimpleImageNode {
-    public void LoadTexture(IDalamudTextureWrap texture) 
-        => PartsList[0].LoadTexture(texture);
 
     public IDalamudTextureWrap? LoadedTexture;
+
+    public override string TexturePath {
+        get => base.TexturePath;
+        set {
+            if (Path.IsPathRooted(value)) {
+                LoadTextureFromFile(value);
+            }
+            else if (DalamudInterface.Instance.DataManager.FileExists(value)) {
+                PartsList[0].LoadTexture(value);
+            }
+        }
+    }
+
+    public void LoadTexture(IDalamudTextureWrap texture)
+        => PartsList[0].LoadTexture(texture);
 
     public void LoadTextureFromFile(string fileSystemPath) {
         DalamudInterface.Instance.Framework.RunOnTick(async () => {
@@ -27,18 +40,6 @@ public class ImGuiImageNode : SimpleImageNode {
             Alpha = 1.0f;
             MarkDirty();
         });
-    }
-
-    public override string TexturePath { 
-        get => base.TexturePath;
-        set {
-            if (Path.IsPathRooted(value)) {
-                LoadTextureFromFile(value);
-            } 
-            else if (DalamudInterface.Instance.DataManager.FileExists(value)) {
-                PartsList[0].LoadTexture(value);
-            }
-        }
     }
 
     protected override void Dispose(bool disposing) {

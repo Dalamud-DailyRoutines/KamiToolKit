@@ -30,21 +30,21 @@ internal static unsafe class NodeLinker {
             case NodePosition.AfterAllSiblings:
                 EmplaceAfterSiblings(node, attachTargetNode);
                 break;
-            
+
             case NodePosition.AsLastChild:
                 EmplaceAsLastChild(node, attachTargetNode);
                 break;
-            
+
             case NodePosition.AsFirstChild:
                 EmplaceAsFirstChild(node, attachTargetNode);
                 break;
-            
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(position), position, null);
         }
     }
-    
-     private static void EmplaceBefore(AtkResNode* node, AtkResNode* attachTargetNode) {
+
+    private static void EmplaceBefore(AtkResNode* node, AtkResNode* attachTargetNode) {
         node->ParentNode = attachTargetNode->ParentNode;
 
         // Target node is the head of the nodelist, we will be the new head.
@@ -64,7 +64,7 @@ internal static unsafe class NodeLinker {
         if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component) {
             attachTargetNode->ParentNode->ChildCount++;
         }
-     }
+    }
 
     private static void EmplaceAfter(AtkResNode* node, AtkResNode* attachTargetNode) {
         node->ParentNode = attachTargetNode->ParentNode;
@@ -132,8 +132,7 @@ internal static unsafe class NodeLinker {
             }
         }
         // Else Add to the List
-        else
-        {
+        else {
             var currentNode = attachTargetNode->ChildNode;
             while (currentNode is not null && currentNode->PrevSiblingNode != null) {
                 currentNode = currentNode->PrevSiblingNode;
@@ -147,7 +146,7 @@ internal static unsafe class NodeLinker {
             }
         }
     }
-    
+
     private static void EmplaceAsFirstChild(AtkResNode* node, AtkResNode* attachTargetNode) {
         // If the child list is empty
         if (attachTargetNode->ChildNode is null && attachTargetNode->ChildCount is 0) {
@@ -188,7 +187,7 @@ internal static unsafe class NodeLinker {
 
         if (node->NextSiblingNode != null)
             node->NextSiblingNode->PrevSiblingNode = node->PrevSiblingNode;
-        
+
         if (node->ParentNode->GetNodeType() is not NodeType.Component) {
             node->ParentNode->ChildCount--;
         }

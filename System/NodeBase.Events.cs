@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Dalamud.Game.Addon.Events;
+using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -10,219 +11,220 @@ using Newtonsoft.Json;
 namespace KamiToolKit.System;
 
 public class EventHandler {
-	public required Action<AddonEventData>? EventAction { get; set; }
-	public IAddonEventHandle? EventHandle { get; set; }
+    public required Action<AddonEventData>? EventAction { get; set; }
+    public IAddonEventHandle? EventHandle { get; set; }
 }
 
 public abstract unsafe partial class NodeBase {
 
-	private readonly Dictionary<AddonEventType, EventHandler> eventHandlers = [];
+    private readonly Dictionary<AddonEventType, EventHandler> eventHandlers = [];
 
-	public bool IsEventRegistered(AddonEventType eventType) 
-		=> eventHandlers.ContainsKey(eventType);
-	
-	public void AddEvent(AddonEventType eventType, Action<AddonEventData> action, bool enableEventFlags = false) {
-		// Check if this eventType is already registered
-		if (eventHandlers.TryGetValue(eventType, out var handler)) {
-			handler.EventAction += action;
-		}
-		else {
-			eventHandlers.Add(eventType, handler = new EventHandler {
-				EventAction = action,
-			});
-			
-			if (EventsActive) {
-				handler.EventHandle ??= DalamudInterface.Instance.AddonEventManager.AddEvent((nint) EventAddonPointer, (nint) InternalResNode, eventType, HandleEvents);
-			}
-			
-			// If we have added a click event, we need to also make the cursor change when hovering this node
-			if (eventType is AddonEventType.MouseClick && !CursorEventsSet) {
-				AddEvent(AddonEventType.MouseOver, SetCursorMouseover);
-				AddEvent(AddonEventType.MouseOut, ResetCursorMouseover);
-				CursorEventsSet = true;
-			}
-		}
-		
-		if (!EventFlagsSet && enableEventFlags) {
-			EventFlagsSet = true;
-		}
-	}
+    public virtual SeString? Tooltip {
+        get;
+        set {
+            if (value is not null && !value.TextValue.IsNullOrEmpty()) {
+                field = value;
 
-	public void RemoveEvent(AddonEventType eventType, Action<AddonEventData> action, bool clearEventFlags = false) {
-		if (eventHandlers.TryGetValue(eventType, out var handler)) {
-			if (handler.EventAction is not null) {
-				handler.EventAction -= action;
-			}
-			
-			// If we removed the last remaining action for this Event Type
-			if (handler is { EventAction: null, EventHandle: not null } ) {
+                if (!TooltipRegistered) {
+                    if (IsDragDropComponent()) {
+                        AddEvent(AddonEventType.DragDropRollOver, ShowTooltip);
+                        AddEvent(AddonEventType.DragDropRollOut, HideTooltip);
+                    }
+                    else {
+                        AddEvent(AddonEventType.MouseOver, ShowTooltip);
+                        AddEvent(AddonEventType.MouseOut, HideTooltip);
+                    }
 
-				// Remove this event handler entirely
-				eventHandlers.Remove(eventType);
-				
-				// And if events are currently active, unregister them
-				if (EventsActive) {
-					DalamudInterface.Instance.AddonEventManager.RemoveEvent(handler.EventHandle);
-					handler.EventHandle = null;
-				}
-				
-				// If we removed the last MouseClick event, we should also remove the cursor modification events
-				if (eventType is AddonEventType.MouseClick && CursorEventsSet) {
-					RemoveEvent(AddonEventType.MouseOver, SetCursorMouseover);
-					RemoveEvent(AddonEventType.MouseOut, ResetCursorMouseover);
-					CursorEventsSet = false;
-				}
-			}
-		}
+                    TooltipRegistered = true;
+                }
+            }
+            else if (value is null) {
+                if (TooltipRegistered) {
+                    if (IsDragDropComponent()) {
+                        RemoveEvent(AddonEventType.DragDropRollOver, ShowTooltip);
+                        RemoveEvent(AddonEventType.DragDropRollOut, HideTooltip);
+                    }
+                    else {
+                        RemoveEvent(AddonEventType.MouseOver, ShowTooltip);
+                        RemoveEvent(AddonEventType.MouseOut, HideTooltip);
+                    }
 
-		if (EventFlagsSet && clearEventFlags) {
-			EventFlagsSet = false;
-		}
-	}
+                    TooltipRegistered = false;
+                }
+            }
+        }
+    }
 
-	private void HandleEvents(AddonEventType atkEventType, AddonEventData eventData) {
-		if (!IsVisible) return;
+    [JsonProperty] public string TooltipString {
+        get => Tooltip?.ToString() ?? string.Empty;
+        set => Tooltip = value;
+    }
 
-		if (eventHandlers.TryGetValue(atkEventType, out var handler)) {
-			handler.EventAction?.Invoke(eventData);
-		}
-	}
+    private AtkUnitBase* EventAddonPointer { get; set; }
 
-	public SeString? Tooltip {
-		get; set {
-			if (value is not null && !value.TextValue.IsNullOrEmpty()) {
-				field = value;
+    private bool EventsActive { get; set; }
+    private bool TooltipRegistered { get; set; }
+    private bool CursorEventsSet { get; set; }
 
-				if (!TooltipRegistered) {
-					if (IsDragDropComponent()) {
-						AddEvent(AddonEventType.DragDropRollOver, ShowTooltip);
-						AddEvent(AddonEventType.DragDropRollOut, HideTooltip);
-					}
-					else {
-						AddEvent(AddonEventType.MouseOver, ShowTooltip);
-						AddEvent(AddonEventType.MouseOut, HideTooltip);
-					}
+    public bool EnableEventFlags {
+        get => EventFlagsSet;
+        set => EventFlagsSet = value;
+    }
 
-					TooltipRegistered = true;
-				}
-			}
-			else if (value is null) {
-				if (TooltipRegistered) {
-					if (IsDragDropComponent()) {
-						RemoveEvent(AddonEventType.DragDropRollOver, ShowTooltip);
-						RemoveEvent(AddonEventType.DragDropRollOut, HideTooltip);
-					}
-					else {
-						RemoveEvent(AddonEventType.MouseOver, ShowTooltip);
-						RemoveEvent(AddonEventType.MouseOut, HideTooltip);
-					}
+    public bool EventFlagsSet {
+        get => NodeFlags.HasFlag(NodeFlags.EmitsEvents) &&
+               NodeFlags.HasFlag(NodeFlags.HasCollision) &&
+               NodeFlags.HasFlag(NodeFlags.RespondToMouse);
+        set {
+            if (value) {
+                SetEventFlags();
+            }
+            else {
+                ClearEventFlags();
+            }
+        }
+    }
 
-					TooltipRegistered = false;
-				}
-			}
-		}
-	}
+    public bool IsEventRegistered(AddonEventType eventType)
+        => eventHandlers.ContainsKey(eventType);
 
-	[JsonProperty] public string TooltipString {
-		get => Tooltip?.ToString() ?? string.Empty;
-		set => Tooltip = value;
-	}
-	
-	private AtkUnitBase* EventAddonPointer { get; set; }
-	
-	private bool EventsActive { get; set; }
-	private bool TooltipRegistered { get; set; }
-	private bool CursorEventsSet { get; set; }
+    public void AddEvent(AddonEventType eventType, Action<AddonEventData> action, bool enableEventFlags = false, bool addClickHelpers = true) {
+        // Check if this eventType is already registered
+        if (eventHandlers.TryGetValue(eventType, out var handler)) {
+            handler.EventAction += action;
+        }
+        else {
+            eventHandlers.Add(eventType, handler = new EventHandler {
+                EventAction = action,
+            });
 
-	public bool EnableEventFlags {
-		get => EventFlagsSet;
-		set => EventFlagsSet = value;
-	}
+            if (EventsActive) {
+                handler.EventHandle ??= DalamudInterface.Instance.AddonEventManager.AddEvent((nint)EventAddonPointer, (nint)InternalResNode, eventType, HandleEvents);
+            }
 
-	public bool EventFlagsSet {
-		get => NodeFlags.HasFlag(NodeFlags.EmitsEvents) &&
-		       NodeFlags.HasFlag(NodeFlags.HasCollision) &&
-		       NodeFlags.HasFlag(NodeFlags.RespondToMouse);
-		set {
-			if (value) {
-				SetEventFlags();
-			}
-			else {
-				ClearEventFlags();
-			}
-		}
-	}
+            // If we have added a click event, we need to also make the cursor change when hovering this node
+            if (eventType is AddonEventType.MouseClick && !CursorEventsSet && addClickHelpers) {
+                AddEvent(AddonEventType.MouseOver, SetCursorMouseover);
+                AddEvent(AddonEventType.MouseOut, ResetCursorMouseover);
+                CursorEventsSet = true;
+            }
+        }
 
-	internal void EnableEvents(AtkUnitBase* addon) {
-		if (addon is null) return;
-		if (EventsActive) return;
+        if (!EventFlagsSet && enableEventFlags) {
+            EventFlagsSet = true;
+        }
+    }
 
-		EventAddonPointer = addon;
-		EventsActive = true;
+    public void RemoveEvent(AddonEventType eventType, Action<AddonEventData> action, bool clearEventFlags = false) {
+        if (eventHandlers.TryGetValue(eventType, out var handler)) {
+            if (handler.EventAction is not null) {
+                handler.EventAction -= action;
+            }
 
-		foreach (var (eventType, handler) in eventHandlers) {
-			handler.EventHandle = DalamudInterface.Instance.AddonEventManager.AddEvent((nint) addon, (nint) InternalResNode, eventType, HandleEvents);
-		}
-		
-		VisitChildren(node => node?.EnableEvents(addon));
-	}
-	
-	internal void DisableEvents() {
-		if (!EventsActive) return;
-		EventsActive = false;
-		
-		foreach (var (_, handler) in eventHandlers) {
-			if (handler.EventHandle is not null) {
-				
-				DalamudInterface.Instance.AddonEventManager.RemoveEvent(handler.EventHandle);
-				handler.EventHandle = null;
-			}
-		}
-		
-		VisitChildren(node => node?.DisableEvents());
-	}
+            // If we removed the last remaining action for this Event Type
+            if (handler is { EventAction: null, EventHandle: not null }) {
 
-	/// <summary>
-	/// Sets EmitsEvents, HasCollision, and RespondToMouse flags for the EventTarget node to allow it to be interactable.
-	/// </summary>
-	public void SetEventFlags()
-		=> AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision | NodeFlags.RespondToMouse);
+                // Remove this event handler entirely
+                eventHandlers.Remove(eventType);
 
-	/// <summary>
-	/// Clears EmitsEvents, HasCollision, and RespondToMouse flags, for the EventTarget node to disable it stealing inputs
-	/// </summary>
-	public void ClearEventFlags()
-		=> RemoveFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision | NodeFlags.RespondToMouse);
+                // And if events are currently active, unregister them
+                if (EventsActive) {
+                    DalamudInterface.Instance.AddonEventManager.RemoveEvent(handler.EventHandle);
+                    handler.EventHandle = null;
+                }
 
-	protected void SetCursor(AddonCursorType cursor)
-		=> DalamudInterface.Instance.AddonEventManager.SetCursor(cursor);
+                // If we removed the last MouseClick event, we should also remove the cursor modification events
+                if (eventType is AddonEventType.MouseClick && CursorEventsSet) {
+                    RemoveEvent(AddonEventType.MouseOver, SetCursorMouseover);
+                    RemoveEvent(AddonEventType.MouseOut, ResetCursorMouseover);
+                    CursorEventsSet = false;
+                }
+            }
+        }
 
-	protected void ResetCursor()
-		=> DalamudInterface.Instance.AddonEventManager.ResetCursor();
+        if (EventFlagsSet && clearEventFlags) {
+            EventFlagsSet = false;
+        }
+    }
 
-	public void ShowTooltip() {
-		if (Tooltip is not null && TooltipRegistered) {
-			var addon = GetAddonForNode(InternalResNode);
-			AtkStage.Instance()->TooltipManager.ShowTooltip(addon->Id, InternalResNode, Tooltip.Encode());
-		}
-	}
+    private void HandleEvents(AddonEventType atkEventType, AddonEventData eventData) {
+        if (!IsVisible) return;
 
-	public void HideTooltip() {
-		var addon = GetAddonForNode(InternalResNode);
-		if (addon is null) return;
+        if (eventHandlers.TryGetValue(atkEventType, out var handler)) {
+            handler.EventAction?.Invoke(eventData);
+        }
+    }
 
-		AtkStage.Instance()->TooltipManager.HideTooltip(addon->Id);
-	}
-	
-	private void ShowTooltip(AddonEventData data) 
-		=> ShowTooltip();
+    internal void EnableEvents(AtkUnitBase* addon) {
+        if (addon is null) return;
+        if (EventsActive) return;
 
-	private void HideTooltip(AddonEventData data)
-		=> HideTooltip();
+        EventAddonPointer = addon;
+        EventsActive = true;
 
-	private void SetCursorMouseover(AddonEventData data)
-		=> SetCursor(AddonCursorType.Clickable);
+        foreach (var (eventType, handler) in eventHandlers) {
+            handler.EventHandle = DalamudInterface.Instance.AddonEventManager.AddEvent((nint)addon, (nint)InternalResNode, eventType, HandleEvents);
+        }
 
-	private void ResetCursorMouseover(AddonEventData data)
-		=> ResetCursor();
+        VisitChildren(node => node?.EnableEvents(addon));
+    }
+
+    internal void DisableEvents() {
+        if (!EventsActive) return;
+        EventsActive = false;
+
+        foreach (var (_, handler) in eventHandlers) {
+            if (handler.EventHandle is not null) {
+
+                DalamudInterface.Instance.AddonEventManager.RemoveEvent(handler.EventHandle);
+                handler.EventHandle = null;
+            }
+        }
+
+        VisitChildren(node => node?.DisableEvents());
+    }
+
+    /// <summary>
+    ///     Sets EmitsEvents, HasCollision, and RespondToMouse flags for the EventTarget node to allow it to be interactable.
+    /// </summary>
+    public void SetEventFlags()
+        => AddFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision | NodeFlags.RespondToMouse);
+
+    /// <summary>
+    ///     Clears EmitsEvents, HasCollision, and RespondToMouse flags, for the EventTarget node to disable it stealing inputs
+    /// </summary>
+    public void ClearEventFlags()
+        => RemoveFlags(NodeFlags.EmitsEvents | NodeFlags.HasCollision | NodeFlags.RespondToMouse);
+
+    protected void SetCursor(AddonCursorType cursor)
+        => DalamudInterface.Instance.AddonEventManager.SetCursor(cursor);
+
+    protected void ResetCursor()
+        => DalamudInterface.Instance.AddonEventManager.ResetCursor();
+
+    public void ShowTooltip() {
+        if (Tooltip is not null && TooltipRegistered) {
+            var addon = GetAddonForNode(InternalResNode);
+            AtkStage.Instance()->TooltipManager.ShowTooltip(addon->Id, InternalResNode, Tooltip.Encode());
+        }
+    }
+
+    public void HideTooltip() {
+        var addon = GetAddonForNode(InternalResNode);
+        if (addon is null) return;
+
+        AtkStage.Instance()->TooltipManager.HideTooltip(addon->Id);
+    }
+
+    private void ShowTooltip(AddonEventData data)
+        => ShowTooltip();
+
+    private void HideTooltip(AddonEventData data)
+        => HideTooltip();
+
+    private void SetCursorMouseover(AddonEventData data)
+        => SetCursor(AddonCursorType.Clickable);
+
+    private void ResetCursorMouseover(AddonEventData data)
+        => ResetCursor();
 }

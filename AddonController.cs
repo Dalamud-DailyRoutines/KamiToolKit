@@ -1,111 +1,145 @@
 ﻿using System;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
-using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.Extensions;
 
 namespace KamiToolKit;
 
 /// <summary>
-/// This class provides functionality to add-and manage custom elements for any Addon
+///     This class provides functionality to add-and manage custom elements for any Addon
 /// </summary>
 public unsafe class AddonController<T> : IDisposable where T : unmanaged {
-	[PluginService] public IAddonLifecycle AddonLifecycle { get; set; } = null!;
-	[PluginService] public IGameGui GameGui { get; set; } = null!;
-	[PluginService] public IFramework Framework { get; set; } = null!;
 
-	private readonly string addonName;
-	private AtkUnitBase* AddonPointer => (AtkUnitBase*)GameGui.GetAddonByName(addonName);
-	private bool IsEnabled { get; set; }
-	
-	public AddonController(IDalamudPluginInterface pluginInterface, string addonName) {
-		pluginInterface.Inject(this);
-		
-		this.addonName = addonName;
-	}
+    public delegate void AddonControllerEvent(T* addon);
 
-	public AddonController(IDalamudPluginInterface pluginInterface) {
-		pluginInterface.Inject(this);
+    private readonly string addonName;
 
-		addonName = AtkUnitBaseExtensions.GetAddonTypeName<T>();
-	}
+    public AddonController(string addonName) {
+        this.addonName = addonName;
+    }
 
-	public void Enable() {
-		Framework.RunOnFrameworkThread(() => {
-			if (IsEnabled) return;
+    public AddonController(IDalamudPluginInterface pluginInterface) {
+        pluginInterface.Inject(this);
 
-			PreEnable?.Invoke((T*) AddonPointer);
+        addonName = AtkUnitBaseExtensions.GetAddonTypeName<T>();
+    }
 
-			AddonLifecycle.RegisterListener(AddonEvent.PostSetup, addonName, OnAddonEvent);
-			AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, addonName, OnAddonEvent);
-			AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, addonName, OnAddonEvent);
-			AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, addonName, OnAddonEvent);
-			AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, addonName, OnAddonEvent);
+    private AtkUnitBase* AddonPointer => (AtkUnitBase*)DalamudInterface.Instance.GameGui.GetAddonByName(addonName).Address;
+    private bool IsEnabled { get; set; }
 
-			if (AddonPointer is not null) {
-				OnAttach?.Invoke((T*) AddonPointer);
-			}
+    public virtual void Dispose() => Disable();
 
-			IsEnabled = true;
+    public void Enable() {
+        DalamudInterface.Instance.Framework.RunOnFrameworkThread(() => {
+            if (IsEnabled) return;
 
-			PostEnable?.Invoke((T*) AddonPointer);
-		});
-	}
+            OnInnerPreEnable?.Invoke((T*)AddonPointer);
 
-	private void OnAddonEvent(AddonEvent type, AddonArgs args) {
-		var addon = (T*) args.Addon;
+            DalamudInterface.Instance.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, addonName, OnAddonEvent);
+            DalamudInterface.Instance.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, addonName, OnAddonEvent);
+            DalamudInterface.Instance.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, addonName, OnAddonEvent);
+            DalamudInterface.Instance.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, addonName, OnAddonEvent);
+            DalamudInterface.Instance.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, addonName, OnAddonEvent);
 
-		switch (type) {
-			case AddonEvent.PostSetup:
-				OnAttach?.Invoke(addon);
-				return;
-			
-			case AddonEvent.PreFinalize:
-				OnDetach?.Invoke(addon);
-				return;
-			
-			case AddonEvent.PostRefresh or AddonEvent.PostRequestedUpdate:
-				OnRefresh?.Invoke(addon);
-				return;
-			
-			case AddonEvent.PostUpdate:
-				OnUpdate?.Invoke(addon);
-				return;
-		}
-	}
+            if (AddonPointer is not null) {
+                OnInnerAttach?.Invoke((T*)AddonPointer);
+            }
 
-	public void Disable() {
-		Framework.RunOnFrameworkThread(() => {
-			if (!IsEnabled) return;
+            IsEnabled = true;
 
-			PreDisable?.Invoke((T*) AddonPointer);
+            OnInnerPostEnable?.Invoke((T*)AddonPointer);
+        });
+    }
 
-			AddonLifecycle.UnregisterListener(OnAddonEvent);
+    private void OnAddonEvent(AddonEvent type, AddonArgs args) {
+        var addon = (T*)args.Addon.Address;
 
-			if (AddonPointer is not null) {
-				OnDetach?.Invoke((T*) AddonPointer);
-			}
+        switch (type) {
+            case AddonEvent.PostSetup:
+                OnInnerAttach?.Invoke(addon);
+                return;
 
-			IsEnabled = false;
+            case AddonEvent.PreFinalize:
+                OnInnerDetach?.Invoke(addon);
+                return;
 
-			PostDisable?.Invoke((T*) AddonPointer);
-		});
-	}
+            case AddonEvent.PostRefresh or AddonEvent.PostRequestedUpdate:
+                OnInnerRefresh?.Invoke(addon);
+                return;
 
-	public virtual void Dispose() => Disable();
+            case AddonEvent.PostUpdate:
+                OnInnerUpdate?.Invoke(addon);
+                return;
+        }
+    }
 
-	public delegate void AddonControllerEvent(T* addon);
+    public void Disable() {
+        DalamudInterface.Instance.Framework.RunOnFrameworkThread(() => {
+            if (!IsEnabled) return;
 
-	public event AddonControllerEvent? OnAttach;
-	public event AddonControllerEvent? OnDetach;
-	public event AddonControllerEvent? OnRefresh;
-	public event AddonControllerEvent? OnUpdate;
-	
-	public event AddonControllerEvent? PreEnable;
-	public event AddonControllerEvent? PostEnable;
-	public event AddonControllerEvent? PreDisable;
-	public event AddonControllerEvent? PostDisable;
+            OnInnerPreDisable?.Invoke((T*)AddonPointer);
+
+            DalamudInterface.Instance.AddonLifecycle.UnregisterListener(OnAddonEvent);
+
+            if (AddonPointer is not null) {
+                OnInnerDetach?.Invoke((T*)AddonPointer);
+            }
+
+            IsEnabled = false;
+
+            OnInnerPostDisable?.Invoke((T*)AddonPointer);
+        });
+    }
+
+    private event AddonControllerEvent? OnInnerAttach;
+    private event AddonControllerEvent? OnInnerDetach;
+    private event AddonControllerEvent? OnInnerRefresh;
+    private event AddonControllerEvent? OnInnerUpdate;
+
+    private event AddonControllerEvent? OnInnerPreEnable;
+    private event AddonControllerEvent? OnInnerPostEnable;
+    private event AddonControllerEvent? OnInnerPreDisable;
+    private event AddonControllerEvent? OnInnerPostDisable;
+    
+    public virtual event AddonControllerEvent? OnAttach {
+        add => OnInnerAttach += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+
+    public virtual event AddonControllerEvent? OnDetach {
+        add => OnInnerDetach += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+    
+    public virtual event AddonControllerEvent? OnRefresh {
+        add => OnInnerRefresh += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+    public virtual event AddonControllerEvent? OnUpdate {
+        add => OnInnerUpdate += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+
+    public virtual event AddonControllerEvent? OnPreEnable {
+        add => OnInnerPreEnable += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+    
+    public virtual event AddonControllerEvent? OnPostEnable {
+        add => OnInnerPostEnable += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+
+    public virtual event AddonControllerEvent? OnPreDisable {
+        add => OnInnerPreDisable += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
+
+    public virtual event AddonControllerEvent? OnPostDisable {
+        add => OnInnerPostDisable += value;
+        remove => throw new Exception("Do not remove events, on dispose addon state will be managed properly.");
+    }
 }

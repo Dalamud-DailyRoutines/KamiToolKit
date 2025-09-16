@@ -7,53 +7,53 @@ namespace KamiToolKit.NodeParts;
 
 public unsafe class TimelineResource : IDisposable {
 
-	internal AtkTimelineResource* InternalResource;
-	
-	private readonly TimelineAnimationArray animationArray;
-	private readonly TimelineLabelSetArray labelsArray;
-	
-	public TimelineResource() {
-		InternalResource = NativeMemoryHelper.UiAlloc<AtkTimelineResource>();
+    private readonly TimelineAnimationArray animationArray;
+    private readonly TimelineLabelSetArray labelsArray;
 
-		InternalResource->Id = 2;
-		InternalResource->AnimationCount = 0;
-		InternalResource->LabelSetCount = 0;
-		
-		animationArray = new TimelineAnimationArray();
-		InternalResource->Animations = animationArray.InternalTimelineArray;
-		
-		labelsArray = new TimelineLabelSetArray();
-		InternalResource->LabelSets = labelsArray.InternalLabelSetArray;
-	}
-	
-	public void Dispose() {
-		animationArray.Dispose();
-		labelsArray.Dispose();
-		
-		NativeMemoryHelper.UiFree(InternalResource);
-		InternalResource = null;
-	}
+    internal AtkTimelineResource* InternalResource;
 
-	public List<TimelineAnimation> Animations {
-		get => animationArray.Animations;
-		set {
-			animationArray.Animations = value;
-			InternalResource->Animations = animationArray.InternalTimelineArray;
-			InternalResource->AnimationCount = (ushort) animationArray.Count;
-		}
-	}
+    public TimelineResource() {
+        InternalResource = NativeMemoryHelper.UiAlloc<AtkTimelineResource>();
 
-	public List<TimelineLabelSet> LabelSets {
-		get => labelsArray.LabelSets;
-		set {
-			labelsArray.LabelSets = value;
-			InternalResource->LabelSets = labelsArray.InternalLabelSetArray;
-			InternalResource->LabelSetCount = (ushort) labelsArray.Count;
-		}
-	}
+        InternalResource->Id = 2;
+        InternalResource->AnimationCount = 0;
+        InternalResource->LabelSetCount = 0;
 
-	public int Id {
-		get => (int) InternalResource->Id;
-		set => InternalResource->Id = (uint) value;
-	}
+        animationArray = new TimelineAnimationArray();
+        InternalResource->Animations = animationArray.InternalTimelineArray;
+
+        labelsArray = new TimelineLabelSetArray();
+        InternalResource->LabelSets = labelsArray.InternalLabelSetArray;
+    }
+
+    public List<TimelineAnimation> Animations {
+        get => animationArray.Animations;
+        set {
+            animationArray.Animations = value;
+            InternalResource->Animations = animationArray.InternalTimelineArray;
+            InternalResource->AnimationCount = (ushort)animationArray.Count;
+        }
+    }
+
+    public List<TimelineLabelSet> LabelSets {
+        get => labelsArray.LabelSets;
+        set {
+            labelsArray.LabelSets = value;
+            InternalResource->LabelSets = labelsArray.InternalLabelSetArray;
+            InternalResource->LabelSetCount = (ushort)labelsArray.Count;
+        }
+    }
+
+    public int Id {
+        get => (int)InternalResource->Id;
+        set => InternalResource->Id = (uint)value;
+    }
+
+    public void Dispose() {
+        animationArray.Dispose();
+        labelsArray.Dispose();
+
+        NativeMemoryHelper.UiFree(InternalResource);
+        InternalResource = null;
+    }
 }

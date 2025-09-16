@@ -1,45 +1,46 @@
 ﻿using System.Numerics;
+using KamiToolKit.Classes;
 
 namespace KamiToolKit.Nodes;
 
 public class TextureButtonNode : ButtonBase {
 
-	public readonly SimpleImageNode ImageNode;
+    public readonly SimpleImageNode ImageNode;
 
-	public TextureButtonNode() {
-		ImageNode = new ImGuiImageNode {
-			IsVisible = true,
-			NodeId = 3,
-			WrapMode = 2,
-			ImageNodeFlags = 0,
-		};
-		
-		ImageNode.AttachNode(this);
-				
-		LoadTimelines();
-		
-		InitializeComponentEvents();
-	}
+    public TextureButtonNode() {
+        ImageNode = new ImGuiImageNode {
+            IsVisible = true, 
+            NodeId = 3, 
+            WrapMode = WrapMode.Stretch, 
+        };
+        ImageNode.AttachNode(this);
 
-	public string TexturePath {
-		get => ImageNode.TexturePath;
-		set => ImageNode.TexturePath = value;
-	}
+        LoadTimelines();
 
-	public Vector2 TextureCoordinates {
-		get => ImageNode.TextureCoordinates;
-		set => ImageNode.TextureCoordinates = value;
-	}
+        InitializeComponentEvents();
+    }
 
-	public Vector2 TextureSize {
-		get => ImageNode.TextureSize;
-		set => ImageNode.TextureSize = value;
-	}
+    public string TexturePath {
+        get => ImageNode.TexturePath;
+        set => ImageNode.TexturePath = value;
+    }
 
-	protected override void OnSizeChanged() {
-		base.OnSizeChanged();		ImageNode.Size = Size;
-	}
+    public Vector2 TextureCoordinates {
+        get => ImageNode.TextureCoordinates;
+        set => ImageNode.TextureCoordinates = value;
+    }
 
-	private void LoadTimelines()
-		=> LoadTwoPartTimelines(this, ImageNode);
+    public Vector2 TextureSize {
+        get => ImageNode.TextureSize;
+        set => ImageNode.TextureSize = value;
+    }
+
+    protected override void OnSizeChanged() {
+        base.OnSizeChanged();
+
+        ImageNode.Size = Size;
+    }
+
+    private void LoadTimelines()
+        => LoadTwoPartTimelines(this, ImageNode);
 }

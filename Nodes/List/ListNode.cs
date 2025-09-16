@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Addon.Events;
+using Dalamud.Game.Addon.Events.EventDataTypes;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.Extensions;
@@ -12,201 +14,253 @@ namespace KamiToolKit.Nodes;
 public abstract class ListNode : ComponentNode<AtkComponentBase, AtkUldComponentDataBase>;
 
 /// Note, automatically inserts buttons to fill the set height, please ensure option count is greater than button count.
-public abstract class ListNode<T> : ListNode {
+public abstract unsafe class ListNode<T> : ListNode {
 
-	public readonly NineGridNode BackgroundNode;
-	public readonly ResNode ContainerNode;
-	public List<ListButtonNode> Nodes = [];
-	public readonly ScrollBarNode ScrollBarNode;
+    public readonly NineGridNode BackgroundNode;
+    public readonly ResNode ContainerNode;
+    public readonly ScrollBarNode ScrollBarNode;
+    public List<ListButtonNode> Nodes = [];
 
-	public T? SelectedOption { get; set; } 
+    protected ListNode() {
+        SetInternalComponentType(ComponentType.Base);
 
-	public List<T>? Options {
-		get; set { 
-			field = value;
-			RebuildNodeList();
-		}
-	}
+        BackgroundNode = new SimpleNineGridNode {
+            TexturePath = "ui/uld/ListB.tex",
+            TextureCoordinates = new Vector2(0.0f, 0.0f),
+            TextureSize = new Vector2(32.0f, 32.0f),
+            TopOffset = 10,
+            BottomOffset = 12,
+            LeftOffset = 10,
+            RightOffset = 10,
+            IsVisible = true,
+        };
+        BackgroundNode.AttachNode(this);
 
-	protected ListNode() {
-		SetInternalComponentType(ComponentType.Base);
+        ContainerNode = new ResNode {
+            NodeFlags = NodeFlags.Clip, 
+            IsVisible = true,
+        };
+        ContainerNode.AttachNode(this);
 
-		BackgroundNode = new SimpleNineGridNode {
-			TexturePath = "ui/uld/ListB.tex",
-			TextureCoordinates = new Vector2(0.0f, 0.0f),
-			TextureSize = new Vector2(32.0f, 32.0f),
-			TopOffset = 10, BottomOffset = 12, LeftOffset = 10, RightOffset = 10,
-			IsVisible = true,
-		};
-		
-		BackgroundNode.AttachNode(this);
+        ScrollBarNode = new ScrollBarNode {
+            Position = new Vector2(0.0f, 9.0f), 
+            Size = new Vector2(8.0f, 0.0f), 
+            IsVisible = true, 
+            OnValueChanged = OnScrollUpdate,
+        };
+        ScrollBarNode.AttachNode(this);
 
-		ContainerNode = new ResNode {
-			NodeFlags = NodeFlags.Clip,
-			IsVisible = true,
-		};
-		
-		ContainerNode.AttachNode(this);
+        BuildTimelines();
 
-		ScrollBarNode = new ScrollBarNode {
-			Position = new Vector2(0.0f, 9.0f),
-			Size = new Vector2(8.0f, 0.0f),
-			IsVisible = true,
-			OnValueChanged = OnScrollUpdate,
-		};
-		
-		ScrollBarNode.AttachNode(this);
-		
-		BuildTimelines();
-		
-		ContainerNode.SetEventFlags();
-		ContainerNode.AddEvent(AddonEventType.MouseWheel, OnMouseWheel);
-	}
+        ContainerNode.SetEventFlags();
+        ContainerNode.AddEvent(AddonEventType.MouseWheel, OnMouseWheel);
+    }
+    
+    protected override void Dispose(bool disposing) {
+        if (disposing) {
+            if (isFocusSet) {
+                var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(InternalResNode);
+                if (parentAddon is not null) {
+                    ClearFocusable(parentAddon);
+                }
+            }
 
-	protected float NodeHeight { get; set; } = 22.0f;
-	
-	private int ButtonCount { get; set; }
+            base.Dispose(disposing);
+        }
+    }
 
-	public int MaxButtons {
-		get; 
-		set { 
-			field = value;
-			RebuildNodeList();
-		}
-	} = 5;
+    public T? SelectedOption {
+        get;
+        set {
+            field = value;
+            UpdateSelected();
+        }
+    }
 
-	protected override void OnSizeChanged() {
-		base.OnSizeChanged();		BackgroundNode.Size = Size;
-		ContainerNode.Size = new Vector2(Width - 25.0f, Height);
-		
-		foreach (var buttonNode in Nodes) {
-			buttonNode.Width = Width - 25.0f;
-		}
+    public List<T>? Options {
+        get;
+        set {
+            field = value;
+            RebuildNodeList();
+        }
+    }
 
-		ScrollBarNode.X = Width - 17.0f;
-	}
+    protected float NodeHeight { get; set; } = 22.0f;
 
-	private void OnScrollUpdate(int scrollPosition) {
-		var index = scrollPosition / 22.0f;
-		
-		CurrentStartIndex = (int) index;
-		UpdateNodes();
-	}
-	
-	private void OnMouseWheel(AddonEventData data) {
-		CurrentStartIndex -= data.GetMouseData().WheelDirection;
-		UpdateNodes();
-		ScrollBarNode.ScrollPosition = (int) ( CurrentStartIndex * NodeHeight + 9.0f );
-				
-		data.SetHandled();
-	}
-	
-	public int CurrentStartIndex { get; set; }
+    private int ButtonCount { get; set; }
 
-	private void RebuildNodeList() {
-		foreach (var button in Nodes) {
-			button.Dispose();
-		}
-		Nodes.Clear();
-		
-		ButtonCount = Math.Min(MaxButtons, Options?.Count ?? 0);
-		
-		var height = ButtonCount * NodeHeight + 24.0f;
-		Height = height;
-		BackgroundNode.Height = height;
-		ContainerNode.Height = height;
-		ScrollBarNode.Height = height - 23.0f;
+    public int MaxButtons {
+        get;
+        set {
+            field = value;
+            RebuildNodeList();
+        }
+    } = 5;
 
-		foreach (var index in Enumerable.Range(0, ButtonCount)) {
-			var newButton = new ListButtonNode {
-				NodeId = (uint) index,
-				Size = new Vector2(Width - 25.0f, NodeHeight),
-				Position = new Vector2(8.0f, NodeHeight * index + 9.0f),
-				IsVisible = true,
-				Label = $"Button {index}",
-				OnClick = () => OnOptionClick(index),
-			};
-			
-			Nodes.Add(newButton);
-			newButton.AttachNode(ContainerNode);
-		}
+    public int CurrentStartIndex { get; set; }
 
-		if (Options is not null) {
-			ScrollBarNode.UpdateScrollParams((int) ScrollBarNode.Height, (int) ( Options.Count * NodeHeight + 24.0f ) );
-		}
+    public Action<T>? OnOptionSelected { get; set; }
 
-		UpdateNodes();
-	}
+    protected override void OnSizeChanged() {
+        base.OnSizeChanged();
 
-	protected virtual void OnOptionClick(int nodeId) {
-		if (Options is null) return;
-		
-		SelectedOption = Options[nodeId + CurrentStartIndex];
-		OnOptionSelected?.Invoke(Options[nodeId + CurrentStartIndex]);
-		
-		UpdateSelected();
-	}
+        BackgroundNode.Size = Size;
+        ContainerNode.Size = new Vector2(Width - 25.0f, Height);
 
-	private void UpdateSelected() {
-		if (Options is null) return;
-		
-		foreach (var index in Enumerable.Range(0, ButtonCount)) {
-			var option = Options[index + CurrentStartIndex];
+        foreach (var buttonNode in Nodes) {
+            buttonNode.Width = Width - 25.0f;
+        }
 
-			Nodes[index].Selected = SelectedOption?.Equals(option) ?? false;
-			Nodes[index].Label = GetLabelForOption(option);
-		}
-	}
-	
-	protected abstract string GetLabelForOption(T option);
-	
-	protected void UpdateNodes() {
-		if (Options is null) return;
-		var maxStartIndex = Options.Count - Nodes.Count;
-		
-		var max = Math.Max(0, maxStartIndex);
-		CurrentStartIndex = Math.Clamp(CurrentStartIndex, 0, max);
-		UpdateSelected();
-	}
+        ScrollBarNode.X = Width - 17.0f;
+    }
 
-	public void SelectDefaultOption() {
-		if (Options is not null) {
-			SelectedOption = Options.First();
-		}
-	}
+    private void OnScrollUpdate(int scrollPosition) {
+        var index = scrollPosition / 22.0f;
 
-	public Action<T>? OnOptionSelected { get; set; }
+        CurrentStartIndex = (int)index;
+        UpdateNodes();
+    }
 
-	public void Show() {
-		IsVisible = true;
-		DrawFlags = 0x200000;
-	}
+    private void OnMouseWheel(AddonEventData data) {
+        CurrentStartIndex -= data.GetMouseData().WheelDirection;
+        UpdateNodes();
+        ScrollBarNode.ScrollPosition = (int)(CurrentStartIndex * NodeHeight + 9.0f);
 
-	public void Hide() {
-		IsVisible = false;
-		DrawFlags = 0x100;
-	}
+        data.SetHandled();
+    }
 
-	public void Toggle(bool newState) {
-		if (newState) {
-			Show();
-		}
-		else {
-			Hide();
-		}
-	}
+    private void RebuildNodeList() {
+        foreach (var button in Nodes) {
+            button.Dispose();
+        }
+        Nodes.Clear();
 
-	private void BuildTimelines() {
-		AddTimeline(new TimelineBuilder()
-			.BeginFrameSet(1, 29)
-			.AddLabel(1, 17, AtkTimelineJumpBehavior.Start, 0)
-			.AddLabel(9, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
-			.AddLabel(10, 18, AtkTimelineJumpBehavior.Start, 0)
-			.AddLabel(19, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
-			.AddLabel(20, 7, AtkTimelineJumpBehavior.Start, 0)
-			.AddLabel(29, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
-			.EndFrameSet()
-			.Build()
-		);
-	}
+        ButtonCount = Math.Min(MaxButtons, Options?.Count ?? 0);
+
+        var height = ButtonCount * NodeHeight + 24.0f;
+        Height = height;
+        BackgroundNode.Height = height;
+        ContainerNode.Height = height;
+        ScrollBarNode.Height = height - 23.0f;
+
+        foreach (var index in Enumerable.Range(0, ButtonCount)) {
+            var newButton = new ListButtonNode {
+                NodeId = (uint)index,
+                Size = new Vector2(Width - 25.0f, NodeHeight),
+                Position = new Vector2(8.0f, NodeHeight * index + 9.0f),
+                IsVisible = true,
+                Label = $"Button {index}",
+                OnClick = () => OnOptionClick(index),
+            };
+
+            Nodes.Add(newButton);
+            newButton.AttachNode(ContainerNode);
+        }
+
+        if (Options is not null) {
+            ScrollBarNode.UpdateScrollParams((int)ScrollBarNode.Height, (int)(Options.Count * NodeHeight + 24.0f));
+        }
+
+        UpdateNodes();
+    }
+
+    protected virtual void OnOptionClick(int nodeId) {
+        if (Options is null) return;
+
+        SelectedOption = Options[nodeId + CurrentStartIndex];
+        OnOptionSelected?.Invoke(Options[nodeId + CurrentStartIndex]);
+
+        UpdateSelected();
+    }
+
+    private void UpdateSelected() {
+        if (Options is null) return;
+
+        foreach (var index in Enumerable.Range(0, ButtonCount)) {
+            var option = Options[index + CurrentStartIndex];
+
+            Nodes[index].Selected = SelectedOption?.Equals(option) ?? false;
+            Nodes[index].Label = GetLabelForOption(option);
+        }
+    }
+
+    protected abstract string GetLabelForOption(T option);
+
+    protected void UpdateNodes() {
+        if (Options is null) return;
+        var maxStartIndex = Options.Count - Nodes.Count;
+
+        var max = Math.Max(0, maxStartIndex);
+        CurrentStartIndex = Math.Clamp(CurrentStartIndex, 0, max);
+        UpdateSelected();
+    }
+
+    public void SelectDefaultOption() {
+        if (Options is not null) {
+            SelectedOption = Options.First();
+        }
+    }
+
+    public void Show() {
+        IsVisible = true;
+        DrawFlags = 0x200000;
+
+        var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(InternalResNode);
+        if (parentAddon is not null) {
+            SetFocusable(parentAddon);
+        }
+    }
+
+    public void Hide() {
+        IsVisible = false;
+        DrawFlags = 0x0;
+
+        var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(InternalResNode);
+        if (parentAddon is not null) {
+            ClearFocusable(parentAddon);
+        }
+    }
+
+    public void Toggle(bool newState) {
+        if (newState) {
+            Show();
+        }
+        else {
+            Hide();
+        }
+    }
+
+    private bool isFocusSet;
+
+    public void SetFocusable(AtkUnitBase* addon) {
+        foreach (ref var focusableNode in addon->AdditionalFocusableNodes) {
+            if (focusableNode.Value is null) {
+                focusableNode = InternalResNode;
+                isFocusSet = true;
+            }
+        }
+    }
+
+    public void ClearFocusable(AtkUnitBase* addon) {
+        foreach (ref var focusableNode in addon->AdditionalFocusableNodes) {
+            if (focusableNode.Value == InternalResNode) {
+                focusableNode = null;
+                isFocusSet = false;
+            }
+        }
+    }
+
+    private void BuildTimelines() {
+        AddTimeline(new TimelineBuilder()
+            .BeginFrameSet(1, 29)
+            .AddLabel(1, 17, AtkTimelineJumpBehavior.Start, 0)
+            .AddLabel(9, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
+            .AddLabel(10, 18, AtkTimelineJumpBehavior.Start, 0)
+            .AddLabel(19, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
+            .AddLabel(20, 7, AtkTimelineJumpBehavior.Start, 0)
+            .AddLabel(29, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
+            .EndFrameSet()
+            .Build()
+        );
+    }
 }

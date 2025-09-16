@@ -7,33 +7,15 @@ using KamiToolKit.Classes;
 namespace KamiToolKit.System;
 
 public abstract unsafe partial class NodeBase : IDisposable {
+
+    internal const uint NodeIdBase = 100_000_000;
     protected static readonly List<NodeBase> CreatedNodes = [];
 
-    private bool isDisposed;
-    
-    internal const uint NodeIdBase = 100_000_000;
-
     internal static uint CurrentOffset;
-    
+
+    private bool isDisposed;
+
     internal abstract AtkResNode* InternalResNode { get; }
-
-    /// <summary>
-    /// Warning, this is only to ensure there are no memory leaks.
-    /// Ensure you have detached nodes safely from native ui before disposing.
-    /// </summary>
-    internal static void DisposeNodes() {
-        foreach (var node in CreatedNodes.ToArray()) {
-            if (!node.IsAttached) continue;
-            Log.Debug($"AutoDisposing node {node.GetType()}");
-            
-            node.TryForceDetach(true);
-            node.Dispose();
-        }
-    }
-
-    ~NodeBase() => Dispose(false);
-
-    protected abstract void Dispose(bool disposing);
 
     public void Dispose() {
         // If the node was invalidated before dispose, we want to skip trying to free it.
@@ -43,12 +25,17 @@ public abstract unsafe partial class NodeBase : IDisposable {
             CreatedNodes.Remove(this);
             return;
         }
-        
+
         if (!isDisposed) {
             Log.Verbose($"Disposing node {GetType()}");
-            
+
+            ClearFocus();
+
             // Automatically dispose any fields/properties that are managed nodes.
-            VisitChildren(node => node?.Dispose());
+            VisitChildren(node => {
+                ClearFocus();
+                node?.Dispose();
+            });
 
             TryForceDetach(false);
 
@@ -56,20 +43,65 @@ public abstract unsafe partial class NodeBase : IDisposable {
             InternalResNode->Timeline = null;
 
             DisableEditMode(NodeEditMode.Move | NodeEditMode.Resize);
-            
+
             Dispose(true);
             GC.SuppressFinalize(this);
 
             CreatedNodes.Remove(this);
         }
-        
+
         isDisposed = true;
     }
+
+    /// <summary>
+    ///     If our node is focused via AtkInputManager, change the focus to be the windows root node instead.
+    /// </summary>
+    private void ClearFocus() {
+        if (InternalResNode is null) return;
+        
+        var inputManager = AtkStage.Instance()->AtkInputManager;
+        if (inputManager is null) return;
+        
+        foreach (var focusEntry in inputManager->FocusList) {
+            if (focusEntry.AtkEventListener is null) continue;
+            if (focusEntry.AtkEventTarget is null) continue;
+
+            // Potentially Explosive, may need to consider checking if this is an AtkUnitBase
+            var addon = (AtkUnitBase*)focusEntry.AtkEventListener;
+            if (addon->RootNode is null) continue;
+
+            // If this focus entry has our custom node focused, redirect the focus to RootNode
+            if (focusEntry.AtkEventTarget == InternalResNode) {
+                Log.Debug($"Custom Node was focused during dispose, Addon: {addon->NameString}, unfocusing node.");
+                Experimental.Instance.SetFocus?.Invoke(inputManager, addon->RootNode, addon, focusEntry.Unk10);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Warning, this is only to ensure there are no memory leaks.
+    ///     Ensure you have detached nodes safely from native ui before disposing.
+    /// </summary>
+    internal static void DisposeNodes() {
+        foreach (var node in CreatedNodes.ToArray()) {
+            if (!node.IsAttached) continue;
+            Log.Debug($"AutoDisposing node {node.GetType()}");
+
+            node.TryForceDetach(true);
+            node.Dispose();
+        }
+    }
+
+    ~NodeBase() {
+        Dispose(false);
+    }
+
+    protected abstract void Dispose(bool disposing);
 
     private bool IsNodeValid() {
         if (InternalResNode is null) return false;
         if (InternalResNode->VirtualTable is null) return false;
-        if ((nint) InternalResNode->VirtualTable == Experimental.Instance.AtkEventListenerVirtualTable) return false;
+        if (InternalResNode->VirtualTable == AtkEventTarget.StaticVirtualTablePointer) return false;
 
         return true;
     }
@@ -77,41 +109,39 @@ public abstract unsafe partial class NodeBase : IDisposable {
     private bool IsDragDropComponent() {
         if (!IsNodeValid()) return false;
         if (NodeType != NodeType.Component) return false;
-		var componentNode = (AtkComponentNode*)InternalResNode;
-		if (componentNode->Component is null) return false;
-		if (componentNode->Component->GetComponentType() is not ComponentType.DragDrop) return false;
+        var componentNode = (AtkComponentNode*)InternalResNode;
+        if (componentNode->Component is null) return false;
+        if (componentNode->Component->GetComponentType() is not ComponentType.DragDrop) return false;
 
-		return true;
+        return true;
     }
-    
-    public static explicit operator AtkResNode*(NodeBase node) => node.InternalResNode;
+
+    public static implicit operator AtkResNode*(NodeBase node) => node.InternalResNode;
 }
 
 public abstract unsafe class NodeBase<T> : NodeBase where T : unmanaged, ICreatable {
-    internal T* InternalNode { get; private set; }
-
-    internal override sealed AtkResNode* InternalResNode => (AtkResNode*) InternalNode;
-
-    public static explicit operator T*(NodeBase<T> node) => (T*)node.InternalResNode;
 
     protected NodeBase(NodeType nodeType) {
         Log.Verbose($"Creating new node {GetType()}");
-        InternalNode = NativeMemoryHelper.Create<T>();
+        Node = NativeMemoryHelper.Create<T>();
         InternalResNode->Type = nodeType;
         InternalResNode->NodeId = NodeIdBase + CurrentOffset++;
 
-        if (InternalNode is null) {
+        if (Node is null) {
             throw new Exception($"Unable to allocate memory for {typeof(T)}");
         }
-        
+
         CreatedNodes.Add(this);
     }
-    
+
+    public T* Node { get; private set; }
+
+    internal sealed override AtkResNode* InternalResNode => (AtkResNode*)Node;
+
     protected override void Dispose(bool disposing) {
         if (disposing) {
             InternalResNode->Destroy(true);
-            InternalNode = null;
+            Node = null;
         }
     }
 }
-

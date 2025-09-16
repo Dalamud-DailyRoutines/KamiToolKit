@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// A simple image node that makes it easy to display a single color.
+///     A simple image node that makes it easy to display a single color.
 /// </summary>
 [JsonObject(MemberSerialization.OptIn)]
 public unsafe class BackgroundImageNode : SimpleImageNode {

@@ -7,18 +7,18 @@ namespace KamiToolKit.Nodes;
 
 public class OrderedVerticalListNode<T, TU> : VerticalListNode where T : NodeBase {
 
-    public Func<T,TU>? OrderSelector { get; set; }
+    public Func<T, TU>? OrderSelector { get; set; }
 
     public override void RecalculateLayout() {
         var typedList = NodeList.OfType<T>();
-        
+
         if (OrderSelector is null) {
             base.RecalculateLayout();
             return;
         }
-        
+
         var orderedList = typedList.OrderBy(OrderSelector).ToList();
-        
+
         var startY = Alignment switch {
             VerticalListAnchor.Top => 0.0f + FirstItemSpacing,
             VerticalListAnchor.Bottom => Height,

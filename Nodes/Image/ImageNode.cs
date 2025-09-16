@@ -1,4 +1,5 @@
 ﻿using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.NodeParts;
 using KamiToolKit.System;
 
@@ -11,34 +12,43 @@ public unsafe class ImageNode : NodeBase<AtkImageNode> {
     public ImageNode() : base(NodeType.Image) {
         PartsList = new PartsList();
 
-        WrapMode = 1;
-        ImageNodeFlags = ImageNodeFlags.AutoFit;
-
-        InternalNode->DrawFlags = 0x100;
-        InternalNode->PartsList = PartsList.InternalPartsList;
-    }
-    
-    protected override void Dispose(bool disposing) {
-        if (disposing) {
-            PartsList.Dispose();
-            
-            base.Dispose(disposing);
-        }
+        Node->PartsList = PartsList.InternalPartsList;
     }
 
     public uint PartId {
-        get => InternalNode->PartId;
-        set => InternalNode->PartId = (ushort) value;
+        get => Node->PartId;
+        set => Node->PartId = (ushort)value;
     }
 
-    public byte WrapMode {
-        get => InternalNode->WrapMode;
-        set => InternalNode->WrapMode = value;
-    } 
+    public WrapMode WrapMode {
+        get => (WrapMode) Node->WrapMode;
+        set => Node->WrapMode = (byte) value;
+    }
 
     public ImageNodeFlags ImageNodeFlags {
-        get => (ImageNodeFlags) InternalNode->Flags;
-        set => InternalNode->Flags = (byte) value;
+        get => (ImageNodeFlags)Node->Flags;
+        set => Node->Flags = (byte)value;
+    }
+
+    protected override void Dispose(bool disposing) {
+        if (disposing) {
+            PartsList.Dispose();
+
+            base.Dispose(disposing);
+        }
+    }
+    
+    /// <summary>
+    ///     When set to true, will cause the loaded texture to
+    ///     fit itself to the size of the node
+    /// </summary>
+    public bool FitTexture {
+        set {
+            if (value) {
+                ImageNodeFlags = ImageNodeFlags.AutoFit;
+                WrapMode = WrapMode.Stretch;
+            }
+        }
     }
 
     public void AddPart(Part part)

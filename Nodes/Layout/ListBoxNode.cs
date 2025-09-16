@@ -16,14 +16,14 @@ public class ListBoxNode : LayoutListNode {
 
     public ListBoxNode() {
         Background = new BackgroundImageNode {
-            NodeId = 2,
+            NodeId = 2, 
             IsVisible = true,
         };
         Background.AttachNode(this);
-        
+
         Border = new BorderNineGridNode {
-            NodeId = 3,
-            Position = new Vector2(-15.0f, -15.0f),
+            NodeId = 3, 
+            Position = new Vector2(-15.0f, -15.0f), 
             IsVisible = false,
         };
         Border.AttachNode(this);
@@ -32,8 +32,8 @@ public class ListBoxNode : LayoutListNode {
     protected override uint ListBaseId => 3;
 
     [JsonProperty] public LayoutAnchor LayoutAnchor {
-        get; 
-        set { 
+        get;
+        set {
             field = value;
             RecalculateLayout();
         }
@@ -48,11 +48,11 @@ public class ListBoxNode : LayoutListNode {
     }
 
     [JsonProperty] public LayoutOrientation LayoutOrientation {
-        get; 
+        get;
         set {
             field = value;
             RecalculateLayout();
-        } 
+        }
     }
 
     [JsonProperty] public Vector4 BackgroundColor {
@@ -71,7 +71,8 @@ public class ListBoxNode : LayoutListNode {
     }
 
     [JsonProperty] public Spacing ItemMargin {
-        get; set { 
+        get;
+        set {
             field = value;
             RecalculateLayout();
         }
@@ -81,26 +82,26 @@ public class ListBoxNode : LayoutListNode {
         get;
         set {
             field = FitContents ? GetMinimumSize().Y : value;
-            
+
             base.Height = field;
-            
+
             Background.Height = field;
             Border.Height = field + 30.0f;
-            
+
             RecalculateLayout();
         }
     }
 
-    public override float Width { 
+    public override float Width {
         get;
         set {
             field = FitContents ? GetMinimumSize().X : value;
 
             base.Width = field;
-            
+
             Background.Width = field;
             Border.Width = field + 30.0f;
-            
+
             RecalculateLayout();
         }
     }
@@ -110,19 +111,19 @@ public class ListBoxNode : LayoutListNode {
             case LayoutOrientation.Vertical:
                 CalculateVerticalLayout();
                 break;
-            
+
             case LayoutOrientation.Horizontal:
                 CalculateHorizontalLayout();
                 break;
         }
     }
-    
+
     /// <summary>
-    /// Get the current minimum size that would contain all the nodes including their margins.
+    ///     Get the current minimum size that would contain all the nodes including their margins.
     /// </summary>
     public Vector2 GetMinimumSize() {
         var size = Vector2.Zero;
-        
+
         foreach (var node in NodeList) {
             if (!node.IsVisible) continue;
 
@@ -132,7 +133,7 @@ public class ListBoxNode : LayoutListNode {
                     size.Y = MathF.Max(size.Y, node.LayoutSize.Y + ItemMargin.Top + ItemMargin.Bottom);
                     size.X += node.LayoutSize.X + ItemMargin.Right + ItemMargin.Left;
                     break;
-                
+
                 // Vertical we take max width, and add heights
                 case LayoutOrientation.Vertical:
                     size.X = MathF.Max(size.X, node.LayoutSize.X + ItemMargin.Left + ItemMargin.Right);
@@ -156,9 +157,9 @@ public class ListBoxNode : LayoutListNode {
 
         foreach (var node in NodeList) {
             if (!node.IsVisible) continue;
-            
+
             var netMargin = node.Margin + ItemMargin + new Spacing(ItemSpacing / 2.0f, 0.0f, 0.0f, ItemSpacing / 2.0f);
-            
+
             switch (LayoutAnchor) {
                 case LayoutAnchor.TopLeft: {
                     node.Position = runningPosition + new Vector2(netMargin.Left, netMargin.Top);
@@ -171,7 +172,7 @@ public class ListBoxNode : LayoutListNode {
                     runningPosition.Y += node.Height * node.Scale.Y + netMargin.Bottom + netMargin.Top;
                     break;
                 }
-                
+
                 case LayoutAnchor.BottomLeft: {
                     node.Position = runningPosition + new Vector2(netMargin.Left, 0.0f) - new Vector2(0.0f, netMargin.Bottom) - new Vector2(0.0f, node.Height * node.Scale.Y);
                     runningPosition.Y -= node.Height * node.Scale.Y + netMargin.Top + netMargin.Bottom;
@@ -186,7 +187,7 @@ public class ListBoxNode : LayoutListNode {
             }
         }
     }
-        
+
     private void CalculateHorizontalLayout() {
         var runningPosition = GetLayoutStartPosition();
 
@@ -196,12 +197,12 @@ public class ListBoxNode : LayoutListNode {
         else if (LayoutAnchor is LayoutAnchor.BottomRight or LayoutAnchor.TopRight) {
             runningPosition -= new Vector2(FirstItemSpacing, 0.0f);
         }
-        
+
         foreach (var node in NodeList) {
             if (!node.IsVisible) continue;
-            
+
             var netMargin = node.Margin + ItemMargin + new Spacing(0.0f, ItemSpacing / 2.0f, ItemSpacing / 2.0f, 0.0f);
-            
+
             switch (LayoutAnchor) {
                 case LayoutAnchor.TopLeft: {
                     node.Position = runningPosition + new Vector2(netMargin.Left, netMargin.Top);
@@ -214,7 +215,7 @@ public class ListBoxNode : LayoutListNode {
                     runningPosition.X -= node.Width * node.Scale.X + netMargin.Left + netMargin.Right;
                     break;
                 }
-                
+
                 case LayoutAnchor.BottomLeft: {
                     node.Position = runningPosition + new Vector2(netMargin.Left, 0.0f) - new Vector2(0.0f, netMargin.Bottom) - new Vector2(0.0f, node.Height * node.Scale.Y);
                     runningPosition.X += node.Width * node.Scale.X + netMargin.Left + netMargin.Right;
@@ -237,7 +238,7 @@ public class ListBoxNode : LayoutListNode {
         LayoutAnchor.BottomRight => new Vector2(Width, Height),
         _ => throw new ArgumentOutOfRangeException(),
     };
-    
+
     public override void DrawConfig() {
         base.DrawConfig();
 
@@ -246,7 +247,7 @@ public class ListBoxNode : LayoutListNode {
                 Background.DrawConfig();
             }
         }
-    
+
         using (var borderNode = ImRaii.TreeNode("Border")) {
             if (borderNode) {
                 Border.DrawConfig();

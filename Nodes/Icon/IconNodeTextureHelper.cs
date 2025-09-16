@@ -99,28 +99,22 @@ public static class IconNodeTextureHelper {
         image.AddPart(new Part {
             Id = 30, TexturePath = "ui/uld/IconA_Frame.tex", Size = new Vector2(18.0f, 18.0f), TextureCoordinates = new Vector2(396.0f, 114.0f),
         });
-	}
+    }
 
     public static void LoadIconARecast2Texture(ImageNode imageNode) {
         foreach (var yIndex in Enumerable.Range(0, 9))
         foreach (var xIndex in Enumerable.Range(0, 9)) {
             var coordinate = new Vector2(xIndex * 44.0f, yIndex * 48.0f);
             imageNode.AddPart(new Part {
-                TexturePath = "ui/uld/IconA_Recast2.tex",
-                TextureCoordinates = coordinate,
-                Size = new Vector2(44.0f, 46.0f),
-                Id = (uint) (xIndex + yIndex),
+                TexturePath = "ui/uld/IconA_Recast2.tex", TextureCoordinates = coordinate, Size = new Vector2(44.0f, 46.0f), Id = (uint)(xIndex + yIndex),
             });
         }
-		
+
         foreach (var yIndex in Enumerable.Range(9, 9))
         foreach (var xIndex in Enumerable.Range(9, 9)) {
             var coordinate = new Vector2(xIndex * 44.0f, (yIndex - 9) * 48.0f);
             imageNode.AddPart(new Part {
-                TexturePath = "ui/uld/IconA_Recast2.tex",
-                TextureCoordinates = coordinate,
-                Size = new Vector2(44.0f, 46.0f),
-                Id = (uint) (xIndex + yIndex),
+                TexturePath = "ui/uld/IconA_Recast2.tex", TextureCoordinates = coordinate, Size = new Vector2(44.0f, 46.0f), Id = (uint)(xIndex + yIndex),
             });
         }
     }
@@ -130,10 +124,7 @@ public static class IconNodeTextureHelper {
         foreach (var xIndex in Enumerable.Range(0, 9)) {
             var coordinate = new Vector2(xIndex * 44.0f, yIndex * 48.0f);
             imageNode.AddPart(new Part {
-                TexturePath = "ui/uld/IconA_Recast.tex",
-                TextureCoordinates = coordinate,
-                Size = new Vector2(44.0f, 46.0f),
-                Id = (uint) (xIndex + yIndex),
+                TexturePath = "ui/uld/IconA_Recast.tex", TextureCoordinates = coordinate, Size = new Vector2(44.0f, 46.0f), Id = (uint)(xIndex + yIndex),
             });
         }
     }

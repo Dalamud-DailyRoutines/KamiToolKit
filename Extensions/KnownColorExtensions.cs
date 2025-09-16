@@ -11,7 +11,6 @@ public static class KnownColorExtensions {
         return new Vector3(color4.X, color4.Y, color4.Z);
     }
 
-    public static Vector3 AsVector3Color(this Vector4 vector4) {
-        return new Vector3(vector4.X, vector4.Y, vector4.Z);
-    }
+    public static Vector3 AsVector3Color(this Vector4 vector4)
+        => new(vector4.X, vector4.Y, vector4.Z);
 }
