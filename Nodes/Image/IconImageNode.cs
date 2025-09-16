@@ -12,6 +12,7 @@ public class IconImageNode : SimpleImageNode {
 
     public IconImageNode() {
         TextureSize = new Vector2(32.0f, 32.0f);
+        FitTexture  = true;
     }
     
     public uint IconId {
