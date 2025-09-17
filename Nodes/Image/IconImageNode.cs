@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
+using Dalamud.Interface.Textures.TextureWraps;
 using KamiToolKit.Classes;
 using KamiToolKit.Extensions;
 using KamiToolKit.NodeParts;
@@ -20,7 +22,15 @@ public class IconImageNode : ImGuiImageNode {
         get;
         set {
             field = value;
-            LoadTexture(DalamudInterface.Instance.TextureProvider.GetFromGameIcon(new(value)).GetWrapOrEmpty());
+            
+            var startLoadTime = Environment.TickCount64;
+            IDalamudTextureWrap? texture = null;
+            while (texture == null && Environment.TickCount64 - startLoadTime <= 10_000) {
+                texture = DalamudInterface.Instance.TextureProvider.GetFromGameIcon(new(field)).GetWrapOrDefault();
+            }
+            if (texture == null) return;
+            
+            LoadTexture(texture);
         }
     }
 
