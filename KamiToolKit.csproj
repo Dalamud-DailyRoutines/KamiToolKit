@@ -3,6 +3,7 @@
     <PropertyGroup>
         <LangVersion>preview</LangVersion>
         <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+        <UseWPF>true</UseWPF>
     </PropertyGroup>
 
     <!-- Dalamud.NET.Sdk settings -->
