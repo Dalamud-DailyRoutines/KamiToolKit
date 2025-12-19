@@ -6,7 +6,6 @@ using Dalamud.Interface;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using InteropGenerator.Runtime;
 using KamiToolKit.Classes;
