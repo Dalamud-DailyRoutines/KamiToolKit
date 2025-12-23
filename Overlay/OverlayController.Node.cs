@@ -11,7 +11,7 @@ public abstract unsafe class OverlayNode : SimpleOverlayNode {
     /// <summary>
     /// When true, this node will automatically hide when the game hides things like nameplates
     /// </summary>
-    public virtual bool HideWithNativeUi => true;
+    public virtual bool HideWithNativeUI => true;
 
     private bool preAutoHideState;
     private bool? lastNamePlateVisible;
@@ -21,7 +21,7 @@ public abstract unsafe class OverlayNode : SimpleOverlayNode {
     }
 
     private void UpdateAutoHide() {
-        if (HideWithNativeUi) {
+        if (HideWithNativeUI) {
             var isNamePlateVisible = IsNameplateVisible();
 
             if (lastNamePlateVisible is null || lastNamePlateVisible != isNamePlateVisible) {
