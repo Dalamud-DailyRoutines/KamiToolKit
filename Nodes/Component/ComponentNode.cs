@@ -98,6 +98,11 @@ public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unma
         ComponentBase->UldManager.RootNodeWidth = (ushort)Width;
     }
 
+    public bool IsEnabled {
+        get => NodeFlags.HasFlag(NodeFlags.Enabled);
+        set => ComponentBase->SetEnabledState(value);
+    }
+
     public override int ChildCount => ComponentBase->UldManager.NodeListCount;
 
     internal T* Component {
