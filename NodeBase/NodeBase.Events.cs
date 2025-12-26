@@ -151,7 +151,7 @@ public abstract unsafe partial class NodeBase {
             // Hover events need to propagate down to trigger various timelines
             case AtkEventType.MouseOver:
             case AtkEventType.MouseOut:
-                AddFlags(NodeFlags.EmitsEvents, NodeFlags.RespondToMouse);
+                AddFlags(NodeFlags.EmitsEvents, NodeFlags.RespondToMouse, NodeFlags.HasCollision);
                 break;
 
             // Any kind of direct interaction should be a blocking event
