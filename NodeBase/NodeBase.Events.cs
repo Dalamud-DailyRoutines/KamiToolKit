@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
-using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit;
 
@@ -134,17 +131,6 @@ public abstract unsafe partial class NodeBase {
             handler.OnReceiveEventDelegate?.Invoke(thisPtr, eventType, eventParam, atkEvent, atkEventData);
         }
     }
-
-    private void ToggleCollisionFlag(bool isVisible) {
-        if (this is ComponentNode) return;
-
-        if (isVisible) {
-            AddFlags(NodeFlags.HasCollision);
-        }
-        else {
-            RemoveFlags(NodeFlags.HasCollision);
-        }
-    }
     
     private void SetNodeEventFlags(AtkEventType eventType) {
         switch (eventType) {
@@ -169,17 +155,5 @@ public abstract unsafe partial class NodeBase {
             case AtkEventType.ButtonClick:
                 break;
         }
-    }
-
-    public void ShowTooltip() {
-        if (Tooltip is not null && TooltipRegistered && ParentAddon is not null) {
-            AtkStage.Instance()->TooltipManager.ShowTooltip(ParentAddon->Id, ResNode, new ReadOnlySeString(Tooltip.GetValueOrDefault().AsSpan()));
-        }
-    }
-
-    public void HideTooltip() {
-        if (ParentAddon is null) return;
-
-        AtkStage.Instance()->TooltipManager.HideTooltip(ParentAddon->Id);
     }
 }
