@@ -9,10 +9,11 @@ namespace KamiToolKit.Nodes;
 public unsafe class TextNode : NodeBase<AtkTextNode> {
 
     public TextNode() : base(NodeType.Text) {
-        TextColor = ColorHelper.GetColor(50);
+        TextColor = ColorHelper.GetColor(8);
         TextOutlineColor = ColorHelper.GetColor(7);
         FontSize = 12;
         FontType = FontType.Axis;
+        LineSpacing = 12;
     }
 
     public Vector4 TextColor {
