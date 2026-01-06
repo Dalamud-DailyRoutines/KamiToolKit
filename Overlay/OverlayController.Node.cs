@@ -17,7 +17,7 @@ public abstract unsafe class OverlayNode : SimpleOverlayNode {
     public void Update() { 
         OnUpdate();
 
-        base.IsVisible = IsVisible && !(HideWithNativeUi && !IsNameplateVisible());
+        base.IsVisible = IsVisible && !(HideWithNativeUI && !IsNameplateVisible());
     }
 
     protected abstract void OnUpdate();
