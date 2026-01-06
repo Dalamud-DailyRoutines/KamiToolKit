@@ -12,35 +12,15 @@ public abstract unsafe class OverlayNode : SimpleOverlayNode {
     /// When true, this node will automatically hide when the game hides things like nameplates
     /// </summary>
     public virtual bool HideWithNativeUI => true;
+    protected new bool IsVisible { get; set; }
 
-    private bool preAutoHideState;
-    private bool? lastNamePlateVisible;
+    public void Update() { 
+        OnUpdate();
 
-    public virtual void Update() {
-        UpdateAutoHide();
+        base.IsVisible = IsVisible && !(HideWithNativeUi && !IsNameplateVisible());
     }
 
-    private void UpdateAutoHide() {
-        if (HideWithNativeUI) {
-            var isNamePlateVisible = IsNameplateVisible();
-
-            if (lastNamePlateVisible is null || lastNamePlateVisible != isNamePlateVisible) {
-                if (lastNamePlateVisible is null) {
-                    preAutoHideState = IsVisible;
-                }
-                
-                if (isNamePlateVisible) {
-                    IsVisible = preAutoHideState;
-                }
-                else {
-                    preAutoHideState = IsVisible;
-                    IsVisible = false;
-                }
-                
-                lastNamePlateVisible = isNamePlateVisible;
-            }
-        }
-    }
+    protected abstract void OnUpdate();
 
     private static bool IsNameplateVisible() {
         var nameplateAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("NamePlate");
