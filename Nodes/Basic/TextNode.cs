@@ -14,7 +14,7 @@ public unsafe class TextNode : NodeBase<AtkTextNode> {
         FontSize = 12;
         FontType = FontType.Axis;
         LineSpacing = 12;
-        AlignmentType = AlignmentType.Left;
+        AlignmentType = AlignmentType.TopLeft;
     }
 
     public Vector4 TextColor {
