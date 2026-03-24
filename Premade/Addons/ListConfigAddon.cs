@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Nodes;
 
@@ -27,6 +28,8 @@ public class ListConfigAddon<T, TU, TV> : NativeAddon where T: class where TV : 
             ItemComparer = ItemComparer,
             IsSearchMatch = OnSearchUpdated,
             ItemSpacing = ItemSpacing,
+            DisplayMode = (AddClicked is not null ? ListConfigDisplayMode.Add : ListConfigDisplayMode.None) | 
+                          (RemoveClicked is not null ? ListConfigDisplayMode.Remove : ListConfigDisplayMode.None),
         };
         selectionListNode.AttachNode(this);
 
@@ -137,6 +140,14 @@ public class ListConfigAddon<T, TU, TV> : NativeAddon where T: class where TV : 
         get;
         set {
             field = value;
+
+            if (value is not null) {
+                selectionListNode?.DisplayMode |= ListConfigDisplayMode.Add;
+            }
+            else {
+                selectionListNode?.DisplayMode &= ~ListConfigDisplayMode.Add;
+            }
+
             selectionListNode?.AddNewEntry = () => {
                 value?.Invoke(this);
             };
@@ -147,6 +158,14 @@ public class ListConfigAddon<T, TU, TV> : NativeAddon where T: class where TV : 
         get;
         set {
             field = value;
+
+            if (value is not null) {
+                selectionListNode?.DisplayMode |= ListConfigDisplayMode.Remove;
+            }
+            else {
+                selectionListNode?.DisplayMode &= ~ListConfigDisplayMode.Remove;
+            }
+            
             selectionListNode?.RemoveEntry = entry => {
                 value?.Invoke(this, entry);
             };

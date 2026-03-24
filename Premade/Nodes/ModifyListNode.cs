@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Utility;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Widgets;
 
@@ -37,23 +38,22 @@ public class ModifyListNode<T, TU> : SimpleComponentNode where TU : ListItemNode
         addButton = new TextButtonNode {
             String = "Add",
             OnClick = OnAddClicked,
-            IsEnabled = false,
         };
         addButton.AttachNode(this);
 
         editButton = new TextButtonNode {
             String = "Edit",
             OnClick = OnEditClicked,
-            IsEnabled = false,
         };
         editButton.AttachNode(this);
 
         removeButton = new TextButtonNode {
             String = "Remove",
             OnClick = OnRemoveClicked,
-            IsEnabled = false,
         };
         removeButton.AttachNode(this);
+
+        UpdateButtonStates();
     }
 
     protected override void OnSizeChanged() {
@@ -77,6 +77,16 @@ public class ModifyListNode<T, TU> : SimpleComponentNode where TU : ListItemNode
         removeButton.Size = new Vector2(buttonWidth, 24.0f);
         removeButton.Position = new Vector2(buttonWidth * 2.0f + buttonPadding * 2.0f, Height - 24.0f);
     }
+    
+    public ListConfigDisplayMode DisplayMode {
+        get;
+        set {
+            field = value;
+            addButton.IsVisible = value.HasFlag(ListConfigDisplayMode.Add);
+            editButton.IsVisible = value.HasFlag(ListConfigDisplayMode.Edit);
+            removeButton.IsVisible = value.HasFlag(ListConfigDisplayMode.Remove);
+        }
+    } = ListConfigDisplayMode.Add | ListConfigDisplayMode.Edit |  ListConfigDisplayMode.Remove;
     
     public List<T> Options {
         get;
@@ -103,24 +113,24 @@ public class ModifyListNode<T, TU> : SimpleComponentNode where TU : ListItemNode
     public Action? AddNewEntry {
         get;
         set {
-            field = value; 
-            addButton.IsEnabled = value is not null;
+            field = value;
+            UpdateButtonStates();
         }
     }
 
     public Action<T>? RemoveEntry {
         get;
         set {
-            field = value; 
-            removeButton.IsEnabled = value is not null && SelectedOption is not null;
+            field = value;
+            UpdateButtonStates();
         }
     }
 
     public Action<T>? EditEntry {
         get;
         set {
-            field = value; 
-            editButton.IsEnabled = value is not null && SelectedOption is not null;
+            field = value;
+            UpdateButtonStates();
         }
     }
 
@@ -189,6 +199,7 @@ public class ModifyListNode<T, TU> : SimpleComponentNode where TU : ListItemNode
     private void UpdateButtonStates() {
         editButton.IsEnabled = SelectedOption is not null && EditEntry is not null;
         removeButton.IsEnabled = SelectedOption is not null && RemoveEntry is not null;
+        addButton.IsEnabled = AddNewEntry is not null;
     }
 
     /// <summary>

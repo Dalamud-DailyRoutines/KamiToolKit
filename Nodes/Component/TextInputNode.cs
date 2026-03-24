@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Input;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using InteropGenerator.Runtime;
 using KamiToolKit.Classes;
+using KamiToolKit.Dalamud;
 using KamiToolKit.Enums;
 using KamiToolKit.Timelines;
 using Lumina.Text.ReadOnly;
@@ -85,7 +86,6 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         CursorNode.AttachNode(this);
 
         PlaceholderTextNode = new TextNode {
-            Position = new Vector2(8.0f, 0.0f),
             TextColor = ColorHelper.GetColor(3),
         };
         PlaceholderTextNode.AttachNode(this);
@@ -129,7 +129,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             OnFocused?.Invoke();
 
             if (AutoSelectAll && Component->EvaluatedString.Length > 0) {
-                DalamudInterface.Instance.Framework.RunOnTick(() => {
+                Services.Framework.RunOnTick(() => {
                     var keyModifiers = new AtkTextInput.KeyModifiers {
                         IsControlDown = true,
                     };
@@ -254,7 +254,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             return InputCallbackResult.None;
         }
         catch (Exception e) {
-            Log.Exception(e);
+            Services.Log.Exception(e);
             return InputCallbackResult.None;
         }
     }
@@ -269,7 +269,8 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
         BackgroundNode.Size = Size;
         FocusNode.Size = Size;
-        PlaceholderTextNode.Size = Size;
+        PlaceholderTextNode.Size = Size - new Vector2(0.0f, 2.0f);
+        PlaceholderTextNode.Position = new Vector2(8.0f, 2.0f);
         TextLimitsNode.Size = new Vector2(Width + 18.0f, Height - 9.0f);
         CurrentTextNode.Size = new Vector2(Width - 20.0f, Height - 10.0f);
     }

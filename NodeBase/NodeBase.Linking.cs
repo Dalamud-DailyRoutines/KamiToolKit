@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Dalamud;
 using KamiToolKit.Nodes;
 
 namespace KamiToolKit;
@@ -12,6 +13,9 @@ public abstract unsafe partial class NodeBase {
 
     internal readonly List<NodeBase> ChildNodes = [];
     private NodeBase? parentNode;
+
+    private readonly HashSet<string> addonsPendingUpdate = [];
+    private readonly HashSet<nint> uldManagersPendingUpdate = [];
 
     internal AtkUldManager* ParentUldManager { get; set; }
     internal AtkUnitBase* ParentAddon { get; private set; }
@@ -104,10 +108,32 @@ public abstract unsafe partial class NodeBase {
                     NodePosition.BeforeAllSiblings => componentNode->Component->UldManager.RootNode,
                     _ => throw new ArgumentOutOfRangeException(nameof(targetPosition), targetPosition, null),
                 };
-                
-                // We also need to check the components node list, to get a safely assigned nodeId
-                if (NodeId > NodeIdBase) {
-                    NodeId = componentNode->Component->UldManager.GetMaxNodeId() + 1;
+
+                // If we aren't inserting as this elements child, then we need to find the parent UldManager and use that instead
+                if (targetPosition is NodePosition.AfterTarget or NodePosition.BeforeTarget) {
+                    if (NodeId > NodeIdBase) {
+                        var targetsParentUldManager = GetUldManagerForNode(targetNode);
+                        
+                        // Failed to get uldManager from node tree
+                        if (targetsParentUldManager is null) {
+                            
+                            // Try to get parent addon from target node
+                            var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(targetNode);
+                            if (parentAddon is not null) {
+                                targetsParentUldManager = &parentAddon->UldManager;
+                            }
+                        }
+
+                        if (targetsParentUldManager is not null) {
+                            NodeId = targetsParentUldManager->GetMaxNodeId() + 1;
+                        }
+                    }
+                }
+                else {
+                    // We also need to check the components node list, to get a safely assigned nodeId
+                    if (NodeId > NodeIdBase) {
+                        NodeId = componentNode->Component->UldManager.GetMaxNodeId() + 1;
+                    }
                 }
             }
         }
@@ -150,10 +176,22 @@ public abstract unsafe partial class NodeBase {
     
     private void RemoveParentAddonReferences() {
         if (ParentAddon is null) return;
+
+        var addonName = ParentAddon->NameString;
         
-        ParentAddon->UldManager.UpdateDrawNodeList();
-        ParentAddon->UpdateCollisionNodeList(false);
-            
+        // Queue collision update for next frame
+        if (addonsPendingUpdate.Add(addonName)) {
+            Services.Framework.RunOnTick(() => {
+                var currentInstance = RaptureAtkUnitManager.Instance()->GetAddonByName(addonName);
+                if (currentInstance is not null) {
+                    currentInstance->UldManager.UpdateDrawNodeList();
+                    currentInstance->UpdateCollisionNodeList(false);
+                }
+
+                addonsPendingUpdate.Remove(addonName);
+            });
+        }
+
         ParentAddon = null;
             
         foreach (var child in GetAllChildren(this)) {
@@ -178,16 +216,40 @@ public abstract unsafe partial class NodeBase {
         }
 
         if (ParentUldManager is not null) {
+            // Queue UldManager update for next frame
+            var manager = ParentUldManager;
+
+            if (uldManagersPendingUpdate.Add((nint)ParentUldManager)) {
+                Services.Framework.RunOnTick(() => {
+                    if (ResNode is null) return;
+
+                    manager->AddNodeToObjectList(this);
+                    uldManagersPendingUpdate.Remove((nint)manager);
+                });
+            }
+
             ParentUldManager->AddNodeToObjectList(this);
         }
 
         if (ParentAddon is not null) {
             if (ParentAddon->NameString is "NamePlate") {
-                Log.Warning("Warning, attaching to AddonNamePlate is not supported. Use OverlayController instead.");
+                Services.Log.Warning("Warning, attaching to AddonNamePlate is not supported. Use OverlayController instead.");
             }
             
-            ParentAddon->UldManager.UpdateDrawNodeList();
-            ParentAddon->UpdateCollisionNodeList(false);
+            var addonName = ParentAddon->NameString;
+            
+            // Queue collision update for next frame
+            if (addonsPendingUpdate.Add(addonName)) {
+                Services.Framework.RunOnTick(() => {
+                    var currentInstance = RaptureAtkUnitManager.Instance()->GetAddonByName(addonName);
+                    if (currentInstance is not null) {
+                        currentInstance->UldManager.UpdateDrawNodeList();
+                        currentInstance->UpdateCollisionNodeList(false);
+                    }
+
+                    addonsPendingUpdate.Remove(addonName);
+                });
+            }
         }
     }
 
