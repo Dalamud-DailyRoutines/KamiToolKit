@@ -224,6 +224,7 @@ public abstract unsafe partial class NodeBase {
                     if (ResNode is null) return;
 
                     manager->AddNodeToObjectList(this);
+                    manager->SetupText();
                     uldManagersPendingUpdate.Remove((nint)manager);
                 });
             }

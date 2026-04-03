@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Premade.Node.Simple;
 using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit.Nodes;
@@ -37,6 +38,11 @@ public unsafe class TextButtonNode : ButtonBase {
     public ReadOnlySeString String {
         get => LabelNode.String;
         set => LabelNode.String = value;
+    }
+
+    public uint TextId {
+        get =>LabelNode.TextId;
+        set => LabelNode.TextId = value;
     }
 
     protected override void OnSizeChanged() {

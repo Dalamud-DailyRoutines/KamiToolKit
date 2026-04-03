@@ -11,6 +11,7 @@ using InteropGenerator.Runtime;
 using KamiToolKit.Classes;
 using KamiToolKit.Dalamud;
 using KamiToolKit.Enums;
+using KamiToolKit.Premade.Node.Simple;
 using KamiToolKit.Timelines;
 using Lumina.Text.ReadOnly;
 
@@ -201,6 +202,11 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             field = value;
             UpdatePlaceholderVisibility();
         }
+    }
+
+    public uint PlaceholderStringId {
+        get => PlaceholderTextNode.TextId;
+        set => PlaceholderTextNode.TextId = value;
     }
 
     public bool IsError {
