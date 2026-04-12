@@ -5,24 +5,43 @@ using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.Dalamud;
 
 namespace KamiToolKit.Controllers;
 
-/// <summary>
-/// Only one or the other field will be valid, be sure to check for null.
-/// </summary>
-public unsafe class ListItemData {
-    public AtkComponentListItemPopulator.ListItemInfo* ItemInfo { get; set; }
-    public AtkComponentListItemRenderer* ItemRenderer { get; set; }
-}
+public class NativeListController : NativeListController<AtkUnitBase, ListItemData>;
+public class NativeListController<T> : NativeListController<T, ListItemData> where T : unmanaged;
 
-public unsafe class NativeListController : IDisposable {
+/// <summary>
+/// Controller for modifying native lists.
+/// </summary>
+/// <typeparam name="T">The concrete addon type.</typeparam>
+/// <typeparam name="TU">A data model for this addons list items.</typeparam>
+public unsafe class NativeListController<T, TU> : IDisposable where T : unmanaged where TU : ListItemData, new() {
     public required string AddonName { get; init; }
 
-    public required ShouldModifyElementHandler ShouldModifyElement { get; init; }
-    public required UpdateElementHandler UpdateElement { get; init; }
-    public required ResetElementHandler ResetElement { get; init; }
+    /// <summary>
+    /// Define a function that will return true if the provided list item should be modified by this controller.
+    /// </summary>
+    /// <remarks>
+    /// If no function is defined it will be assumed that each line should be edited.
+    /// </remarks>
+    public ShouldModifyElementHandler? ShouldModifyElement { get; init; }
+    
+    /// <summary>
+    /// Define how specifically you want the list item to be modified.
+    /// </summary>
+    public UpdateElementHandler? UpdateElement { get; init; }
+    
+    /// <summary>
+    /// Define how specifically you want the list item to be reset.
+    /// </summary>
+    public ResetElementHandler? ResetElement { get; init; }
+    
+    /// <summary>
+    /// Function that gets the root ComponentItemRenderer to extract the populator functions from.
+    /// </summary>
     public required GetPopulatorNodeHandler GetPopulatorNode { get; init; }
 
     private Hook<AtkComponentListItemPopulator.PopulateDelegate>? onListPopulate;
@@ -30,15 +49,12 @@ public unsafe class NativeListController : IDisposable {
 
     public readonly List<uint> ModifiedIndexes = [];
 
-    public Action? OnClose { get; init; }
-    public Action? OnOpen { get; init; }
-
     public void Enable() {
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, AddonName, OnAddonSetup);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, AddonName, OnAddonFinalize);
 
         Services.Framework.RunOnFrameworkThread(() => {
-            var addon = RaptureAtkUnitManager.Instance()->GetAddonByName(AddonName);
+            var addon = (T*) RaptureAtkUnitManager.Instance()->GetAddonByName(AddonName);
             if (addon is not null) {
                 Services.Log.Warning("Caution: ListController was loaded after list was initialized, data may be stale.");
                 LoadPopulators(addon);
@@ -60,7 +76,7 @@ public unsafe class NativeListController : IDisposable {
         => Disable();
 
     private void OnAddonSetup(AddonEvent type, AddonArgs args)
-        => LoadPopulators((AtkUnitBase*)args.Addon.Address);
+        => LoadPopulators((T*)args.Addon.Address);
 
     private void OnAddonFinalize(AddonEvent type, AddonArgs args) {
         onListPopulate?.Dispose();
@@ -70,11 +86,9 @@ public unsafe class NativeListController : IDisposable {
         onRendererPopulate = null;
         
         ModifiedIndexes.Clear();
-
-        OnClose?.Invoke();
     }
     
-    private void LoadPopulators(AtkUnitBase* addon) {
+    private void LoadPopulators(T* addon) {
         var populateMethod = GetPopulatorNode(addon)->Populator;
 
         if (populateMethod.Populate is not null) {
@@ -86,21 +100,21 @@ public unsafe class NativeListController : IDisposable {
             onRendererPopulate = Services.GameInteropProvider.HookFromAddress<AtkComponentListItemPopulator.PopulateWithRendererDelegate>(populateMethod.PopulateWithRenderer, OnRendererPopulateDetour);
             onRendererPopulate?.Enable();
         }
-
-        OnOpen?.Invoke();
     }
 
     private void OnPopulateDetour(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* itemInfo, AtkResNode** nodeList) {
         try {
-            var listItemData = new ListItemData {
+            var listItemData = new TU {
                 ItemInfo = itemInfo,
+                NodeList = nodeList,
+                ItemIndex = itemInfo->ListItemIndex,
             };
             
-            var shouldModifyElement = ShouldModifyElement(unitBase, listItemData, nodeList);
+            var shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
 
             if (!shouldModifyElement) {
                 if (ModifiedIndexes.Contains(itemInfo->ListItem->Renderer->OwnerNode->NodeId)) {
-                    ResetElement.Invoke(unitBase, listItemData, nodeList);
+                    ResetElement?.Invoke((T*)unitBase, listItemData);
                     ModifiedIndexes.Remove(itemInfo->ListItem->Renderer->OwnerNode->NodeId);
                 }
             }
@@ -108,7 +122,7 @@ public unsafe class NativeListController : IDisposable {
             onListPopulate!.Original(unitBase, itemInfo, nodeList);
 
             if (shouldModifyElement) {
-                UpdateElement.Invoke(unitBase, listItemData, nodeList);
+                UpdateElement?.Invoke((T*)unitBase, listItemData);
                 ModifiedIndexes.Add(itemInfo->ListItem->Renderer->OwnerNode->NodeId);
             }
         }
@@ -119,15 +133,17 @@ public unsafe class NativeListController : IDisposable {
     
     private void OnRendererPopulateDetour(AtkUnitBase* unitBase, int listItemIndex, AtkResNode** nodeList, AtkComponentListItemRenderer* listItemRenderer) {
         try {
-            var listItemData = new ListItemData {
+            var listItemData = new TU {
                 ItemRenderer = listItemRenderer,
+                NodeList = nodeList,
+                ItemIndex = listItemIndex,
             };
             
-            var shouldModifyElement = ShouldModifyElement(unitBase, listItemData, nodeList);
+            var shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
 
             if (!shouldModifyElement) {
                 if (ModifiedIndexes.Contains(listItemRenderer->OwnerNode->NodeId)) {
-                    ResetElement.Invoke(unitBase, listItemData, nodeList);
+                    ResetElement?.Invoke((T*)unitBase, listItemData);
                     ModifiedIndexes.Remove(listItemRenderer->OwnerNode->NodeId);
                 }
             }
@@ -135,7 +151,7 @@ public unsafe class NativeListController : IDisposable {
             onRendererPopulate!.Original(unitBase, listItemIndex, nodeList, listItemRenderer);
 
             if (shouldModifyElement) {
-                UpdateElement.Invoke(unitBase, listItemData, nodeList);
+                UpdateElement?.Invoke((T*)unitBase, listItemData);
                 ModifiedIndexes.Add(listItemRenderer->OwnerNode->NodeId);
             }
         }
@@ -144,8 +160,8 @@ public unsafe class NativeListController : IDisposable {
         }
     }
 
-    public delegate bool ShouldModifyElementHandler(AtkUnitBase* unitBase, ListItemData listItemInfo, AtkResNode** nodeList);
-    public delegate AtkComponentListItemRenderer* GetPopulatorNodeHandler(AtkUnitBase* addon);
-    public delegate void UpdateElementHandler(AtkUnitBase* unitBase, ListItemData listItemInfo, AtkResNode** nodeList);
-    public delegate void ResetElementHandler(AtkUnitBase* unitBase, ListItemData listItemInfo, AtkResNode** nodeList);
+    public delegate bool ShouldModifyElementHandler(T* unitBase, TU listItem);
+    public delegate AtkComponentListItemRenderer* GetPopulatorNodeHandler(T* addon);
+    public delegate void UpdateElementHandler(T* unitBase, TU listItem);
+    public delegate void ResetElementHandler(T* unitBase, TU listItem);
 }
