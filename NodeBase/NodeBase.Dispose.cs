@@ -19,6 +19,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
     internal static uint CurrentOffset;
 
     private bool isDisposed;
+    internal bool IsDisposed => isDisposed;
 
     internal abstract AtkResNode* ResNode { get; }
     internal bool IsAddonRootNode;
@@ -161,14 +162,14 @@ public abstract unsafe partial class NodeBase : IDisposable {
     }
 
     private void DestructorDetour(AtkResNode* thisPtr, bool free) {
+        isDisposed = true;
+
         Dispose(true, true);
         InvokeOriginalDestructor(thisPtr, free);
 
         Services.Log.Verbose($"Native has disposed node {GetType()}");
         GC.SuppressFinalize(this);
         CreatedNodes.Remove(this);
-
-        isDisposed = true;
     }
 
     protected void InvokeOriginalDestructor(AtkResNode* thisPtr, bool free) {

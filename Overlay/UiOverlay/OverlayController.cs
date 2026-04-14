@@ -15,6 +15,7 @@ public unsafe class OverlayController : IDisposable {
     private readonly Dictionary<OverlayLayer, List<OverlayNode>> overlayNodes = [];
     private readonly Dictionary<OverlayLayer, OverlayAddonState> addonState = [];
 
+    private bool isDisposed;
     private ControllerState controllerState = ControllerState.WaitForNameplate;
 
     public OverlayController() {
@@ -33,11 +34,17 @@ public unsafe class OverlayController : IDisposable {
     }
 
     public void Dispose() {
+        if (isDisposed) return;
+        isDisposed = true;
+
+        Services.Framework.Update -= CheckOverlayState;
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "NamePlate");
         Services.AddonLifecycle.UnregisterListener(OnOverlayAddonFinalize, OnOverlayAddonUpdate);
 
-        foreach (var node in overlayNodes.SelectMany(nodeList => nodeList.Value)) {
-            node.Dispose();
+        foreach (var node in overlayNodes.SelectMany(nodeList => nodeList.Value).ToList()) {
+            if (!node.IsDisposed) {
+                node.Dispose();
+            }
         }
 
         overlayNodes.Clear();
@@ -56,11 +63,17 @@ public unsafe class OverlayController : IDisposable {
     }
 
     private void BeginStateCheck() {
+        if (isDisposed) return;
         Services.Framework.Update -= CheckOverlayState;
         Services.Framework.Update += CheckOverlayState;
     }
 
     private void CheckOverlayState(IFramework framework) {
+        if (isDisposed) {
+            Services.Framework.Update -= CheckOverlayState;
+            return;
+        }
+
         switch (controllerState) {
             case ControllerState.WaitForNameplate:
                 CheckNameplateReady();
@@ -120,12 +133,10 @@ public unsafe class OverlayController : IDisposable {
     }
 
     private void AttachAllNodes(OverlayLayer layer) {
-        if (!overlayNodes.TryGetValue(layer, out var list)) return;
-
         var addon = RaptureAtkUnitManager.Instance()->GetAddonByName(layer.Description);
         if (addon is null) return;
 
-        foreach (var node in list) {
+        foreach (var node in GetLiveNodes(layer)) {
             AttachNode(addon, node);
         }
     }
@@ -139,6 +150,9 @@ public unsafe class OverlayController : IDisposable {
     });
 
     public void AddNode(OverlayNode node) => Services.Framework.RunOnFrameworkThread(() => {
+        if (isDisposed) return;
+        if (node.IsDisposed) return;
+
         overlayNodes.TryAdd(node.OverlayLayer, []);
 
         if (overlayNodes[node.OverlayLayer].Contains(node)) return;
@@ -154,10 +168,10 @@ public unsafe class OverlayController : IDisposable {
     });
 
     public void RemoveNode(OverlayNode node) => Services.Framework.RunOnFrameworkThread(() => {
-        if (!overlayNodes.TryGetValue(node.OverlayLayer, out var list)) return;
-
-        if (list.Remove(node)) {
-            node.Dispose();
+        if (TryUntrackNode(node)) {
+            if (!node.IsDisposed) {
+                node.Dispose();
+            }
         }
     });
 
@@ -172,12 +186,12 @@ public unsafe class OverlayController : IDisposable {
     //
 
     private void OnNamePlatePreFinalize(AddonEvent type, AddonArgs args) {
+        if (isDisposed) return;
+
         ClearState();
 
         foreach (var overlayLayer in Enum.GetValues<OverlayLayer>()) {
-            if (!overlayNodes.TryGetValue(overlayLayer, out var list)) continue;
-
-            foreach (var node in list) {
+            foreach (var node in GetLiveNodes(overlayLayer)) {
                 node.DetachNode();
             }
         }
@@ -186,28 +200,42 @@ public unsafe class OverlayController : IDisposable {
     }
 
     private void OnOverlayAddonFinalize(AddonEvent type, AddonArgs args) {
+        if (isDisposed) return;
+
         var addon = (AtkUnitBase*)args.Addon.Address;
         var overlayLayer = addon->DepthLayer.GetOverlayLayer();
 
-        if (overlayNodes.TryGetValue(overlayLayer, out var list)) {
-            foreach (var node in list) {
-                node.DetachNode();
-            }
+        foreach (var node in GetLiveNodes(overlayLayer)) {
+            node.DetachNode();
         }
 
         addonState[overlayLayer] = OverlayAddonState.None;
     }
 
     private void OnOverlayAddonUpdate(AddonEvent type, AddonArgs args) {
+        if (isDisposed) return;
+
         var addon = (AtkUnitBase*)args.Addon.Address;
         var overlayLayer = addon->DepthLayer.GetOverlayLayer();
 
         if (addonState[overlayLayer] is not OverlayAddonState.Ready) return;
-        if (!overlayNodes.TryGetValue(overlayLayer, out var list)) return;
 
-        foreach (var node in list) {
+        foreach (var node in GetLiveNodes(overlayLayer)) {
             node.Update();
         }
+    }
+
+    private bool TryUntrackNode(OverlayNode node) {
+        if (!overlayNodes.TryGetValue(node.OverlayLayer, out var list)) return false;
+
+        return list.Remove(node);
+    }
+
+    private List<OverlayNode> GetLiveNodes(OverlayLayer layer) {
+        if (!overlayNodes.TryGetValue(layer, out var list)) return [];
+
+        list.RemoveAll(node => node.IsDisposed);
+        return list.ToList();
     }
 
     //
