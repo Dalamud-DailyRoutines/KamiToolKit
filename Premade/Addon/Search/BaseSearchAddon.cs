@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Premade.Node;
 
 namespace KamiToolKit.Premade.Addon.Search;
 
-public abstract class BaseSearchAddon<T, TU> : NativeAddon where TU : ListItemNode<T>, new() {
+public abstract class BaseSearchAddon<T, TU> : NativeAddon where TU : ListItemNode<T>, IListItemNode, new() {
     
     private SearchWidget? searchWidget;
     private ListNode<T, TU>? listNode;
@@ -18,7 +19,7 @@ public abstract class BaseSearchAddon<T, TU> : NativeAddon where TU : ListItemNo
 
     private T? selectedOption;
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon) {
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan) {
         searchWidget = new SearchWidget {
             Size = ContentSize,
             Position = ContentStartPosition,
@@ -80,9 +81,9 @@ public abstract class BaseSearchAddon<T, TU> : NativeAddon where TU : ListItemNo
         Close();
     }
 
-    private void OnSortOrderUpdated(string sortingString, bool reversed) {
+    private void OnSortOrderUpdated(Enum sortingMode, bool reversed) {
         var resortedList = SearchOptions.ToList();
-        resortedList.Sort((left, right) => Comparer(left, right, sortingString, reversed));
+        resortedList.Sort((left, right) => Comparer(left, right, sortingMode, reversed));
 
         listNode?.OptionsList = resortedList;
     }
@@ -91,10 +92,10 @@ public abstract class BaseSearchAddon<T, TU> : NativeAddon where TU : ListItemNo
         listNode?.OptionsList = SearchOptions.Where(item => IsMatch(item, searchString)).ToList();
     }
 
-    protected abstract int Comparer(T left, T right, string sortingString, bool reversed);
+    protected abstract int Comparer(T left, T right, Enum sortingMode, bool reversed);
     protected abstract bool IsMatch(T item, string searchString);
 
-    public List<string> SortingOptions { get; init; } = [ "Alphabetical", "Id" ];
+    public List<Enum> SortingOptions { get; init; } = [ DefaultSortOptions.Alphabetical, DefaultSortOptions.Id ];
 
     public List<T> SearchOptions {
         get;

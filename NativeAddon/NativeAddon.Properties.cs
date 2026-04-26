@@ -1,27 +1,18 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Nodes;
 using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit;
 
 public unsafe partial class NativeAddon {
-    public void SetWindowPosition(Vector2 windowPosition) {
-        if (InternalAddon is null) return;
-        InternalAddon->SetPosition((short)windowPosition.X, (short)windowPosition.Y);
-    }
-
-    public void SetWindowSize(Vector2 windowSize) {
-        if (InternalAddon is null) return;
-
-        Size = windowSize;
-        InternalAddon->SetSize((ushort)Size.X, (ushort)Size.Y);
-
-        WindowNode?.Size = Size;
-    }
-
-    protected void SetWindowSize(float width, float height)
-        => SetWindowSize(new Vector2(width, height));
+    public ResNode RootNode { get; private set; } = null!;
+    
+    public static implicit operator AtkUnitBase*(NativeAddon addon) => addon.InternalAddon;
+    
+    public Func<WindowNodeBase>? CreateWindowNode { get; init; }
 
     public required string InternalName {
         get;
@@ -51,8 +42,6 @@ public unsafe partial class NativeAddon {
     public bool RememberClosePosition { get; set; } = true;
     
     internal Vector2 LastClosePosition = Vector2.Zero;
-
-    public static implicit operator AtkUnitBase*(NativeAddon addon) => addon.InternalAddon;
 
     internal bool IsOverlayAddon { get; init; }
 

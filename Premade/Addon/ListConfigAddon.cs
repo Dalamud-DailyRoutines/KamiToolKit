@@ -9,14 +9,14 @@ using KamiToolKit.Premade.Node;
 
 namespace KamiToolKit.Premade.Addon;
 
-public class ListConfigAddon<T, TU, TV> : NativeAddon where T: class where TV : ConfigNode<T>, new() where TU : ListItemNode<T>, new() {
+public class ListConfigAddon<T, TU, TV> : NativeAddon where T: class where TV : ConfigNode<T>, new() where TU : ListItemNode<T>, IListItemNode, new() {
 
     private ModifyListNode<T, TU>? selectionListNode;
     private VerticalLineNode? separatorLine;
     private TV? configNode;
     private TextNode? nothingSelectedTextNode;
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon) {
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan) {
         selectionListNode = new ModifyListNode<T, TU> {
             Position = ContentStartPosition,
             Size = new Vector2(250.0f, ContentSize.Y),
@@ -113,13 +113,13 @@ public class ListConfigAddon<T, TU, TV> : NativeAddon where T: class where TV : 
     public void SelectItem(T? listItem)
         => SelectionChanged(listItem);
 
-    public List<string>? SortOptions {
+    public List<Enum>? SortOptions {
         get;
         set {
             field = value;
             selectionListNode?.SortOptions = value;
         }
-    } = ["Alphabetical", "Id"];
+    } = [ DefaultSortOptions.Alphabetical, DefaultSortOptions.Id ];
 
     public required List<T> Options { get;
         set {

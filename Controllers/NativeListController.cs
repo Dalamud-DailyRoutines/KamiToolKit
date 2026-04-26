@@ -72,42 +72,55 @@ public unsafe class NativeListController<T, TU> : IDisposable where T : unmanage
         onRendererPopulate = null;
     }
 
-    public void Dispose()
-        => Disable();
-
-    private void OnAddonSetup(AddonEvent type, AddonArgs args)
-        => LoadPopulators((T*)args.Addon.Address);
-
-    private void OnAddonFinalize(AddonEvent type, AddonArgs args) {
+    public void Dispose() {
         onListPopulate?.Dispose();
         onListPopulate = null;
         
         onRendererPopulate?.Dispose();
         onRendererPopulate = null;
         
+        Disable();
+    }
+
+    private void OnAddonSetup(AddonEvent type, AddonArgs args)
+        => LoadPopulators((T*)args.Addon.Address);
+
+    private void OnAddonFinalize(AddonEvent type, AddonArgs args) {
+        onListPopulate?.Disable();
+        onRendererPopulate?.Disable();
+
         ModifiedIndexes.Clear();
     }
-    
+
     private void LoadPopulators(T* addon) {
         var populateMethod = GetPopulatorNode(addon)->Populator;
 
         if (populateMethod.Populate is not null) {
-            onListPopulate = Services.GameInteropProvider.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod.Populate, OnPopulateDetour);
+            onListPopulate ??= Services.GameInteropProvider.HookFromAddress<AtkComponentListItemPopulator.PopulateDelegate>(populateMethod.Populate, OnPopulateDetour);
             onListPopulate?.Enable();
         }
 
         if (populateMethod.PopulateWithRenderer is not null) {
-            onRendererPopulate = Services.GameInteropProvider.HookFromAddress<AtkComponentListItemPopulator.PopulateWithRendererDelegate>(populateMethod.PopulateWithRenderer, OnRendererPopulateDetour);
+            onRendererPopulate ??= Services.GameInteropProvider.HookFromAddress<AtkComponentListItemPopulator.PopulateWithRendererDelegate>(populateMethod.PopulateWithRenderer, OnRendererPopulateDetour);
             onRendererPopulate?.Enable();
         }
     }
 
     private void OnPopulateDetour(AtkUnitBase* unitBase, AtkComponentListItemPopulator.ListItemInfo* itemInfo, AtkResNode** nodeList) {
         try {
+            var listItemNode = itemInfo->ListItem->Renderer->OwnerNode;
+
+            var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode((AtkResNode*)listItemNode);
+            if (parentAddon is null || parentAddon->NameString != AddonName) {
+                onListPopulate!.Original(unitBase, itemInfo, nodeList);
+                return;
+            }
+            
             var listItemData = new TU {
                 ItemInfo = itemInfo,
                 NodeList = nodeList,
                 ItemIndex = itemInfo->ListItemIndex,
+                NodeId = itemInfo->ListItem->Renderer->OwnerNode->NodeId,
             };
             
             var shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
@@ -133,10 +146,19 @@ public unsafe class NativeListController<T, TU> : IDisposable where T : unmanage
     
     private void OnRendererPopulateDetour(AtkUnitBase* unitBase, int listItemIndex, AtkResNode** nodeList, AtkComponentListItemRenderer* listItemRenderer) {
         try {
+            var listItemNode = listItemRenderer->OwnerNode;
+
+            var parentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode((AtkResNode*)listItemNode);
+            if (parentAddon is null || parentAddon->NameString != AddonName) {
+                onRendererPopulate!.Original(unitBase, listItemIndex, nodeList, listItemRenderer);
+                return;
+            }
+
             var listItemData = new TU {
                 ItemRenderer = listItemRenderer,
                 NodeList = nodeList,
                 ItemIndex = listItemIndex,
+                NodeId = listItemRenderer->OwnerNode->NodeId,
             };
             
             var shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;

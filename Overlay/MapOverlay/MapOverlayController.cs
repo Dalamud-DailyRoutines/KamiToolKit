@@ -26,6 +26,8 @@ public unsafe class MapOverlayController : IDisposable {
 
     private readonly List<MapMarkerInfo> queuedMarkers = [];
     private readonly List<MapMarkerNode> queuedNodes = [];
+
+    public bool IsVisible { get; set; } = true;
     
     public MapOverlayController() {
         mapController = new AddonController<AddonAreaMap> {
@@ -44,18 +46,8 @@ public unsafe class MapOverlayController : IDisposable {
         
         mapController.Dispose();
 
-        foreach (var node in markerNodes) {
-            node.Dispose();
-        }
-        markerNodes.Clear();
+        RemoveAllMarkers();
 
-        foreach (var node in queuedNodes) {
-            node.Dispose();
-        }
-        queuedNodes.Clear();
-
-        queuedMarkers.Clear();
-        
         overlayNode?.Dispose();
         overlayNode = null;
         
@@ -81,6 +73,20 @@ public unsafe class MapOverlayController : IDisposable {
         }
     }
 
+    public void RemoveAllMarkers() {
+        foreach (var node in markerNodes) {
+            node.Dispose();
+        }
+        markerNodes.Clear();
+
+        foreach (var node in queuedNodes) {
+            node.Dispose();
+        }
+        queuedNodes.Clear();
+
+        queuedMarkers.Clear();
+    }
+
     private void OnAttach(AddonAreaMap* addon) {
         var mapComponentNode = addon->GetNodeById(53);
         if (mapComponentNode is null) return;
@@ -102,7 +108,9 @@ public unsafe class MapOverlayController : IDisposable {
         if (clippingContainerNode is null) return;
         if (overlayNode is null) return;
 
-        if (showingTooltip && AgentMap.Instance()->IsControlKeyPressed) {
+        var agentMap = AgentMap.Instance();
+        
+        if (showingTooltip && agentMap->IsControlKeyPressed) {
             AtkStage.Instance()->TooltipManager.HideTooltip(addon->Id);
             showingTooltip = false;
         }
@@ -119,7 +127,7 @@ public unsafe class MapOverlayController : IDisposable {
         var mapComponent = areaMap.ComponentMap;
         if (mapComponent is null) return;
 
-        clippingContainerNode.IsVisible = !AgentMap.Instance()->IsControlKeyPressed;
+        clippingContainerNode.IsVisible = !agentMap->IsControlKeyPressed && IsVisible;
 
         clippingContainerNode.Size = mapComponent->OwnerNode->AtkResNode.Size;
         clippingContainerNode.Position = mapComponent->OwnerNode->AtkResNode.Position;
@@ -130,8 +138,18 @@ public unsafe class MapOverlayController : IDisposable {
         overlayNode.Scale = new Vector2(areaMap.MapScale, areaMap.MapScale);
         overlayNode.Size = new Vector2(2048.0f, 2048.0f);
 
-        var offset = new Vector2(areaMap.MapOffsetX, areaMap.MapOffsetY) + overlayNode.Size / 2.0f;
+        // Start with current position
+        var offset = new Vector2(areaMap.MapOffsetX, areaMap.MapOffsetY);
+
+        // Add map-specific offset
+        offset += new Vector2(agentMap->CurrentOffsetX, agentMap->CurrentOffsetY);
+
+        // Set object position relative to center of node
+        offset += overlayNode.Size / 2.0f;
+
+        // Scale to current Zoom Level
         offset *= mapComponent->MapScale;
+
         overlayNode.Position = center - offset - clippingContainerNode.Position;
 
         foreach (var marker in markerNodes) {
@@ -168,6 +186,7 @@ public unsafe class MapOverlayController : IDisposable {
                 Origin = (markerInfo.Size ?? new Vector2(16.0f, 16.0f)) / 2.0f,
                 Position = markerInfo.Position ?? new Vector2(1024.0f, 1024.0f),
                 TextTooltip = markerInfo.Tooltip ?? string.Empty,
+                AllowAnyMap = markerInfo.AllowAnyMap,
             };
     
             markerNodes.Add(newMarkerNode);
