@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Game.Addon.Events;
@@ -16,6 +16,7 @@ namespace KamiToolKit.Overlay.MapOverlay;
 public unsafe class MapOverlayController : IDisposable {
     private readonly AddonController<AddonAreaMap> mapController;
     private SimpleOverlayNode? clippingContainerNode;
+    private SimpleOverlayNode? flagContainerNode;
     private SimpleOverlayNode? overlayNode;
     private ViewportEventListener? viewportEventListener;
 
@@ -26,6 +27,8 @@ public unsafe class MapOverlayController : IDisposable {
 
     private readonly List<MapMarkerInfo> queuedMarkers = [];
     private readonly List<MapMarkerNode> queuedNodes = [];
+
+    private MapMarkerNode? flagNode;
 
     public bool IsVisible { get; set; } = true;
     
@@ -102,6 +105,16 @@ public unsafe class MapOverlayController : IDisposable {
         
         overlayNode = new SimpleOverlayNode();
         overlayNode.AttachNode(clippingContainerNode);
+        
+        flagContainerNode = new SimpleOverlayNode();
+        flagContainerNode.AttachNode(clippingContainerNode);
+
+        flagNode = new MapMarkerNode {
+            Size = new Vector2(32.0f, 32.0f),
+            IconId = 60561,
+            AllowAnyMap = true,
+        };
+        flagNode.AttachNode(flagContainerNode);
     }
 
     private void OnUpdate(AddonAreaMap* addon) {
@@ -141,8 +154,8 @@ public unsafe class MapOverlayController : IDisposable {
         // Start with current position
         var offset = new Vector2(areaMap.MapOffsetX, areaMap.MapOffsetY);
 
-        // Add map-specific offset
-        offset += new Vector2(agentMap->CurrentOffsetX, agentMap->CurrentOffsetY);
+        // Add map-specific offset using the selected map
+        offset += new Vector2(agentMap->SelectedOffsetX, agentMap->SelectedOffsetY);
 
         // Set object position relative to center of node
         offset += overlayNode.Size / 2.0f;
@@ -156,6 +169,8 @@ public unsafe class MapOverlayController : IDisposable {
             marker.Update();
             marker.Scale = Vector2.One / new Vector2(areaMap.MarkerPositionScaling, areaMap.MarkerPositionScaling);
         }
+
+        UpdateFlagNode(agentMap, areaMap);
     }
 
     private void OnDetach(AddonAreaMap* addon) {
@@ -174,7 +189,7 @@ public unsafe class MapOverlayController : IDisposable {
         overlayNode?.Dispose();
         overlayNode = null;
     }
-    
+
     private void ProcessQueues() {
         foreach (var markerInfo in queuedMarkers) {
             var newMarkerNode = new MapMarkerNode {
@@ -201,6 +216,23 @@ public unsafe class MapOverlayController : IDisposable {
         queuedNodes.Clear();
     }
 
+    private void UpdateFlagNode(AgentMap* agentMap, Atk2DAreaMap areaMap) {
+        if (overlayNode is null) return;
+
+        if (flagContainerNode is not null && flagNode is not null) {
+            flagContainerNode.Size = overlayNode.Size;
+            flagContainerNode.Scale = overlayNode.Scale;
+            flagContainerNode.Position = overlayNode.Position;
+
+            ref var flagMarker = ref agentMap->FlagMapMarkers[0];
+        
+            flagNode?.Position = new Vector2(flagMarker.XFloat, flagMarker.YFloat);
+            flagNode?.IsVisible = agentMap->FlagMarkerCount is not 0;
+            flagNode?.Update();
+            flagNode?.Scale = Vector2.One / new Vector2(areaMap.MarkerPositionScaling, areaMap.MarkerPositionScaling);
+        }
+    }
+
     private void OnViewportEvent(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
         switch (eventType) {
             case AtkEventType.MouseMove:
@@ -214,14 +246,18 @@ public unsafe class MapOverlayController : IDisposable {
     }
 
     private void ProcessMouseMove(AtkEventData* atkEventData) {
+        if (clippingContainerNode is null) return;
+        
         var mapAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("AreaMap");
         if (mapAddon is null) return;
+
+        if (RaptureAtkModule.Instance()->AtkCollisionManager.IntersectingAddon != mapAddon) return;
 
         var anyCollisions = false;
 
         if (!AgentMap.Instance()->IsControlKeyPressed) {
             foreach (var node in markerNodes) {
-                if (node.IsActuallyVisible() && node.CheckCollision(atkEventData)) {
+                if (node.IsActuallyVisible() && node.CheckCollision(atkEventData) && clippingContainerNode.CheckCollision(atkEventData)) {
                     node.ShowTextTooltip(node.TextTooltip);
                     showingTooltip = true;
                     anyCollisions = true;
