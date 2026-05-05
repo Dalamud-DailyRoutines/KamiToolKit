@@ -135,7 +135,10 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
                         IsControlDown = true,
                     };
 
-                    AtkStage.Instance()->AtkInputManager->TextInput->ProcessKeyShortcut(SeVirtualKey.A, &keyModifiers);
+                    var textInput = AtkStage.Instance()->AtkInputManager->TextInput;
+                    if (textInput == null) return;
+                    
+                    textInput->ProcessKeyShortcut(SeVirtualKey.A, &keyModifiers);
                 }, delayTicks: 1);
             }
         });
