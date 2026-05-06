@@ -22,17 +22,17 @@ public class ItemListItemNode : ListItemNode<Item>, IListItemNode {
         IconNode.AttachNode(this);
 
         LabelTextNode = new TextNode {
-            TextFlags = TextFlags.Ellipsis | TextFlags.Emboss,
+            TextFlags = TextFlags.Ellipsis | TextFlags.Edge,
             FontSize = 14,
             LineSpacing = 14,
             AlignmentType = AlignmentType.BottomLeft,
-            TextColor = ColorHelper.GetColor(8),
-            TextOutlineColor = ColorHelper.GetColor(7),
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(1),
         };
         LabelTextNode.AttachNode(this);
 
         SubLabelTextNode = new TextNode {
-            TextFlags = TextFlags.Ellipsis | TextFlags.Emboss,
+            TextFlags = TextFlags.Ellipsis | TextFlags.Edge,
             FontSize = 12,
             LineSpacing = 12,
             AlignmentType = AlignmentType.TopLeft,
@@ -71,8 +71,9 @@ public class ItemListItemNode : ListItemNode<Item>, IListItemNode {
     protected override void SetNodeData(Item itemData) {
         if (itemData.RowId is 0) return;
 
-        IconNode.IconId = itemData.Icon;
-        LabelTextNode.String = itemData.Name.ToString();
-        SubLabelTextNode.String = itemData.ItemSearchCategory.ValueNullable?.Name.ToString() ?? string.Empty;
+        IconNode.IconId           = itemData.Icon;
+        LabelTextNode.String      = itemData.Name.ToString();
+        SubLabelTextNode.String   = itemData.ItemSearchCategory.ValueNullable?.Name.ToString() ?? string.Empty;
+        CollisionNode.ItemTooltip = itemData.RowId;
     }
 }
