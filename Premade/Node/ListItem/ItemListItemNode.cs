@@ -22,22 +22,20 @@ public class ItemListItemNode : ListItemNode<Item>, IListItemNode {
         IconNode.AttachNode(this);
 
         LabelTextNode = new TextNode {
-            TextFlags = TextFlags.Ellipsis | TextFlags.Edge,
+            TextFlags = TextFlags.Ellipsis,
             FontSize = 14,
             LineSpacing = 14,
             AlignmentType = AlignmentType.BottomLeft,
-            TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(1),
+            TextColor = ColorHelper.GetColor(8),
         };
         LabelTextNode.AttachNode(this);
 
         SubLabelTextNode = new TextNode {
-            TextFlags = TextFlags.Ellipsis | TextFlags.Edge,
+            TextFlags = TextFlags.Ellipsis,
             FontSize = 12,
             LineSpacing = 12,
             AlignmentType = AlignmentType.TopLeft,
-            TextColor = ColorHelper.GetColor(3),
-            TextOutlineColor = ColorHelper.GetColor(7),
+            TextColor = ColorHelper.GetColor(3)
         };
         SubLabelTextNode.AttachNode(this);
 
