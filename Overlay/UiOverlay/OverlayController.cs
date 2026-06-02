@@ -169,7 +169,7 @@ public unsafe class OverlayController : IDisposable {
         if (!overlayNodes.TryGetValue(node.OverlayLayer, out var list)) return;
 
         if (list.Remove(node)) {
-            if (node.IsDisposed) continue;
+            if (node.IsDisposed) return;
             node.Dispose();
         }
     }
