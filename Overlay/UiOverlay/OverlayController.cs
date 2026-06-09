@@ -20,7 +20,6 @@ public unsafe class OverlayController : IDisposable {
     private ControllerState controllerState = ControllerState.WaitForNameplate;
 
     public OverlayController() {
-        ThreadSafety.AssertMainThread();
 
         ClearState();
 
@@ -37,7 +36,8 @@ public unsafe class OverlayController : IDisposable {
     }
 
     public void Dispose() {
-        ThreadSafety.AssertMainThread();
+        if (isDisposed)
+            return;
 
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "NamePlate");
         Services.AddonLifecycle.UnregisterListener(OnOverlayAddonFinalize, OnOverlayAddonUpdate);
@@ -48,6 +48,8 @@ public unsafe class OverlayController : IDisposable {
         }
 
         overlayNodes.Clear();
+
+        isDisposed = true;
     }
 
     //
@@ -146,7 +148,6 @@ public unsafe class OverlayController : IDisposable {
     //
 
     public void AddNode(OverlayNode node) {
-        ThreadSafety.AssertMainThread();
         if (node.IsDisposed) return;
 
         overlayNodes.TryAdd(node.OverlayLayer, []);
@@ -164,7 +165,6 @@ public unsafe class OverlayController : IDisposable {
     }
 
     public void RemoveNode(OverlayNode node) {
-        ThreadSafety.AssertMainThread();
 
         if (!overlayNodes.TryGetValue(node.OverlayLayer, out var list)) return;
 
@@ -175,7 +175,6 @@ public unsafe class OverlayController : IDisposable {
     }
 
     public void RemoveAllNodes() {
-        ThreadSafety.AssertMainThread();
 
         foreach (var node in overlayNodes.SelectMany(set => set.Value).ToList()) {
             RemoveNode(node);

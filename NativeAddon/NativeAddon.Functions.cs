@@ -17,8 +17,6 @@ public partial class NativeAddon {
     /// Initializes and Opens this instance of Addon
     /// </summary>
     public unsafe void Open() {
-        ThreadSafety.AssertMainThread();
-
         Services.Log.Verbose($"[{InternalName}] Open Called");
 
         if (InternalAddon is null) {
@@ -41,7 +39,6 @@ public partial class NativeAddon {
     /// This NativeAddon object will remain valid, you can call Open to re-allocate this addon.
     /// </summary>
     public unsafe void Close() {
-        ThreadSafety.AssertMainThread();
         if (InternalAddon is null) return;
 
         Services.Log.Verbose($"[{InternalName}] Close");

@@ -52,7 +52,6 @@ public unsafe class NativeListController<T, TU> : IDisposable where T : unmanage
     public readonly List<uint> ModifiedIndexes = [];
 
     public void Enable() {
-        ThreadSafety.AssertMainThread();
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, AddonName, OnAddonSetup);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, AddonName, OnAddonFinalize);
@@ -65,7 +64,6 @@ public unsafe class NativeListController<T, TU> : IDisposable where T : unmanage
     }
 
     public void Disable() {
-        ThreadSafety.AssertMainThread();
 
         Services.AddonLifecycle.UnregisterListener(OnAddonSetup, OnAddonFinalize);
 

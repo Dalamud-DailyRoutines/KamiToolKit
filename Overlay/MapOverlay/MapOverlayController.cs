@@ -34,7 +34,6 @@ public unsafe class MapOverlayController : IDisposable {
     public bool IsVisible { get; set; } = true;
 
     public MapOverlayController() {
-        ThreadSafety.AssertMainThread();
 
         mapController = new AddonController<AddonAreaMap> {
             AddonName = "AreaMap",
@@ -47,7 +46,6 @@ public unsafe class MapOverlayController : IDisposable {
     }
 
     public void Dispose() {
-        ThreadSafety.AssertMainThread();
 
         viewportEventListener?.Dispose();
         viewportEventListener = null;

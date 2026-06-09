@@ -44,11 +44,6 @@ public abstract unsafe partial class NodeBase : IDisposable {
                 return;
             }
 
-            if (!ThreadSafety.IsMainThread) {
-                LogIndented($"{GetType()}'s Dispose must be called from the main thread.");
-                return;
-            }
-
             isDisposed = true;
 
             if (!IsNodeValid()) {

@@ -28,7 +28,6 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
     }
 
     public void Enable() {
-        ThreadSafety.AssertMainThread();
         if (IsEnabled) return;
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, AddonName, OnAddonEvent);
@@ -61,7 +60,6 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
         => Disable();
 
     public void Disable() {
-        ThreadSafety.AssertMainThread();
         if (!IsEnabled) return;
 
         Services.AddonLifecycle.UnregisterListener(OnAddonEvent);

@@ -82,8 +82,6 @@ public static class KamiToolKitLibrary {
         if (Services.Framework.IsFrameworkUnloading) return;
 
         try {
-            if (!ThreadSafety.IsMainThread) return;
-
             NativeAddon.DisposeAddons();
             NodeBase.DisposeNodes();
         } finally {

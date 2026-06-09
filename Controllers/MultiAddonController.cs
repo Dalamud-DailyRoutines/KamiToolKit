@@ -70,7 +70,6 @@ public unsafe class MultiAddonController<T> : IAddonEventController<T>, IDisposa
         => OnPreUpdate?.Invoke(addon);
 
     public void Dispose() {
-        ThreadSafety.AssertMainThread();
 
         addonControllers.ForEach(controller => controller.Dispose());
         addonControllers.Clear();

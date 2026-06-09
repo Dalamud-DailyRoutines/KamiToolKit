@@ -31,8 +31,6 @@ public class AddonFactoryController : IDisposable {
     /// Enables the addon factory replacement.
     /// </summary>
     public unsafe void Enable() {
-        ThreadSafety.AssertMainThread();
-
         var factoryInfo = RaptureAtkModule.Instance()->GetAddonFactoryInfo(AddonName);
         if (factoryInfo is null) return;
 
@@ -45,7 +43,6 @@ public class AddonFactoryController : IDisposable {
     /// Disables addon factory replacement and disposes any open replaced addons.
     /// </summary>
     public unsafe void Disable() {
-        ThreadSafety.AssertMainThread();
 
         nativeAddon?.Dispose();
         nativeAddon = null;

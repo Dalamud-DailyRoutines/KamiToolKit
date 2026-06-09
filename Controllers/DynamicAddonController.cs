@@ -99,7 +99,6 @@ public unsafe class DynamicAddonController : IAddonEventController<AtkUnitBase>,
     }
 
     private void AddListeners(string name) {
-        ThreadSafety.AssertMainThread();
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, name, OnAddonEvent);
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, name, OnAddonEvent);
@@ -117,7 +116,6 @@ public unsafe class DynamicAddonController : IAddonEventController<AtkUnitBase>,
     }
 
     private void RemoveListeners(string name) {
-        ThreadSafety.AssertMainThread();
 
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, name, OnAddonEvent);
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, name, OnAddonEvent);
