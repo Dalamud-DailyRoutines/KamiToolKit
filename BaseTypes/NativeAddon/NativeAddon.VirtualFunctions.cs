@@ -205,6 +205,9 @@ public unsafe partial class NativeAddon {
     }
 
     private void Finalizer(AtkUnitBase* addon) {
+        if (isFinalized) return;
+        isFinalized = true;
+
         Services.Log.Verbose($"[{InternalName}] Finalize");
 
         try {
@@ -214,7 +217,7 @@ public unsafe partial class NativeAddon {
             Services.Log.Exception(e);
         }
 
-        if (RememberClosePosition) {
+        if (RememberClosePosition && InternalAddon is not null) {
             LastClosePosition = new Vector2(InternalAddon->X, InternalAddon->Y);
         }
 
@@ -228,6 +231,9 @@ public unsafe partial class NativeAddon {
         var result = originalVirtualTable->Dtor(addon, flags);
 
         if ((flags & 1) == 1) {
+            // Restore original virtual table so the game won't read a dangling pointer if it calls anything on this addon later.
+            addon->VirtualTable = originalVirtualTable;
+
             InternalAddon = null;
             disposeHandle?.Dispose();
             disposeHandle = null;
@@ -281,4 +287,5 @@ public unsafe partial class NativeAddon {
     }
 
     private bool isSetup;
+    private bool isFinalized;
 }
