@@ -213,6 +213,9 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         }
     }
 
+    /// <summary>
+    /// Constructs a new <see cref="TextInputNode"/>
+    /// </summary>
     public TextInputNode() {
         SetInternalComponentType(ComponentType.TextInput);
 
@@ -314,6 +317,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         CollisionNode.AddEvent(AtkEventType.FocusStop, OnInputFocusEnded);
     }
 
+    /// <inheritdoc />
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
 
@@ -325,6 +329,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         CurrentTextNode.Size = new Vector2(Width - 20.0f, Height - 10.0f);
     }
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
         if (disposing) {
             Component->Callback = null;

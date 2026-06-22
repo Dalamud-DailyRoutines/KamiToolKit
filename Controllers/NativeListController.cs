@@ -111,6 +111,7 @@ public unsafe class NativeListController<T, TU> : IDisposable where T : unmanage
         onRendererPopulate = null;
     }
 
+    /// <inheritdoc />
     public void Dispose()
         => Disable();
 

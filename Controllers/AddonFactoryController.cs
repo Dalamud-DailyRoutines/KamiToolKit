@@ -69,6 +69,7 @@ public class AddonFactoryController : IDisposable {
         originalFactoryCreateAddress = null;
     }
 
+    /// <inheritdoc />
     public void Dispose()
         => Disable();
 

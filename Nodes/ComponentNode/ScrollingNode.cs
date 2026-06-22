@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
+using KamiToolKit.Interfaces;
 
 namespace KamiToolKit.Nodes;
 
@@ -53,12 +54,15 @@ public class ScrollingNode<T> : ResNode where T : NodeBase, new() {
     /// Recalculates sizes to update scroll params correctly.
     /// </summary>
     public void RecalculateSizes() {
-        if (ContentNode is LayoutListNode layoutNode) {
+        if (ContentNode is ILayoutListNode layoutNode) {
             layoutNode.RecalculateLayout();
         }
         OnSizeChanged();
     }
 
+    /// <summary>
+    /// Constructs a new <see cref="ScrollingNode{T}"/>.
+    /// </summary>
     public unsafe ScrollingNode() {
         ClippingContentNode = new ResNode {
             NodeFlags = NodeFlags.AnchorTop | NodeFlags.AnchorLeft |
@@ -113,6 +117,7 @@ public class ScrollingNode<T> : ResNode where T : NodeBase, new() {
         );
     }
 
+    /// <inheritdoc />
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
 
