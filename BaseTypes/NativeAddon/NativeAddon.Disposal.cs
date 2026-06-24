@@ -85,9 +85,12 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
             addon.Dispose();
         }
 
+        // 必须对所有 addon (包括 OverlayAddon) 恢复 vtable
+        // OverlayAddon 虽然 intentionally leaked, 但其 modifiedVirtualTable 中的函数指针
+        // 指向 KTK 的 managed delegate, 程序集卸载后这些 delegate 失效
+        // Dalamud 的 AddonVirtualTable.OriginalVirtualTable 指向 KTK 的 modifiedVirtualTable
+        // 如果不恢复, Dalamud 调用时会跳转到已卸载的 managed delegate 导致崩溃
         foreach (var addon in addons) {
-            if (addon.IsOverlayAddon) continue;
-
             addon.RestoreVirtualTable();
         }
 

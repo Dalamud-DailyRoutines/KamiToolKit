@@ -65,9 +65,21 @@ public unsafe partial class NativeAddon {
         if (InternalAddon is null) return;
         if (modifiedVirtualTable is null) return;
 
-        InternalAddon->VirtualTable = originalVirtualTable;
+        // 将 modifiedVirtualTable 中的所有函数指针恢复为 originalVirtualTable 的内容
+        // Dalamud 的 AddonVirtualTable.OriginalVirtualTable 可能指向我们的 modifiedVirtualTable
+        // 程序集卸载后 managed delegate 失效, 必须将函数指针恢复为原始 native 函数
+        // 否则 Dalamud 通过 OriginalVirtualTable 调用会跳转到已卸载的 managed delegate 导致崩溃
+        NativeMemory.Copy(originalVirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
 
-        NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+        // 仅当 addon 当前仍使用我们的 modifiedVirtualTable 时才恢复
+        // 如果 Dalamud 已替换为它自己的 vtable, 不要覆盖, 让 Dalamud 正常管理
+        if (InternalAddon->VirtualTable == modifiedVirtualTable) {
+            InternalAddon->VirtualTable = originalVirtualTable;
+        }
+
+        // 不释放 modifiedVirtualTable, 因为 Dalamud 的 OriginalVirtualTable 可能指向它
+        // 释放会导致 Dalamud 持有悬空指针, 后续调用时崩溃
+        // 此处造成的少量内存泄漏仅插件重载时发生, 可接受
         modifiedVirtualTable = null;
 
         disposeHandle?.Dispose();
