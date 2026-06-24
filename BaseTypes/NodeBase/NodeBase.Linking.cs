@@ -74,10 +74,10 @@ public abstract unsafe partial class NodeBase {
         ThreadSafety.AssertMainThread();
         if (ResNode is null) return;
 
-        UnlinkFromNative();
         RemoveUldManagerObjectReferences();
-        RemoveParentAddonReferences();
         RemoveParentNodeReferences();
+        UnlinkFromNative();
+        RemoveParentAddonReferences();
     }
 
     private void PerformManagedAttach(NativeAddon? targetAddon, NodePosition targetPosition = NodePosition.AsLastChild) {
@@ -148,14 +148,34 @@ public abstract unsafe partial class NodeBase {
     }
 
     private void RemoveUldManagerObjectReferences() {
+        // If UldManager is null, try again to get the UldManager.
+        if (ParentUldManager is null) {
+            ParentUldManager = GetUldManagerForNode(this);
+        }
+
+        // If we still can't get it, it doesn't exist.
         if (ParentUldManager is null) return;
 
+        // Remove this node and all children from the UldManager's Objects List
         ParentUldManager->RemoveNodeFromObjectList(this);
         ParentUldManager = null;
     }
 
     private void RemoveParentAddonReferences() {
-        if (ParentAddon is null) return;
+        // If ParentAddon is null, try again to get it from RaptureAtkUnitManager
+        if (ParentAddon is null) {
+            ParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
+        }
+
+        // If it's still null, then it doesn't exist.
+        if (ParentAddon is null) {
+
+            // Ensure the children also know that they have no parents.
+            foreach (var child in GetAllChildren(this)) {
+                child.ParentAddon = null;
+            }
+            return;
+        }
 
         ParentAddon->UldManager.UpdateDrawNodeList();
         ParentAddon->UpdateCollisionNodeList(false);
@@ -177,10 +197,12 @@ public abstract unsafe partial class NodeBase {
     private void UpdateNative() {
         if (ResNode is null) return;
 
+        // Set this node and all children to dirty to have the
+        // game recalc their visible location.
         MarkDirty();
 
         if (ParentUldManager is null) {
-            ParentUldManager = GetUldManagerForNode(ResNode);
+            ParentUldManager = GetUldManagerForNode(this);
         }
 
         if (ParentUldManager is not null) {
@@ -239,6 +261,10 @@ public abstract unsafe partial class NodeBase {
         }
 
         // We failed to find a parent component, try to get a parent addon instead
+        if (ParentAddon is null) {
+            ParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(node);
+        }
+
         if (ParentAddon is not null) {
             return &ParentAddon->UldManager;
         }
