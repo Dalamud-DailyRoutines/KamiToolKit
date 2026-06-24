@@ -162,15 +162,25 @@ public abstract unsafe partial class NodeBase {
     }
 
     private void RemoveParentAddonReferences() {
-        // If ParentAddon is null, try again to get it from RaptureAtkUnitManager
         if (ParentAddon is null) {
             ParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
         }
 
-        // If it's still null, then it doesn't exist.
-        if (ParentAddon is null) {
+        if (ParentAddon is not null) {
+            var unitManager = RaptureAtkUnitManager.Instance();
+            ref var loadedList = ref unitManager->AllLoadedUnitsList;
+            var isAlive = false;
+            for (var i = 0; i < loadedList.Count; i++) {
+                if (loadedList.Entries[i].Value == ParentAddon) {
+                    isAlive = true;
+                    break;
+                }
+            }
+            if (!isAlive)
+                ParentAddon = null;
+        }
 
-            // Ensure the children also know that they have no parents.
+        if (ParentAddon is null) {
             foreach (var child in GetAllChildren(this)) {
                 child.ParentAddon = null;
             }
