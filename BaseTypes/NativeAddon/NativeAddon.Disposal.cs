@@ -77,10 +77,18 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
     }
 
     internal static void DisposeAddons() {
-        foreach (var addon in CreatedAddons.ToArray()) {
+        var addons = CreatedAddons.ToArray();
+
+        foreach (var addon in addons) {
             if (addon.IsOverlayAddon) continue;
 
             addon.Dispose();
+        }
+
+        foreach (var addon in addons) {
+            if (addon.IsOverlayAddon) continue;
+
+            addon.RestoreVirtualTable();
         }
 
         CreatedAddons.Clear();

@@ -95,6 +95,7 @@ public static class KamiToolKitLibrary {
         try {
             NativeAddon.DisposeAddons();
             NodeBase.DisposeNodes();
+            NodeBase.RestoreAllNodeVirtualTables();
         } finally {
             Services.PluginInterface.RelinquishData(NodeDataShareKey);
         }

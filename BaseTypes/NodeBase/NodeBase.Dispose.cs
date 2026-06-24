@@ -148,6 +148,12 @@ public abstract unsafe partial class NodeBase : IDisposable {
         }
     }
 
+    internal static void RestoreAllNodeVirtualTables() {
+        foreach (var node in CreatedNodes.ToArray()) {
+            node.RestoreNodeVirtualTable();
+        }
+    }
+
     /// <summary>
     /// Dispose associated resources. If a resource modifies native state directly guard it with isNativeDestructor
     /// </summary>
@@ -193,6 +199,16 @@ public abstract unsafe partial class NodeBase : IDisposable {
 
         // Replace native destructor with
         modifiedVirtualTable->Destroy = (delegate* unmanaged<AtkResNode*, bool, void>)Marshal.GetFunctionPointerForDelegate(destroyFunction);
+    }
+
+    internal void RestoreNodeVirtualTable() {
+        if (modifiedVirtualTable is null) return;
+        if (ResNode is null) return;
+
+        ResNode->VirtualTable = originalVirtualTable;
+
+        NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
+        modifiedVirtualTable = null;
     }
 
     /// <summary>

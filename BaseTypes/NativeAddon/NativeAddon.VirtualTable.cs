@@ -60,4 +60,19 @@ public unsafe partial class NativeAddon {
         modifiedVirtualTable->OnRefresh = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, bool>)Marshal.GetFunctionPointerForDelegate(onRefreshFunction);
         modifiedVirtualTable->OnScreenSizeChange = (delegate* unmanaged<AtkUnitBase*, int, int, void>)Marshal.GetFunctionPointerForDelegate(onScreenSizeChangedFunction);
     }
+
+    internal void RestoreVirtualTable() {
+        if (InternalAddon is null) return;
+        if (modifiedVirtualTable is null) return;
+
+        InternalAddon->VirtualTable = originalVirtualTable;
+
+        NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+        modifiedVirtualTable = null;
+
+        disposeHandle?.Dispose();
+        disposeHandle = null;
+
+        InternalAddon = null;
+    }
 }

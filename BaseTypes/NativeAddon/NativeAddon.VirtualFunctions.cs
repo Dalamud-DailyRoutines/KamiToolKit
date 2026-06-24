@@ -241,6 +241,7 @@ public unsafe partial class NativeAddon {
 
             // Free our custom virtual table, the game doesn't know this exists and won't clear it on its own.
             NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+            modifiedVirtualTable = null;
         }
 
         return result;
