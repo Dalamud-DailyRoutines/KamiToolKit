@@ -14,19 +14,20 @@ public class HoldButtonProgressNode : ResNode {
     /// <summary>
     /// Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
-    public ImageNode ImageNode { get; }
+    public SimpleNineGridNode ImageNode { get; }
 
     /// <summary>
     /// Constructs a new <see cref="HoldButtonProgressNode"/>
     /// </summary>
     public HoldButtonProgressNode() {
-        ImageNode = new SimpleImageNode {
+        ImageNode = new SimpleNineGridNode {
             NodeId = 4,
             TexturePath = "ui/uld/LongPressButtonA.tex",
             TextureCoordinates = new Vector2(0.0f, 36.0f),
             TextureSize = new Vector2(100.0f, 36.0f),
             Size = new Vector2(0.0f, 36.0f),
-            WrapMode = WrapMode.Tile,
+            LeftOffset = 16.0f,
+            RightOffset = 16.0f,
         };
         ImageNode.AttachNode(this);
 

@@ -1,6 +1,7 @@
-﻿using System;
+﻿﻿using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
@@ -75,8 +76,8 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
             TextureCoordinates = new Vector2(0.0f, 0.0f),
             TextureSize = new Vector2(100.0f, 36.0f),
             Size = new Vector2(100.0f, 36.0f),
-            LeftOffset = 16,
-            RightOffset = 16,
+            LeftOffset = 16.0f,
+            RightOffset = 16.0f,
         };
         BackgroundNode.AttachNode(this);
 
@@ -90,6 +91,8 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
             TextureCoordinates = new Vector2(0.0f, 72.0f),
             TextureSize = new Vector2(100.0f, 36.0f),
             Size = new Vector2(100.0f, 36.0f),
+            LeftOffset = 16.0f,
+            RightOffset = 16.0f,
         };
         FrameNode.AttachNode(this);
 
@@ -97,6 +100,7 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
             Position = new Vector2(16.0f, 8.0f),
             Size = new Vector2(68.0f, 20.0f),
             AlignmentType = AlignmentType.Center,
+            TextColor = ColorHelper.GetColor(50),
             String = "OK",
         };
         TextNode.AttachNode(this);
@@ -111,6 +115,17 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
         AddEvent(AtkEventType.ButtonClick, ClickHandler);
 
         BuildTimelines();
+    }
+
+    /// <inheritdoc />
+    protected override void OnSizeChanged() {
+        base.OnSizeChanged();
+
+        BackgroundNode.Size = Size;
+        FrameNode.Size = Size;
+        ProgressNode.Size = Size;
+        ProgressNode.ImageNode.Height = Height;
+        TextNode.Size = new Vector2(Width - 32.0f, Height - 16.0f);
     }
 
     private void ClickHandler() {
