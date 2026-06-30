@@ -322,5 +322,5 @@ public abstract unsafe partial class NodeBase {
     private NodeBase? parentNode;
 
     internal AtkUldManager* ParentUldManager { get; set; }
-    internal AtkUnitBase* ParentAddon { get; private set; }
+    public AtkUnitBase* ParentAddon { get; private set; }
 }

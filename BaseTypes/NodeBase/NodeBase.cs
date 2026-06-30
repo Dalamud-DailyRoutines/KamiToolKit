@@ -66,5 +66,5 @@ public abstract unsafe class NodeBase<T> : NodeBase where T : unmanaged, ICreata
         }
     }
 
-    internal sealed override AtkResNode* ResNode => (AtkResNode*)Node;
+    public sealed override AtkResNode* ResNode => (AtkResNode*)Node;
 }

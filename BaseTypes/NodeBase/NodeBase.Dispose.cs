@@ -105,7 +105,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
     internal const uint NodeIdBase = 100_000_000;
     internal static uint CurrentOffset;
 
-    internal abstract AtkResNode* ResNode { get; }
+    public abstract AtkResNode* ResNode { get; }
     internal bool IsAddonRootNode;
 
     private static int logIndent = -1;
