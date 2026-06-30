@@ -339,7 +339,7 @@ public unsafe class DropDownNode<T> : SimpleComponentNode {
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
-        if (disposing && !IsDisposed) {
+        if (disposing) {
             if (isFocusSet && !isNativeDestructor) {
                 if (ParentAddon is not null) {
                     ClearFocusable(ParentAddon);

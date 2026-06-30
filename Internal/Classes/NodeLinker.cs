@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
 
@@ -87,10 +87,6 @@ internal static unsafe class NodeLinker {
         if (previous is not null) {
             EmplaceBefore(node, previous);
         }
-
-        if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component) {
-            attachTargetNode->ParentNode->ChildCount++;
-        }
     }
 
     private static void EmplaceAfterSiblings(AtkResNode* node, AtkResNode* attachTargetNode) {
@@ -104,10 +100,6 @@ internal static unsafe class NodeLinker {
 
         if (previous is not null) {
             EmplaceAfter(node, previous);
-        }
-
-        if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component) {
-            attachTargetNode->ParentNode->ChildCount++;
         }
     }
 

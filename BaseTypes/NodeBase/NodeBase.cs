@@ -40,7 +40,7 @@ public abstract unsafe class NodeBase<T> : NodeBase where T : unmanaged, ICreata
         BuildVirtualTable();
 
         ResNode->Type = nodeType;
-        ResNode->NodeId = NodeIdBase + CurrentOffset++;
+        ResNode->NodeId = NODE_ID_BASE + CurrentOffset++;
         ResNode->ToggleVisibility(true);
 
         CreatedNodes.Add(this);
@@ -48,7 +48,7 @@ public abstract unsafe class NodeBase<T> : NodeBase where T : unmanaged, ICreata
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
-        if (disposing && !IsDisposed) {
+        if (disposing) {
             try {
                 base.Dispose(disposing, isNativeDestructor);
             }

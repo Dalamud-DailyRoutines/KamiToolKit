@@ -30,9 +30,9 @@ public abstract unsafe partial class NodeBase : IDisposable {
     protected static List<NodeBase> CreatedNodes { get; } = [];
 
     /// <summary>
-    /// Indicates whether this instance has already been disposed.
+    /// Indicates whether this instance has been disposed or is in the process of being disposed.
     /// </summary>
-    protected bool IsDisposed { get; private set; }
+    protected bool IsDisposed => disposeState is not DisposeState.Alive;
 
     /// <summary>
     /// Disposes this instance. Has double dispose guards.
@@ -41,27 +41,19 @@ public abstract unsafe partial class NodeBase : IDisposable {
     /// Must be invoked from the main game thread.
     /// </remarks>
     public void Dispose() {
+        if (disposeState is not DisposeState.Alive) return;
+
         try {
             logIndent++;
             LogIndented($"Beginning Dispose for {GetType()}", true);
             logIndent++;
-
-            if (IsDisposed) {
-                LogIndented("Node was already disposed, skipping.", EnableFullLogging);
-                return;
-            }
 
             if (Services.Framework.IsFrameworkUnloading) {
                 LogIndented("Game is shutting down, aborting manual dispose.", EnableFullLogging);
                 return;
             }
 
-            if (!ThreadSafety.IsMainThread) {
-                LogIndented($"{GetType()}'s Dispose must be called from the main thread.", EnableFullLogging);
-                return;
-            }
-
-            IsDisposed = true;
+            disposeState = DisposeState.Disposing;
 
             if (!IsNodeValid()) {
                 Services.Log.Warning("Invalid node, dispose aborted.");
@@ -86,6 +78,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
 
             LogIndented("Disposing Timeline", EnableFullLogging);
             Timeline?.Dispose();
+            Timeline = null;
             ResNode->Timeline = null;
 
             LogIndented("Invoking Native Dispose", EnableFullLogging);
@@ -96,16 +89,21 @@ public abstract unsafe partial class NodeBase : IDisposable {
         catch (Exception e) {
             Services.Log.Exception(e);
         } finally {
+            if (disposeState is DisposeState.Disposing) {
+                disposeState = DisposeState.Disposed;
+            }
             logIndent--;
             LogIndented("Dispose Complete", true);
             logIndent--;
         }
     }
 
-    internal const uint NodeIdBase = 100_000_000;
+    internal const uint NODE_ID_BASE = 100_000_000;
+
     internal static uint CurrentOffset;
 
     public abstract AtkResNode* ResNode { get; }
+
     internal bool IsAddonRootNode;
 
     private static int logIndent = -1;
@@ -114,6 +112,14 @@ public abstract unsafe partial class NodeBase : IDisposable {
 
     private AtkResNode.AtkResNodeVirtualTable* originalVirtualTable;
     private AtkResNode.AtkResNodeVirtualTable* modifiedVirtualTable;
+
+    private DisposeState disposeState;
+
+    private enum DisposeState : byte {
+        Alive = 0,
+        Disposing = 1,
+        Disposed = 2,
+    }
 
     private static void LogIndented(string message, bool enableLogging) {
         if (!enableLogging) return;
@@ -153,7 +159,12 @@ public abstract unsafe partial class NodeBase : IDisposable {
 
     internal static void RestoreAllNodeVirtualTables() {
         foreach (var node in CreatedNodes.ToArray()) {
-            node.RestoreNodeVirtualTable();
+            try {
+                node.RestoreNodeVirtualTable();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
         }
     }
 
@@ -208,6 +219,10 @@ public abstract unsafe partial class NodeBase : IDisposable {
         if (modifiedVirtualTable is null) return;
         if (ResNode is null) return;
 
+        Timeline?.Dispose();
+        Timeline = null;
+        ResNode->Timeline = null;
+
         ResNode->VirtualTable = originalVirtualTable;
 
         NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
@@ -218,18 +233,29 @@ public abstract unsafe partial class NodeBase : IDisposable {
     /// Pinned managed function that is used to replace the native virtual tables dtor function pointer.
     /// </summary>
     protected void Destroy(AtkResNode* thisPtr, bool free) {
+        if (disposeState is not DisposeState.Alive) return;
+        disposeState = DisposeState.Disposing;
+
+        Timeline?.Dispose();
+        Timeline = null;
+        thisPtr->Timeline = null;
+
         Dispose(true, true);
+
+        thisPtr->VirtualTable = originalVirtualTable;
 
         originalVirtualTable->Destroy(thisPtr, free);
 
-        NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
-        modifiedVirtualTable = null;
+        if (modifiedVirtualTable is not null) {
+            NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
+            modifiedVirtualTable = null;
+        }
 
         Services.Log.Verbose($"Native has disposed node {GetType()}");
         GC.SuppressFinalize(this);
         CreatedNodes.Remove(this);
 
-        IsDisposed = true;
+        disposeState = DisposeState.Disposed;
     }
 
     // To be invoked from NodeBase.Dispose(bool, bool).
@@ -240,15 +266,17 @@ public abstract unsafe partial class NodeBase : IDisposable {
     /// This is intended to be used from <see cref="NodeBase"/> after the managed disposal functions have been invoked.
     /// </remarks>
     protected void OriginalDestroy(AtkResNode* thisPtr, bool free) {
+        thisPtr->VirtualTable = originalVirtualTable;
+
         originalVirtualTable->Destroy(thisPtr, free);
 
-        NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
-        modifiedVirtualTable = null;
+        if (modifiedVirtualTable is not null) {
+            NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
+            modifiedVirtualTable = null;
+        }
 
         GC.SuppressFinalize(this);
         CreatedNodes.Remove(this);
-
-        IsDisposed = true;
     }
 
     /// <summary>

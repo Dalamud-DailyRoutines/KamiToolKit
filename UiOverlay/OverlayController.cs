@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.Addon.Lifecycle;
@@ -28,8 +28,6 @@ public unsafe class OverlayController : IDisposable {
     /// The added node is then owned by the overlay.
     /// </remarks>
     public void AddNode(OverlayNode node) {
-        ThreadSafety.AssertMainThread();
-
         overlayNodes.TryAdd(node.OverlayLayer, []);
 
         if (overlayNodes[node.OverlayLayer].Contains(node)) return;
@@ -53,8 +51,6 @@ public unsafe class OverlayController : IDisposable {
     /// This must be done from the main game thread.
     /// </remarks>
     public void RemoveNode(OverlayNode node) {
-        ThreadSafety.AssertMainThread();
-
         if (!overlayNodes.TryGetValue(node.OverlayLayer, out var list)) return;
 
         if (list.Remove(node)) {
@@ -71,8 +67,6 @@ public unsafe class OverlayController : IDisposable {
     /// Must be done from the main game thread.
     /// </remarks>
     public void RemoveAllNodes() {
-        ThreadSafety.AssertMainThread();
-
         foreach (var node in overlayNodes.SelectMany(set => set.Value).ToList()) {
             RemoveNode(node);
         }
@@ -82,8 +76,6 @@ public unsafe class OverlayController : IDisposable {
     /// Must be constructed from the main game thread
     /// </remarks>
     public OverlayController() {
-        ThreadSafety.AssertMainThread();
-
         ClearState();
 
         Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "NamePlate", OnNamePlatePreFinalize);
@@ -100,14 +92,13 @@ public unsafe class OverlayController : IDisposable {
 
     /// <inheritdoc />
     public void Dispose() {
-        ThreadSafety.AssertMainThread();
-
         Services.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, "NamePlate");
         Services.AddonLifecycle.UnregisterListener(OnOverlayAddonFinalize, OnOverlayAddonUpdate);
 
         foreach (var (overlayLayer, nodes) in overlayNodes) {
             Services.Log.Debug($"Disposing overlay nodes for layer {overlayLayer}");
             foreach (var node in nodes) {
+                node.DetachNode();
                 node.Dispose();
             }
 

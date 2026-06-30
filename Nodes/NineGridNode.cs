@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -116,7 +116,7 @@ public unsafe class NineGridNode : NodeBase<AtkNineGridNode> {
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
-        if (disposing && !IsDisposed) {
+        if (disposing) {
             if (!isNativeDestructor) {
                 PartsList.Dispose();
                 Node->PartsList = null;

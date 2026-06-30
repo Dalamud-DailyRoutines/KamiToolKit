@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Numerics;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -90,7 +90,7 @@ public unsafe class AlphaBarNode : ResNode {
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
-        if (disposing && !IsDisposed) {
+        if (disposing) {
             base.Dispose(disposing, isNativeDestructor);
 
             alphaEventListener.Dispose();

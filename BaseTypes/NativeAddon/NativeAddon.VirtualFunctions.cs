@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
@@ -221,6 +221,14 @@ public unsafe partial class NativeAddon {
             LastClosePosition = new Vector2(InternalAddon->X, InternalAddon->Y);
         }
 
+        if (RootNode is not null && RootNode.ResNode is not null) {
+            RootNode.Timeline?.Dispose();
+            RootNode.Timeline = null;
+            RootNode.ResNode->Timeline = null;
+        }
+
+        ClearTimelineManager(addon);
+
         originalVirtualTable->Finalizer(addon);
         isSetup = false;
     }
@@ -244,6 +252,8 @@ public unsafe partial class NativeAddon {
                 NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
                 modifiedVirtualTable = null;
             }
+
+            disposeState = AddonDisposeState.Disposed;
         }
 
         return result;

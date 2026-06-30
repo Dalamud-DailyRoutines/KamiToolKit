@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
 
@@ -7,6 +8,10 @@ namespace KamiToolKit.BaseTypes;
 public unsafe partial class NativeAddon {
 
     private const int VirtualTableEntryCount = 200;
+
+    private static void ClearTimelineManager(AtkUnitBase* addon) {
+        addon->UldManager.TimelineManager = null;
+    }
 
     private AtkUnitBase.Delegates.Dtor destructorFunction = null!;
     private AtkUnitBase.Delegates.Draw drawFunction = null!;
@@ -65,14 +70,25 @@ public unsafe partial class NativeAddon {
         if (InternalAddon is null) return;
         if (modifiedVirtualTable is null) return;
 
-        // 将 modifiedVirtualTable 中的所有函数指针恢复为 originalVirtualTable 的内容
-        // Dalamud 的 AddonVirtualTable.OriginalVirtualTable 可能指向我们的 modifiedVirtualTable
-        // 程序集卸载后 managed delegate 失效, 必须将函数指针恢复为原始 native 函数
-        // 否则 Dalamud 通过 OriginalVirtualTable 调用会跳转到已卸载的 managed delegate 导致崩溃
+        if (RootNode is not null && RootNode.ResNode is not null) {
+            RootNode.Timeline?.Dispose();
+            RootNode.Timeline = null;
+            RootNode.ResNode->Timeline = null;
+        }
+
+        ClearTimelineManager(InternalAddon);
+
+        if (RootNode is not null) {
+            try {
+                RootNode.RestoreNodeVirtualTable();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
+        }
+
         NativeMemory.Copy(originalVirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
 
-        // 仅当 addon 当前仍使用我们的 modifiedVirtualTable 时才恢复
-        // 如果 Dalamud 已替换为它自己的 vtable, 不要覆盖, 让 Dalamud 正常管理
         if (InternalAddon->VirtualTable == modifiedVirtualTable) {
             InternalAddon->VirtualTable = originalVirtualTable;
         }

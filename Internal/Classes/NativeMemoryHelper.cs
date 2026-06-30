@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 
@@ -12,11 +12,11 @@ internal static class NativeMemoryHelper {
         var allocSize = (ulong)sizeof(T) * elementCount;
         var memory = (T*)IMemorySpace.GetUISpace()->Malloc(allocSize, alignment);
 
-        IMemorySpace.Memset(memory, 0, allocSize);
-
         if (memory is null) {
             throw new Exception($"Unable to allocate memory for {typeof(T)}");
         }
+
+        IMemorySpace.Memset(memory, 0, allocSize);
 
         return memory;
     }

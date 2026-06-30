@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿﻿using System.IO;
 using System.Threading.Tasks;
 using Dalamud.Interface.Textures.TextureWraps;
 using KamiToolKit.Classes;
@@ -81,7 +81,7 @@ public class ImGuiImageNode : SimpleImageNode {
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
-        if (disposing && !IsDisposed) {
+        if (disposing) {
             base.Dispose(disposing, isNativeDestructor);
 
             if (LoadedTexture is not null) {

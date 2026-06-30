@@ -32,7 +32,6 @@ public unsafe class MapOverlayController : IDisposable {
     /// Must be called from the main thread.
     /// </remarks>
     public void Enable() {
-        ThreadSafety.AssertMainThread();
         mapController.Enable();
     }
 
@@ -43,7 +42,6 @@ public unsafe class MapOverlayController : IDisposable {
     /// Must be called from the main thread.
     /// </remarks>
     public void Disable() {
-        ThreadSafety.AssertMainThread();
         mapController.Disable();
     }
 
@@ -111,8 +109,6 @@ public unsafe class MapOverlayController : IDisposable {
     /// Must be called from the main thread.
     /// </remarks>
     public void Dispose() {
-        ThreadSafety.AssertMainThread();
-
         Disable();
 
         viewportEventListener?.Dispose();
