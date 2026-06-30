@@ -87,7 +87,7 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
     /// <summary>
     /// Function is called on any click-drag of the scrollbar, or direct mousewheel on the scrollbar.
     /// </summary>
-    private void OnScrollUpdate(int newPosition) {
+    private unsafe void OnScrollUpdate(int newPosition) {
         var remainingPosition = (float) newPosition;
         var scrollOffset = 0;
 
@@ -114,6 +114,10 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
                 scrollOffset++;
             }
         }
+
+        if (ParentAddon is not null) {
+            ParentAddon->UpdateCollisionNodeList(false);
+        }
     }
 
     /// <summary>
@@ -138,10 +142,14 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
         }
 
         scrollPosition += atkEventData->IsScrollUp ? -1 : 1;
-        scrollPosition = Math.Clamp(scrollPosition, 0, numValidOptions - Math.Max(HeaderNodes.Count, EntryNodes.Count) + 1);
-        ScrollBarNode.ScrollPosition = (int) ( (float) scrollPosition / numValidOptions * GetTotalOffscreenHeight());
+        scrollPosition = Math.Clamp(scrollPosition, 0, numValidOptions - Math.Min(HeaderNodes.Count, EntryNodes.Count));
+        ScrollBarNode.ScrollPosition = (float) scrollPosition / numValidOptions * GetTotalOffscreenHeight();
 
         PopulateNodes();
+
+        if (ParentAddon is not null) {
+            ParentAddon->UpdateCollisionNodeList(false);
+        }
 
         atkEvent->SetEventIsHandled();
     }
@@ -217,11 +225,13 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
         var entryIndex = 0;
 
         HeaderNodes.ForEach(node => {
+            node.Y = 0.0f;
             node.IsVisible = false;
             node.Height = 0.0f;
         });
 
         EntryNodes.ForEach(node => {
+            node.Y = 0.0f;
             node.IsVisible = false;
             node.Height = 0.0f;
         });
@@ -252,10 +262,18 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
             }
 
             if (isCollapsed) continue;
+            var isBreaking = false;
 
             foreach (var entry in entries) {
-                if (entryIndex > EntryNodes.Count) break;
-                if (position + itemHeight + ItemSpacing > Height) break;
+                if (entryIndex > EntryNodes.Count) {
+                    isBreaking = true;
+                    break;
+                }
+
+                if (position + itemHeight + ItemSpacing > Height) {
+                    isBreaking = true;
+                    break;
+                }
 
                 if (scrollSkips is 0 || scrollSkips-- <= 0) {
                     var entryNode = EntryNodes[entryIndex];
@@ -269,6 +287,10 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
                     entryNode.Y = position;
                     position += entryNode.Height + ItemSpacing;
                 }
+            }
+
+            if (isBreaking) {
+                break;
             }
         }
 

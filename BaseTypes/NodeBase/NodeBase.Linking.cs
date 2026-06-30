@@ -71,7 +71,6 @@ public abstract unsafe partial class NodeBase {
     /// <em>Do not call this immediately before calling dispose!</em>
     /// </remarks>
     public void DetachNode() {
-        ThreadSafety.AssertMainThread();
         if (ResNode is null) return;
 
         UnlinkFromNative();
@@ -90,6 +89,11 @@ public abstract unsafe partial class NodeBase {
     }
 
     private void PerformManagedAttach(NodeBase? targetNode, NodePosition targetPosition) {
+        if (this == targetNode) {
+            Services.Log.Warning("Attempted to attach self to self, attach was aborted.");
+            return;
+        }
+
         if (targetNode is null) return;
 
         PerformNativeAttach(targetNode, targetPosition);
@@ -99,6 +103,11 @@ public abstract unsafe partial class NodeBase {
     }
 
     private void PerformNativeAttach(AtkResNode* targetNode, NodePosition targetPosition) {
+        if (ResNode == targetNode) {
+            Services.Log.Warning("Attempted to attach self to self, attach was aborted.");
+            return;
+        }
+
         if (targetNode is null) return;
 
         if (targetNode->GetNodeType() is NodeType.Component) {
@@ -134,6 +143,11 @@ public abstract unsafe partial class NodeBase {
     }
 
     internal void ReattachNode(AtkResNode* newTarget) {
+        if (ResNode == newTarget) {
+            Services.Log.Warning("Attempted to attach self to self, attach was aborted.");
+            return;
+        }
+
         if (newTarget is null) return;
 
         DetachNode();
