@@ -72,29 +72,30 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
         SetInternalComponentType(ComponentType.HoldButton);
 
         BackgroundNode = new SimpleNineGridNode {
-            TexturePath = "ui/uld/LongPressButtonA.tex",
-            TextureCoordinates = new Vector2(0.0f, 0.0f),
-            TextureSize = new Vector2(100.0f, 36.0f),
-            Size = new Vector2(100.0f, 36.0f),
-            LeftOffset = 16.0f,
-            RightOffset = 16.0f,
+            TexturePath        = "ui/uld/LongPressButtonA.tex",
+            TextureCoordinates = new Vector2(0.0f,   0.0f),
+            TextureSize        = new Vector2(100.0f, 36.0f),
+            Size               = new Vector2(100.0f, 36.0f),
+            LeftOffset         = 16.0f,
+            RightOffset        = 16.0f,
         };
         BackgroundNode.AttachNode(this);
 
+        FrameNode = new SimpleNineGridNode {
+            TexturePath        = "ui/uld/LongPressButtonA.tex",
+            TextureCoordinates = new Vector2(0.0f,   72.0f),
+            TextureSize        = new Vector2(100.0f, 36.0f),
+            Size               = new Vector2(100.0f, 36.0f),
+            LeftOffset         = 16.0f,
+            RightOffset        = 16.0f,
+        };
+        FrameNode.AttachNode(this);
+
         ProgressNode = new HoldButtonProgressNode {
+            Position = new Vector2(0.0f, -1.0f),
             Size = new Vector2(100.0f, 36.0f),
         };
         ProgressNode.AttachNode(this);
-
-        FrameNode = new SimpleNineGridNode {
-            TexturePath = "ui/uld/LongPressButtonA.tex",
-            TextureCoordinates = new Vector2(0.0f, 72.0f),
-            TextureSize = new Vector2(100.0f, 36.0f),
-            Size = new Vector2(100.0f, 36.0f),
-            LeftOffset = 16.0f,
-            RightOffset = 16.0f,
-        };
-        FrameNode.AttachNode(this);
 
         TextNode = new TextNode {
             Position = new Vector2(16.0f, 8.0f),
