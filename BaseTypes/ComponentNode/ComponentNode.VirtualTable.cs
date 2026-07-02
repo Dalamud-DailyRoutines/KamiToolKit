@@ -63,4 +63,27 @@ public abstract unsafe partial class ComponentNode {
         modifiedVirtualTable->GetFocusNode = (delegate* unmanaged<AtkComponentBase*, AtkResNode*>) Marshal.GetFunctionPointerForDelegate(getFocusNodeFunction);
         modifiedVirtualTable->InitializeFromComponentData = (delegate* unmanaged<AtkComponentBase*, void*, void>) Marshal.GetFunctionPointerForDelegate(initializeFromComponentData);
     }
+
+    private void RestoreComponentVirtualTable() {
+        if (modifiedVirtualTable is null) return;
+
+        if (ResNode is not null) {
+            try {
+                if (ComponentBase is not null && ComponentBase->VirtualTable == modifiedVirtualTable) {
+                    ComponentBase->VirtualTable = originalVirtualTable;
+                }
+            }
+            catch {
+                // ignored
+            }
+        }
+
+        NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+        modifiedVirtualTable = null;
+    }
+
+    internal override void RestoreNodeVirtualTable() {
+        base.RestoreNodeVirtualTable();
+        RestoreComponentVirtualTable();
+    }
 }

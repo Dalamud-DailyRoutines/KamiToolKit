@@ -215,7 +215,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
         modifiedVirtualTable->Destroy = (delegate* unmanaged<AtkResNode*, bool, void>)Marshal.GetFunctionPointerForDelegate(destroyFunction);
     }
 
-    internal void RestoreNodeVirtualTable() {
+    internal virtual void RestoreNodeVirtualTable() {
         if (modifiedVirtualTable is null) return;
         if (ResNode is null) return;
 
