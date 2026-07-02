@@ -173,6 +173,7 @@ public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unma
             catch (Exception e) {
                 Services.Log.Exception(e);
             } finally {
+                RestoreComponentVirtualTable();
                 base.Dispose(disposing, isNativeDestructor);
             }
         }

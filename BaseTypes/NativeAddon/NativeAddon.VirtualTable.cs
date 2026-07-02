@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
@@ -71,9 +71,15 @@ public unsafe partial class NativeAddon {
         if (modifiedVirtualTable is null) return;
 
         if (RootNode is not null && RootNode.ResNode is not null) {
-            RootNode.Timeline?.Dispose();
+            var timeline = RootNode.Timeline;
             RootNode.Timeline = null;
             RootNode.ResNode->Timeline = null;
+            try {
+                timeline?.Dispose();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
         }
 
         ClearTimelineManager(InternalAddon);

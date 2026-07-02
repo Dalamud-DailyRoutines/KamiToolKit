@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using KamiToolKit.Internal.Classes;
@@ -79,11 +79,21 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
         foreach (var addon in addons) {
             if (addon.IsOverlayAddon) continue;
 
-            addon.Dispose();
+            try {
+                addon.Dispose();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
         }
 
         foreach (var addon in addons) {
-            addon.RestoreVirtualTable();
+            try {
+                addon.RestoreVirtualTable();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
         }
 
         CreatedAddons.Clear();

@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
@@ -222,9 +222,15 @@ public unsafe partial class NativeAddon {
         }
 
         if (RootNode is not null && RootNode.ResNode is not null) {
-            RootNode.Timeline?.Dispose();
+            var timeline = RootNode.Timeline;
             RootNode.Timeline = null;
             RootNode.ResNode->Timeline = null;
+            try {
+                timeline?.Dispose();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
         }
 
         ClearTimelineManager(addon);

@@ -77,9 +77,15 @@ public abstract unsafe partial class NodeBase : IDisposable {
             DetachNode();
 
             LogIndented("Disposing Timeline", EnableFullLogging);
-            Timeline?.Dispose();
+            var timeline = Timeline;
             Timeline = null;
             ResNode->Timeline = null;
+            try {
+                timeline?.Dispose();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
 
             LogIndented("Invoking Native Dispose", EnableFullLogging);
             Dispose(true, false);
@@ -153,7 +159,12 @@ public abstract unsafe partial class NodeBase : IDisposable {
             if (node.ResNode->ParentNode is not null) continue;
             if (node.IsAddonRootNode) continue;
 
-            node.Dispose();
+            try {
+                node.Dispose();
+            }
+            catch (Exception e) {
+                Services.Log.Exception(e);
+            }
         }
     }
 
@@ -219,9 +230,15 @@ public abstract unsafe partial class NodeBase : IDisposable {
         if (modifiedVirtualTable is null) return;
         if (ResNode is null) return;
 
-        Timeline?.Dispose();
+        var timeline = Timeline;
         Timeline = null;
         ResNode->Timeline = null;
+        try {
+            timeline?.Dispose();
+        }
+        catch (Exception e) {
+            Services.Log.Exception(e);
+        }
 
         ResNode->VirtualTable = originalVirtualTable;
 
@@ -236,9 +253,15 @@ public abstract unsafe partial class NodeBase : IDisposable {
         if (disposeState is not DisposeState.Alive) return;
         disposeState = DisposeState.Disposing;
 
-        Timeline?.Dispose();
+        var timeline = Timeline;
         Timeline = null;
         thisPtr->Timeline = null;
+        try {
+            timeline?.Dispose();
+        }
+        catch (Exception e) {
+            Services.Log.Exception(e);
+        }
 
         Dispose(true, true);
 

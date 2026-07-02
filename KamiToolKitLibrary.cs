@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Resources;
@@ -95,8 +95,8 @@ public static class KamiToolKitLibrary {
         try {
             NativeAddon.DisposeAddons();
             NodeBase.DisposeNodes();
-            NodeBase.RestoreAllNodeVirtualTables();
         } finally {
+            NodeBase.RestoreAllNodeVirtualTables();
             Services.PluginInterface.RelinquishData(NodeDataShareKey);
         }
     }

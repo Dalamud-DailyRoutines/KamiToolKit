@@ -64,7 +64,7 @@ public abstract unsafe partial class ComponentNode {
         modifiedVirtualTable->InitializeFromComponentData = (delegate* unmanaged<AtkComponentBase*, void*, void>) Marshal.GetFunctionPointerForDelegate(initializeFromComponentData);
     }
 
-    private void RestoreComponentVirtualTable() {
+    internal void RestoreComponentVirtualTable() {
         if (modifiedVirtualTable is null) return;
 
         if (ResNode is not null) {
