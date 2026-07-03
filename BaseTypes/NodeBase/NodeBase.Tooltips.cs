@@ -18,7 +18,6 @@ public unsafe partial class NodeBase {
     public virtual ReadOnlySeString TextTooltip {
         get;
         set {
-            field = value;
             if (!value.IsEmpty) {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Text;
@@ -26,6 +25,12 @@ public unsafe partial class NodeBase {
             else {
                 tooltipType &= ~AtkTooltipType.Text;
             }
+
+            if (field != value && ParentAddon is not null) {
+                ParentAddon->UpdateCollisionNodeList(false);
+            }
+
+            field = value;
         }
     }
 
@@ -38,7 +43,6 @@ public unsafe partial class NodeBase {
     public virtual uint ActionTooltip {
         get;
         set {
-            field = value;
             if (value is not 0) {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Action;
@@ -46,6 +50,12 @@ public unsafe partial class NodeBase {
             else {
                 tooltipType &= ~AtkTooltipType.Action;
             }
+
+            if (field != value && ParentAddon is not null) {
+                ParentAddon->UpdateCollisionNodeList(false);
+            }
+
+            field = value;
         }
     }
 
@@ -58,7 +68,6 @@ public unsafe partial class NodeBase {
     public virtual uint ItemTooltip {
         get;
         set {
-            field = value;
             if (value is not 0) {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Item;
@@ -66,6 +75,12 @@ public unsafe partial class NodeBase {
             else {
                 tooltipType &= ~AtkTooltipType.Item;
             }
+
+            if (field != value && ParentAddon is not null) {
+                ParentAddon->UpdateCollisionNodeList(false);
+            }
+
+            field = value;
         }
     }
 
@@ -78,7 +93,6 @@ public unsafe partial class NodeBase {
     public virtual InventoryItemTooltip? InventoryItemTooltip {
         get;
         set {
-            field = value;
             if (value is not null) {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Item;
@@ -86,6 +100,12 @@ public unsafe partial class NodeBase {
             else {
                 tooltipType &= ~AtkTooltipType.Item;
             }
+
+            if (field != value && ParentAddon is not null) {
+                ParentAddon->UpdateCollisionNodeList(false);
+            }
+
+            field = value;
         }
     }
 

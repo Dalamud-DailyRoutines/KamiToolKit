@@ -75,8 +75,8 @@ public abstract unsafe partial class NodeBase {
 
         UnlinkFromNative();
         RemoveUldManagerObjectReferences();
-        RemoveParentAddonReferences();
         RemoveParentNodeReferences();
+        RemoveParentAddonReferences();
     }
 
     private void PerformManagedAttach(NativeAddon? targetAddon, NodePosition targetPosition = NodePosition.AsLastChild) {
@@ -162,15 +162,8 @@ public abstract unsafe partial class NodeBase {
     }
 
     private void RemoveUldManagerObjectReferences() {
-        // If UldManager is null, try again to get the UldManager.
-        if (ParentUldManager is null) {
-            ParentUldManager = GetUldManagerForNode(this);
-        }
-
-        // If we still can't get it, it doesn't exist.
         if (ParentUldManager is null) return;
 
-        // Remove this node and all children from the UldManager's Objects List
         ParentUldManager->RemoveNodeFromObjectList(this);
         ParentUldManager = null;
     }
@@ -232,6 +225,10 @@ public abstract unsafe partial class NodeBase {
         if (ParentUldManager is not null) {
             ParentUldManager->AddNodeToObjectList(this);
 
+            foreach (var child in GetAllChildren(this)) {
+                child.ParentUldManager = ParentUldManager;
+            }
+
             if (this is TextNode { TextId: not 0 }) {
                 ParentUldManager->SetupText();
             }
@@ -285,10 +282,6 @@ public abstract unsafe partial class NodeBase {
         }
 
         // We failed to find a parent component, try to get a parent addon instead
-        if (ParentAddon is null) {
-            ParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(node);
-        }
-
         if (ParentAddon is not null) {
             return &ParentAddon->UldManager;
         }
