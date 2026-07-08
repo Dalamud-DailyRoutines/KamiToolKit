@@ -27,7 +27,7 @@ public class StringDropDownNode : DropDownNode<string> {
 /// <summary>
 /// Specialization of <see cref="DropDownNode{T}"/> for enums.
 /// </summary>
-public class EnumDropDownNode : DropDownNode<Enum> {
+public class EnumDropDownNode<T> : DropDownNode<T> where T : Enum {
     /// <inheritdoc />
     public EnumDropDownNode()
         => GetLabelFunction = entry => entry.Description;
@@ -250,7 +250,7 @@ public unsafe class DropDownNode<T> : SimpleComponentNode {
     /// <summary>
     /// Constructs a new <see cref="DropDownNode{T}"/>.
     /// </summary>
-    protected DropDownNode() {
+    public DropDownNode() {
         BackgroundNode = new SimpleNineGridNode {
             TexturePath = "ui/uld/DropDownA.tex",
             TextureSize = new Vector2(44.0f, 23.0f),
