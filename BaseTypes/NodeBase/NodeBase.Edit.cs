@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using Dalamud.Game.Addon.Events;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
@@ -93,8 +94,7 @@ public abstract unsafe partial class NodeBase {
         if (currentEditMode.HasFlag(NodeEditMode.Resize) || currentEditMode.HasFlag(NodeEditMode.Move)) return;
 
         if (editEventListener is not null) {
-            editEventListener.RemoveEvent(AtkEventType.MouseMove);
-            editEventListener.RemoveEvent(AtkEventType.MouseDown);
+            editEventListener.RemoveEvent(AtkEventType.UnregisterAll);
             editEventListener.Dispose();
             editEventListener = null;
         }
@@ -210,10 +210,10 @@ public abstract unsafe partial class NodeBase {
     }
 
     private static void SetCursor(AddonCursorType cursor)
-        => Services.AddonEventManager.SetCursor(cursor);
+        => IAddonEventManager.Get().SetCursor(cursor);
 
     private static void ResetCursor()
-        => Services.AddonEventManager.ResetCursor();
+        => IAddonEventManager.Get().ResetCursor();
 
     private Vector2 clickStartPosition = Vector2.Zero;
     private NodeEditMode currentEditMode = 0;

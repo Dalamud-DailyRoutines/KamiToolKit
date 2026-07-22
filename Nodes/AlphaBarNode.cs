@@ -91,9 +91,8 @@ public unsafe class AlphaBarNode : ResNode {
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
         if (disposing) {
-            base.Dispose(disposing, isNativeDestructor);
-
             alphaEventListener.Dispose();
+            base.Dispose(disposing, isNativeDestructor);
         }
     }
 

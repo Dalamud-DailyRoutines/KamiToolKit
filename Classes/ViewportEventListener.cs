@@ -1,4 +1,5 @@
-﻿using Dalamud.Utility;
+﻿using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
 
@@ -20,7 +21,7 @@ public unsafe class ViewportEventListener(AtkEventListener.Delegates.ReceiveEven
     /// <param name="node">Node to pass when the callback is triggered.</param>
     public void AddEvent(AtkEventType eventType, AtkResNode* node) {
 
-        Services.Log.Verbose($"Registering ViewportEvent: {eventType}");
+        IPluginLog.Get().Verbose($"Registering ViewportEvent: {eventType}");
         AtkStage.Instance()->ViewportEventManager.RegisterEvent(eventType, 0, node, &node->AtkEventTarget, this, false);
     }
 
@@ -33,7 +34,7 @@ public unsafe class ViewportEventListener(AtkEventListener.Delegates.ReceiveEven
     /// <param name="eventType">Event Type to no longer listen for.</param>
     public void RemoveEvent(AtkEventType eventType) {
 
-        Services.Log.Verbose($"Unregistering ViewportEvent: {eventType}");
+        IPluginLog.Get().Verbose($"Unregistering ViewportEvent: {eventType}");
         AtkStage.Instance()->ViewportEventManager.UnregisterEvent(eventType, 0, this, false);
     }
 
@@ -45,7 +46,7 @@ public unsafe class ViewportEventListener(AtkEventListener.Delegates.ReceiveEven
     /// </remarks>
     public override void Dispose() {
 
-        Services.Log.Verbose("Disposing ViewportEventListener");
+        IPluginLog.Get().Verbose("Disposing ViewportEventListener");
 
         RemoveEvent(AtkEventType.UnregisterAll);
         base.Dispose();

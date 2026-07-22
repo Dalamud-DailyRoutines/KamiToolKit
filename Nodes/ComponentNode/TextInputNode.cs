@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Interface;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
@@ -368,7 +369,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             return InputCallbackResult.None;
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
             return InputCallbackResult.None;
         }
     }
@@ -378,7 +379,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         OnFocused?.Invoke();
 
         if (AutoSelectAll && Component->EvaluatedString.Length > 0) {
-            Services.Framework.RunOnTick(() => {
+            IFramework.Get().RunOnTick(() => {
                 var keyModifiers = new AtkTextInput.KeyModifiers {
                     IsControlDown = true,
                 };

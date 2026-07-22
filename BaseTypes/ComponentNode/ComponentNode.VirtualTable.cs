@@ -1,4 +1,6 @@
+using System;
 using System.Runtime.InteropServices;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
 
@@ -73,8 +75,8 @@ public abstract unsafe partial class ComponentNode {
                     ComponentBase->VirtualTable = originalVirtualTable;
                 }
             }
-            catch {
-                // ignored
+            catch (Exception e) {
+                IPluginLog.Get().Exception(e);
             }
         }
 

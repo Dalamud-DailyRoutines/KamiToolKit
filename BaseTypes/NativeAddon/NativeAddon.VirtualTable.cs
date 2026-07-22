@@ -1,5 +1,6 @@
 ﻿﻿using System;
 using System.Runtime.InteropServices;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
 
@@ -78,7 +79,7 @@ public unsafe partial class NativeAddon {
                 timeline?.Dispose();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
 
@@ -89,7 +90,7 @@ public unsafe partial class NativeAddon {
                 RootNode.RestoreNodeVirtualTable();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
 

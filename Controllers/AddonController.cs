@@ -1,7 +1,9 @@
 ﻿using System;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Interfaces;
 using KamiToolKit.Internal.Classes;
@@ -57,30 +59,30 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
     public void Enable() {
         if (IsEnabled) return;
 
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, AddonName, OnAddonEvent);
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, AddonName, OnAddonEvent);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PostSetup, AddonName, OnAddonEvent);
+        IAddonLifecycle.Get().RegisterListener(AddonEvent.PreFinalize, AddonName, OnAddonEvent);
 
         if (OnRefresh is not null || OnPreRefresh is not null) {
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PreRefresh, AddonName, OnAddonEvent);
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PreRequestedUpdate, AddonName, OnAddonEvent);
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, AddonName, OnAddonEvent);
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PostRequestedUpdate, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PreRefresh, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PreRequestedUpdate, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRefresh, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PostRequestedUpdate, AddonName, OnAddonEvent);
         }
 
         if (OnUpdate is not null) {
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PostUpdate, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PostUpdate, AddonName, OnAddonEvent);
         }
 
         if (OnPreUpdate is not null) {
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PreUpdate, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PreUpdate, AddonName, OnAddonEvent);
         }
 
         if (OnDraw is not null) {
-            Services.AddonLifecycle.RegisterListener(AddonEvent.PreDraw, AddonName, OnAddonEvent);
+            IAddonLifecycle.Get().RegisterListener(AddonEvent.PreDraw, AddonName, OnAddonEvent);
         }
 
         if (AddonPointer is not null) {
-            OnSetup?.Invoke((T*)AddonPointer);
+            OnSetup?.Invoke(AddonPointer);
             isSetupComplete = true;
         }
 
@@ -91,10 +93,10 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
     public void Disable() {
         if (!IsEnabled) return;
 
-        Services.AddonLifecycle.UnregisterListener(OnAddonEvent);
+        IAddonLifecycle.Get().UnregisterListener(OnAddonEvent);
 
         if (AddonPointer is not null) {
-            OnFinalize?.Invoke((T*)AddonPointer);
+            OnFinalize?.Invoke(AddonPointer);
         }
 
         IsEnabled = false;
@@ -126,21 +128,22 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
                 OnRefresh?.Invoke(addon);
                 return;
 
-            case AddonEvent.PreUpdate:
+            case AddonEvent.PreUpdate when isSetupComplete:
                 OnPreUpdate?.Invoke(addon);
                 break;
 
-            case AddonEvent.PostUpdate:
+            case AddonEvent.PostUpdate when isSetupComplete:
                 OnUpdate?.Invoke(addon);
                 return;
 
-            case AddonEvent.PreDraw:
+            case AddonEvent.PreDraw when isSetupComplete:
                 OnDraw?.Invoke(addon);
                 return;
         }
     }
 
-    private AtkUnitBase* AddonPointer => Services.GameGui.GetAddonByName<AtkUnitBase>(AddonName);
+    private T* AddonPointer => (T*)RaptureAtkUnitManager.Instance()->GetAddonByName(AddonName);
+
     private bool IsEnabled { get; set; }
     private bool isSetupComplete;
 }

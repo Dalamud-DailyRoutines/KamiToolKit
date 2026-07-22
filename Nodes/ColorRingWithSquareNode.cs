@@ -128,8 +128,8 @@ public unsafe class ColorRingWithSquareNode : SimpleComponentNode {
     /// <inheritdoc />
     protected override void Dispose(bool disposing, bool isNativeDestructor) {
         if (disposing) {
-            base.Dispose(disposing, isNativeDestructor);
             eventListener.Dispose();
+            base.Dispose(disposing, isNativeDestructor);
         }
     }
 

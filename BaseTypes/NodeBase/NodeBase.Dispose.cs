@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
@@ -53,7 +54,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
             LogIndented($"Beginning Dispose for {GetType()}", true);
             logIndent++;
 
-            if (Services.Framework.IsFrameworkUnloading) {
+            if (IFramework.Get().IsFrameworkUnloading) {
                 LogIndented("Game is shutting down, aborting manual dispose.", EnableFullLogging);
                 return;
             }
@@ -61,7 +62,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
             disposeState = DisposeState.Disposing;
 
             if (!IsNodeValid()) {
-                Services.Log.Warning("Invalid node, dispose aborted.");
+                IPluginLog.Get().Warning("Invalid node, dispose aborted.");
                 return;
             }
 
@@ -89,16 +90,14 @@ public abstract unsafe partial class NodeBase : IDisposable {
                 timeline?.Dispose();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
 
             LogIndented("Invoking Native Dispose", EnableFullLogging);
             Dispose(true, false);
-            GC.SuppressFinalize(this);
-            CreatedNodes.Remove(this);
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         } finally {
             if (disposeState is DisposeState.Disposing) {
                 disposeState = DisposeState.Disposed;
@@ -135,14 +134,14 @@ public abstract unsafe partial class NodeBase : IDisposable {
     private static void LogIndented(string message, bool enableLogging) {
         if (!enableLogging) return;
 
-        Services.Log.Verbose(new string(' ', logIndent * 2) + message);
+        IPluginLog.Get().Verbose(new string(' ', logIndent * 2) + message);
     }
 
     internal static void WarnLeakedNodes() {
         var leakedNodeCount = CreatedNodes.Count(node => !node.IsAddonRootNode && node.ResNode is not null && node.ResNode->ParentNode is null);
 
         if (leakedNodeCount is not 0) {
-            Services.Log.Warning($"There were {leakedNodeCount} node(s) that were not disposed safely.");
+            IPluginLog.Get().Warning($"There were {leakedNodeCount} node(s) that were not disposed safely.");
         }
 
         foreach (var node in CreatedNodes.ToArray()) {
@@ -150,7 +149,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
             if (node.ResNode->ParentNode is not null) continue;
             if (node.IsAddonRootNode) continue;
 
-            Services.Log.Warning($"Forcing disposal of: {node.GetType()}");
+            IPluginLog.Get().Warning($"Forcing disposal of: {node.GetType()}");
         }
     }
 
@@ -168,7 +167,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
                 node.Dispose();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
     }
@@ -179,7 +178,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
                 node.RestoreNodeVirtualTable();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
     }
@@ -187,10 +186,6 @@ public abstract unsafe partial class NodeBase : IDisposable {
     /// <summary>
     /// Dispose associated resources. If a resource modifies native state directly guard it with isNativeDestructor
     /// </summary>
-    /// <param name="disposing">
-    /// Indicates if this specific call should dispose resources or not. This protects against double dispose,
-    /// or incorrectly manipulating native state too many times.
-    /// </param>
     /// <param name="isNativeDestructor">
     /// Indicates if the dispose call should try to completely clean up all resources,
     /// or if it should only clean up managed resources. When false, be sure to only dispose
@@ -242,7 +237,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
             timeline?.Dispose();
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         ResNode->VirtualTable = originalVirtualTable;
@@ -265,7 +260,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
             timeline?.Dispose();
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         Dispose(true, true);
@@ -279,7 +274,7 @@ public abstract unsafe partial class NodeBase : IDisposable {
             modifiedVirtualTable = null;
         }
 
-        Services.Log.Verbose($"Native has disposed node {GetType()}");
+        IPluginLog.Get().Verbose($"Native has disposed node {GetType()}");
         GC.SuppressFinalize(this);
         CreatedNodes.Remove(this);
 

@@ -1,6 +1,7 @@
 ﻿﻿﻿﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Dalamud.Plugin.Services;
 using KamiToolKit.Internal.Classes;
 using Serilog;
 
@@ -14,7 +15,7 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
     /// due to the addons closing animation. If you need to fully wait for the window to close use <see cref="DisposeAsync"/> and await the result.
     /// </summary>
     /// <code>await thisInstance.DisposeAsync();</code>
-    public virtual void Dispose() {
+    public virtual unsafe void Dispose() {
         if (disposeState is not AddonDisposeState.Alive) return;
 
         if (IsOverlayAddon) {
@@ -25,10 +26,15 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
             return;
         }
 
-        Services.Log.Debug($"Disposing addon {GetType()}");
+        IPluginLog.Get().Debug($"Disposing addon {GetType()}");
 
         disposeState = AddonDisposeState.Disposing;
-        Close();
+        if (InternalAddon is null) {
+            disposeState = AddonDisposeState.Disposed;
+        }
+        else {
+            Close();
+        }
 
         CreatedAddons.Remove(this);
 
@@ -53,7 +59,7 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
             return;
         }
 
-        Services.Log.Debug($"Disposing addon {GetType()}");
+        IPluginLog.Get().Debug($"Disposing addon {GetType()}");
 
         disposeState = AddonDisposeState.Disposing;
         await CloseAsync();
@@ -68,8 +74,8 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
         foreach (var addon in CreatedAddons.ToArray()) {
             if (addon.IsOverlayAddon) continue;
 
-            Services.Log.Warning($"Addon {addon.GetType()} was not disposed properly please ensure you call dispose at an appropriate time.");
-            Services.Log.Debug($"Automatically disposing addon {addon.GetType()} as a safety measure.");
+            IPluginLog.Get().Warning($"Addon {addon.GetType()} was not disposed properly please ensure you call dispose at an appropriate time.");
+            IPluginLog.Get().Debug($"Automatically disposing addon {addon.GetType()} as a safety measure.");
         }
     }
 
@@ -83,7 +89,7 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
                 addon.Dispose();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
 
@@ -92,7 +98,7 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
                 addon.RestoreVirtualTable();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
 

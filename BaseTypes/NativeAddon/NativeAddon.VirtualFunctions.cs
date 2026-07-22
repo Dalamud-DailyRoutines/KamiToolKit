@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
 using KamiToolKit.Internal.Classes;
@@ -56,7 +57,7 @@ public unsafe partial class NativeAddon {
     protected virtual void OnRefresh(AtkUnitBase* addon, Span<AtkValue> atkValues) { }
 
     private void Initialize(AtkUnitBase* thisPtr) {
-        Services.Log.Verbose($"[{InternalName}] Initialize");
+        IPluginLog.Get().Verbose($"[{InternalName}] Initialize");
 
         originalVirtualTable->Initialize(thisPtr);
 
@@ -115,7 +116,7 @@ public unsafe partial class NativeAddon {
     }
 
     private void Setup(AtkUnitBase* addon, uint valueCount, AtkValue* values) {
-        Services.Log.Verbose($"[{InternalName}] Setup");
+        IPluginLog.Get().Verbose($"[{InternalName}] Setup");
 
         if (!IsOverlayAddon) {
             SetInitialState();
@@ -134,7 +135,7 @@ public unsafe partial class NativeAddon {
             OnSetup(addon, new Span<AtkValue>(values, (int)valueCount));
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         // Initialize all TextId fields that were attached in OnSetup
@@ -144,52 +145,52 @@ public unsafe partial class NativeAddon {
     }
 
     private void Show(AtkUnitBase* addon, bool silenceOpenSoundEffect, uint unsetShowHideFlags) {
-        Services.Log.Verbose($"[{InternalName}] Show");
+        IPluginLog.Get().Verbose($"[{InternalName}] Show");
 
         try {
             OnShow(addon);
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         originalVirtualTable->Show(addon, silenceOpenSoundEffect, unsetShowHideFlags);
     }
 
     private void Update(AtkUnitBase* addon, float delta) {
-        Services.Log.Excessive($"[{InternalName}] Update");
+        IPluginLog.Get().Excessive($"[{InternalName}] Update");
 
         try {
             OnUpdate(addon);
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         originalVirtualTable->Update(addon, delta);
     }
 
     private void Draw(AtkUnitBase* addon) {
-        Services.Log.Excessive($"[{InternalName}] Draw");
+        IPluginLog.Get().Excessive($"[{InternalName}] Draw");
 
         try {
             OnDraw(addon);
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         originalVirtualTable->Draw(addon);
     }
 
     private void Hide(AtkUnitBase* addon, bool unkBool, bool callHideCallback, uint setShowHideFlags) {
-        Services.Log.Verbose($"[{InternalName}] Hide");
+        IPluginLog.Get().Verbose($"[{InternalName}] Hide");
 
         try {
             OnHide(addon);
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         SaveAddonConfig();
@@ -199,7 +200,7 @@ public unsafe partial class NativeAddon {
     }
 
     private void Hide2(AtkUnitBase* addon) {
-        Services.Log.Verbose($"[{InternalName}] Hide2");
+        IPluginLog.Get().Verbose($"[{InternalName}] Hide2");
 
         originalVirtualTable->Hide2(addon);
     }
@@ -208,13 +209,13 @@ public unsafe partial class NativeAddon {
         if (isFinalized) return;
         isFinalized = true;
 
-        Services.Log.Verbose($"[{InternalName}] Finalize");
+        IPluginLog.Get().Verbose($"[{InternalName}] Finalize");
 
         try {
             OnFinalize(addon);
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         if (RememberClosePosition && InternalAddon is not null) {
@@ -229,7 +230,7 @@ public unsafe partial class NativeAddon {
                 timeline?.Dispose();
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
 
@@ -240,7 +241,7 @@ public unsafe partial class NativeAddon {
     }
 
     private AtkEventListener* Destructor(AtkUnitBase* addon, byte flags) {
-        Services.Log.Verbose($"[{InternalName}] Destructor");
+        IPluginLog.Get().Verbose($"[{InternalName}] Destructor");
 
         var result = originalVirtualTable->Dtor(addon, flags);
 
@@ -259,14 +260,16 @@ public unsafe partial class NativeAddon {
                 modifiedVirtualTable = null;
             }
 
-            disposeState = AddonDisposeState.Disposed;
+            if (disposeState is AddonDisposeState.Disposing) {
+                disposeState = AddonDisposeState.Disposed;
+            }
         }
 
         return result;
     }
 
     private void RequestedUpdate(AtkUnitBase* thisPtr, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) {
-        Services.Log.Verbose($"[{InternalName}] RequestedUpdate");
+        IPluginLog.Get().Verbose($"[{InternalName}] RequestedUpdate");
 
         // Prevent calls to OnRequestedUpdate before Setup is completed. The game will try to call this after Show but before Setup
         if (isSetup) {
@@ -275,7 +278,7 @@ public unsafe partial class NativeAddon {
 
             }
             catch (Exception e) {
-                Services.Log.Exception(e);
+                IPluginLog.Get().Exception(e);
             }
         }
 
@@ -283,20 +286,20 @@ public unsafe partial class NativeAddon {
     }
 
     private bool Refresh(AtkUnitBase* thisPtr, uint valueCount, AtkValue* values) {
-        Services.Log.Verbose($"[{InternalName}] Refresh");
+        IPluginLog.Get().Verbose($"[{InternalName}] Refresh");
 
         try {
             OnRefresh(thisPtr, new Span<AtkValue>(values, (int)valueCount));
         }
         catch (Exception e) {
-            Services.Log.Exception(e);
+            IPluginLog.Get().Exception(e);
         }
 
         return originalVirtualTable->OnRefresh(thisPtr,valueCount, values);
     }
 
     private void ScreenSizeChange(AtkUnitBase* thisPtr, int width, int height) {
-        Services.Log.Verbose($"[{InternalName}] ScreenSizeChange");
+        IPluginLog.Get().Verbose($"[{InternalName}] ScreenSizeChange");
 
         originalVirtualTable->OnScreenSizeChange(thisPtr, width, height);
 
