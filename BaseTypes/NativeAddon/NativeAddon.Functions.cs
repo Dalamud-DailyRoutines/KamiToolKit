@@ -19,8 +19,6 @@ public partial class NativeAddon {
     /// Must be invoked from the games main thread.
     /// </remarks>
     public unsafe void Open() {
-        ThreadSafety.AssertMainThread();
-
         IPluginLog.Get().Verbose($"[{InternalName}] Open Called");
 
         if (InternalAddon is null) {
@@ -63,7 +61,6 @@ public partial class NativeAddon {
     /// </remarks>
     public async Task CloseAsync() {
         if (IFramework.Get().IsFrameworkUnloading) return;
-        ThreadSafety.AssertNotMainThread();
 
         unsafe {
             if (InternalAddon is null) {
