@@ -160,11 +160,6 @@ public unsafe class MapOverlayController : IDisposable {
             showingTooltip = false;
         }
 
-        if (IClientState.Get().IsPvP) {
-            clippingContainerNode.IsVisible = false;
-            return;
-        }
-
         ProcessQueues();
 
         ref var areaMap = ref addon->AreaMap;
@@ -282,18 +277,22 @@ public unsafe class MapOverlayController : IDisposable {
         if (RaptureAtkModule.Instance()->AtkCollisionManager.IntersectingAddon != mapAddon) return;
 
         var anyCollisions = false;
+        var anyInteractions = false;
 
         if (!AgentMap.Instance()->IsControlKeyPressed) {
             foreach (var node in markerNodes) {
-                if (node.IsActuallyVisible && node.CheckCollision(atkEventData) && clippingContainerNode.CheckCollision(atkEventData)) {
-                    node.ShowTextTooltip(node.TextTooltip);
-                    showingTooltip = true;
-                    anyCollisions = true;
+                if (!node.IsActuallyVisible || !node.CheckCollision(atkEventData) || !clippingContainerNode.CheckCollision(atkEventData)) {
+                    continue;
                 }
+
+                node.ShowTextTooltip(node.TextTooltip);
+                showingTooltip = true;
+                anyCollisions = true;
 
                 if (node.OnClick is not null) {
                     IAddonEventManager.Get().SetCursor(AddonCursorType.Clickable);
                     showingInteractCursor = true;
+                    anyInteractions = true;
                 }
             }
         }
@@ -303,7 +302,7 @@ public unsafe class MapOverlayController : IDisposable {
             showingTooltip = false;
         }
 
-        if (!anyCollisions && showingInteractCursor) {
+        if (!anyInteractions && showingInteractCursor) {
             IAddonEventManager.Get().ResetCursor();
             showingInteractCursor = false;
         }
