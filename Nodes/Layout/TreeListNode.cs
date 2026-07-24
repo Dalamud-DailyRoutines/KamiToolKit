@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.BaseTypes;
 using KamiToolKit.Interfaces;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Internal.Nodes;
@@ -41,8 +40,6 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
     /// This only applies to the list item nodes, and will not trigger when a header is clicked on.
     /// </remarks>
     public Action<T?>? OnItemSelected { get; set; }
-
-    public Action<NodeBase, ReadOnlySeString>? OnHeaderUpdated { get; set; }
 
     public bool CollapseEntriesByDefault { get; set; }
 
@@ -316,7 +313,6 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
                 headerNode.IsCollapsed = isCollapsed;
 
                 headerNode.Y = position;
-                OnHeaderUpdated?.Invoke(headerNode, header);
                 position += headerNode.Height + ItemSpacing;
             }
 
