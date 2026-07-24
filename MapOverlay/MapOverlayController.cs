@@ -21,6 +21,8 @@ namespace KamiToolKit.MapOverlay;
 /// </summary>
 public unsafe class MapOverlayController : IDisposable {
 
+    public Action<uint, Vector2>? OnMapClick { get; set; }
+
     /// <summary>
     /// Gets or sets whether the overlay is visible.
     /// </summary>
@@ -309,11 +311,45 @@ public unsafe class MapOverlayController : IDisposable {
     }
 
     private void ProcessMouseClick(AtkEventData* atkEventData) {
-        foreach (var node in markerNodes) {
+        if (atkEventData->MouseData.ButtonId is not 0) return;
+
+        for (var index = markerNodes.Count - 1; index >= 0; index--) {
+            var node = markerNodes[index];
             if (node.IsActuallyVisible && node.CheckCollision(atkEventData)) {
                 node.OnClick?.Invoke();
+                return;
             }
         }
+
+        if (TryGetMapPosition(atkEventData, out var mapId, out var mapPosition)) {
+            OnMapClick?.Invoke(mapId, mapPosition);
+        }
+    }
+
+    private bool TryGetMapPosition(AtkEventData* atkEventData, out uint mapId, out Vector2 mapPosition) {
+        mapId = AgentMap.Instance()->SelectedMapId;
+        mapPosition = default;
+
+        if (overlayNode is null) return false;
+
+        var node = overlayNode.ResNode;
+        if (node is null) return false;
+        var cumulativeScale = Vector2.One;
+        for (var currentNode = node; currentNode is not null; currentNode = currentNode->ParentNode) {
+            cumulativeScale *= new Vector2(currentNode->ScaleX, currentNode->ScaleY);
+        }
+
+        if (cumulativeScale.X is 0.0f || cumulativeScale.Y is 0.0f) return false;
+
+        var mousePosition = new Vector2(atkEventData->MouseData.PosX, atkEventData->MouseData.PosY);
+        var localPosition = (mousePosition - new Vector2(node->ScreenX, node->ScreenY)) / cumulativeScale;
+        var agentMap = AgentMap.Instance();
+        var mapScale = agentMap->SelectedMapSizeFactorFloat;
+        if (mapScale is 0.0f) return false;
+
+        var selectedOffset = new Vector2(agentMap->SelectedOffsetX, agentMap->SelectedOffsetY);
+        mapPosition = ((localPosition - new Vector2(1024.0f)) - selectedOffset) / mapScale + selectedOffset;
+        return true;
     }
 
     private readonly AddonController<AddonAreaMap> mapController;

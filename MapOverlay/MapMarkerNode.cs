@@ -41,6 +41,8 @@ public unsafe class MapMarkerNode : ResNode {
     /// </summary>
     public float MarkerScale { get; set; } = 1.0f;
 
+    public bool UseRawPosition { get; set; }
+
     /// <summary>
     /// Gets or sets the markers position on the map.
     /// </summary>
@@ -153,14 +155,19 @@ public unsafe class MapMarkerNode : ResNode {
     public void Update() {
         OnUpdate();
 
-        if (!IDataManager.Get().GetExcelSheet<Map>().TryGetRow(MapId, out var mapRow)) {
-            IsVisible = false;
-            return;
-        }
-
-        var mapScale = mapRow.SizeFactor / 100.0f;
-        var mapOffset = new Vector2(mapRow.OffsetX, mapRow.OffsetY) * (mapScale - 1);
         var centerOffset = new Vector2(1024.0f, 1024.0f);
+        var markerPosition = Position;
+
+        if (!UseRawPosition) {
+            if (!IDataManager.Get().GetExcelSheet<Map>().TryGetRow(MapId, out var mapRow)) {
+                IsVisible = false;
+                return;
+            }
+
+            var mapScale = mapRow.SizeFactor / 100.0f;
+            var mapOffset = new Vector2(mapRow.OffsetX, mapRow.OffsetY) * (mapScale - 1);
+            markerPosition = (Position * mapScale) + mapOffset;
+        }
 
         base.Size = Size * MarkerScale;
         base.Origin = base.Size / 2.0f;
@@ -171,7 +178,7 @@ public unsafe class MapMarkerNode : ResNode {
         imGuiImageNode?.Size = base.Size;
         imGuiImageNode?.Origin = base.Size / 2.0f;
 
-        base.Position = (Position * mapScale) + mapOffset + centerOffset - (base.Size / 2.0f);
+        base.Position = markerPosition + centerOffset - (base.Size / 2.0f);
         base.IsVisible = IsVisible && (AllowAnyMap || AgentMap.Instance()->SelectedMapId == MapId);
     }
 

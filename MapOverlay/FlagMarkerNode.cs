@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace KamiToolKit.MapOverlay;
@@ -10,11 +10,12 @@ namespace KamiToolKit.MapOverlay;
 public unsafe class FlagMarkerNode : MapMarkerNode {
 
     /// <summary>
-    /// Constructs a instance of <see cref="FlagMarkerNode"/>
+    /// Constructs a instance of a <see cref="FlagMarkerNode"/>
     /// </summary>
     public FlagMarkerNode() {
         IconId = 60561;
         AllowAnyMap = true;
+        UseRawPosition = true;
         Size = new Vector2(32.0f, 32.0f);
     }
 
