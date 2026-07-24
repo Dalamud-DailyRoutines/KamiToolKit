@@ -41,8 +41,6 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
     /// </remarks>
     public Action<T?>? OnItemSelected { get; set; }
 
-    public bool CollapseEntriesByDefault { get; set; }
-
     /// <summary>
     /// Gets or sets the selected node.
     /// </summary>
@@ -58,11 +56,6 @@ public class TreeListNode<T, TU> : ResNode where TU : TreeListItemNode<T>, ITree
         get;
         set {
             field = value;
-
-            if (CollapseEntriesByDefault) {
-                CollapsedEntries.Clear();
-                CollapsedEntries.AddRange(value.Keys);
-            }
 
             NoResultsTextNodeContainer.IsVisible = value.Count is 0;
 
