@@ -60,7 +60,7 @@ public unsafe class DragDropPayload {
             ReferenceIndex = dragDropInterface->DragDropReferenceIndex,
             Int1 = payloadContainer->Int1,
             Int2 = payloadContainer->Int2,
-            Text = new ReadOnlySeString(payloadContainer->Text),
+            Text = [with(payloadContainer->Text)],
         };
     }
 
