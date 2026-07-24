@@ -26,7 +26,7 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
             return;
         }
 
-        IPluginLog.Get().Debug($"Disposing addon {GetType()}");
+        IPluginLog.Get().Verbose($"Disposing addon {GetType()}");
 
         disposeState = AddonDisposeState.Disposing;
         if (InternalAddon is null) {
@@ -59,7 +59,7 @@ public partial class NativeAddon : IDisposable, IAsyncDisposable {
             return;
         }
 
-        IPluginLog.Get().Debug($"Disposing addon {GetType()}");
+        IPluginLog.Get().Verbose($"Disposing addon {GetType()}");
 
         disposeState = AddonDisposeState.Disposing;
         await CloseAsync();
