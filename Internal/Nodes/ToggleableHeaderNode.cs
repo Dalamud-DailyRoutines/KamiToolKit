@@ -88,8 +88,7 @@ internal class ToggleableHeaderNode : SimpleComponentNode {
 
         LabelTextNode = new TextNode {
             NodeFlags = NodeFlags.AnchorLeft | NodeFlags.Visible | NodeFlags.Enabled,
-            TextColor = ColorHelper.GetColor(1),
-            TextOutlineColor = ColorHelper.GetColor(7),
+            TextColor = ColorHelper.GetColor(7),
             FontSize = 14,
             LineSpacing = 14,
             Alpha = 229.0f / 255.0f,
@@ -202,7 +201,7 @@ internal class ToggleableHeaderNode : SimpleComponentNode {
         ToggleArrowImageNode.Position = new Vector2(0.0f, 1.0f);
 
         LabelTextNode.Size = new Vector2(Width - ToggleArrowImageNode.Width, 28.0f);
-        LabelTextNode.Position = new Vector2(ToggleArrowImageNode.Bounds.Right, 0.0f);
+        LabelTextNode.Position = new Vector2(ToggleArrowImageNode.Bounds.Right + 1.0f, 3.0f);
     }
 
     private unsafe void OnEvent(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
