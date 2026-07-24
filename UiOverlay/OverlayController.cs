@@ -96,7 +96,7 @@ public unsafe class OverlayController : IDisposable {
         IAddonLifecycle.Get().UnregisterListener(OnOverlayAddonFinalize, OnOverlayAddonUpdate);
 
         foreach (var (overlayLayer, nodes) in overlayNodes) {
-            IPluginLog.Get().Debug($"Disposing overlay nodes for layer {overlayLayer}");
+            IPluginLog.Get().Verbose($"Disposing overlay nodes for layer {overlayLayer}");
             foreach (var node in nodes) {
                 node.DetachNode();
                 node.Dispose();
