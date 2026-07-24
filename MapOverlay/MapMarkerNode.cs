@@ -20,6 +20,8 @@ public unsafe class MapMarkerNode : ResNode {
     /// </summary>
     public Action? OnClick { get; set; }
 
+    public Action? OnRightClick { get; set; }
+
     /// <summary>
     /// Gets whether this node is actually being shown.
     /// </summary>

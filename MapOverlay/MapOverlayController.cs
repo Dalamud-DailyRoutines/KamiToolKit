@@ -291,7 +291,7 @@ public unsafe class MapOverlayController : IDisposable {
                 showingTooltip = true;
                 anyCollisions = true;
 
-                if (node.OnClick is not null) {
+                if (node.OnClick is not null || node.OnRightClick is not null) {
                     IAddonEventManager.Get().SetCursor(AddonCursorType.Clickable);
                     showingInteractCursor = true;
                     anyInteractions = true;
@@ -311,15 +311,28 @@ public unsafe class MapOverlayController : IDisposable {
     }
 
     private void ProcessMouseClick(AtkEventData* atkEventData) {
-        if (atkEventData->MouseData.ButtonId is not 0) return;
+        var isRightClick = atkEventData->MouseData.ButtonId is 1;
+        if (!isRightClick && atkEventData->MouseData.ButtonId is not 0) return;
 
         for (var index = markerNodes.Count - 1; index >= 0; index--) {
             var node = markerNodes[index];
             if (node.IsActuallyVisible && node.CheckCollision(atkEventData)) {
-                node.OnClick?.Invoke();
+                if (isRightClick)
+                {
+                    if (node.OnRightClick is null) continue;
+
+                    node.OnRightClick.Invoke();
+                }
+                else
+                {
+                    node.OnClick?.Invoke();
+                }
+
                 return;
             }
         }
+
+        if (isRightClick) return;
 
         if (TryGetMapPosition(atkEventData, out var mapId, out var mapPosition)) {
             OnMapClick?.Invoke(mapId, mapPosition);
