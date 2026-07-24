@@ -61,9 +61,13 @@ public class HorizontalListNode : LayoutListNode {
 
     /// <inheritdoc />
     protected override void OnRecalculateLayout() {
+        var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+        var contentWidth = visibleNodes.Sum(node => node.Width) + (visibleNodes.Count > 1 ? (visibleNodes.Count - 1) * ItemSpacing : 0.0f);
+
         var startX = Alignment switch {
             HorizontalListAnchor.Left => 0.0f + FirstItemSpacing,
             HorizontalListAnchor.Right => Width - FirstItemSpacing,
+            HorizontalListAnchor.Center => (Width - contentWidth) / 2.0f,
             _ => 0.0f,
         };
 
@@ -71,14 +75,17 @@ public class HorizontalListNode : LayoutListNode {
             if (!node.IsVisible) continue;
 
             if (Alignment is HorizontalListAnchor.Right) {
-                startX -= node.Width + ItemSpacing;
+                startX -= node.Width;
             }
 
             node.X = startX;
             AdjustNode(node);
 
-            if (Alignment is HorizontalListAnchor.Left) {
+            if (Alignment is HorizontalListAnchor.Left or HorizontalListAnchor.Center) {
                 startX += node.Width + ItemSpacing;
+            }
+            else if (Alignment is HorizontalListAnchor.Right) {
+                startX -= ItemSpacing;
             }
 
             if (FitHeight) {

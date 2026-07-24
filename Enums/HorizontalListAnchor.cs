@@ -13,6 +13,9 @@ public enum HorizontalListAnchor {
     [Description("Left")]
     Left,
 
+    [Description("Center")]
+    Center,
+
     /// <summary>
     /// Anchor contents to the right.
     /// </summary>
