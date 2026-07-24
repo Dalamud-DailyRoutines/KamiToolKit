@@ -276,7 +276,11 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         CursorNode.AttachNode(this);
 
         PlaceholderTextNode = new TextNode {
-            TextColor = ColorHelper.GetColor(3),
+            Position      = new Vector2(10.0f,  6.0f),
+            Size          = new Vector2(132.0f, 18.0f),
+            AlignmentType = AlignmentType.TopLeft,
+            TextFlags     = TextFlags.AutoAdjustNodeSize,
+            TextColor     = ColorHelper.GetColor(3),
         };
         PlaceholderTextNode.AttachNode(this);
 
@@ -322,12 +326,11 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
 
-        BackgroundNode.Size = Size;
-        FocusBorderNode.Size = Size;
-        PlaceholderTextNode.Size = Size - new Vector2(0.0f, 2.0f);
-        PlaceholderTextNode.Position = new Vector2(8.0f, 2.0f);
-        TextLimitsNode.Size = new Vector2(Width + 18.0f, Height - 9.0f);
-        CurrentTextNode.Size = new Vector2(Width - 20.0f, Height - 10.0f);
+        BackgroundNode.Size      = Size;
+        FocusBorderNode.Size     = Size;
+        PlaceholderTextNode.Size = new Vector2(Width - 20.0f, Height - 10.0f);
+        TextLimitsNode.Size      = new Vector2(Width + 18.0f, Height - 9.0f);
+        CurrentTextNode.Size     = new Vector2(Width - 20.0f, Height - 10.0f);
     }
 
     /// <inheritdoc />
