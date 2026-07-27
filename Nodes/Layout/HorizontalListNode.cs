@@ -1,4 +1,5 @@
-﻿using System.Linq;
+using System;
+using System.Linq;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Enums;
 
@@ -6,7 +7,6 @@ namespace KamiToolKit.Nodes;
 
 /// <summary>
 /// A <see cref="LayoutListNode"/> that represents a horizontally growing list of nodes.
-/// Can be anchored on left side or right side.
 /// </summary>
 public class HorizontalListNode : LayoutListNode {
 
@@ -24,30 +24,41 @@ public class HorizontalListNode : LayoutListNode {
         }
     }
 
-    /// <inheritdoc/>
-    public override float Width {
-        get => base.Width;
+    /// <summary>
+    /// Adjusts contained nodes heights to match this nodes height
+    /// </summary>
+    public bool FitHeight {
+        get;
         set {
-            base.Width = value;
+            field = value;
             RecalculateLayout();
         }
     }
 
     /// <summary>
-    /// Adjusts contained nodes heights to match this nodes height
-    /// </summary>
-    public bool FitHeight { get; set; }
-
-    /// <summary>
     /// Resizes the horizontal list node to fit all contents
     /// </summary>
-    public bool FitToContentHeight { get; set; }
+    public bool FitToContentHeight {
+        get;
+        set {
+            field = value;
+            RecalculateLayout();
+        }
+    }
 
     /// <summary>
     /// Gets the amount of space remaining in this node.
     /// </summary>
-    public float AreaRemaining
-        => Width - NodeList.Sum(node => node.Width + ItemSpacing) - ItemSpacing;
+    public float AreaRemaining {
+        get {
+            var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+            var contentWidth = visibleNodes.Sum(node => node.Width * node.ScaleX);
+            var spacingWidth = Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing;
+            var anchorSpacing = Alignment is HorizontalListAnchor.Center ? 0.0f : FirstItemSpacing;
+
+            return Width - anchorSpacing - contentWidth - spacingWidth;
+        }
+    }
 
     /// <summary>
     /// Gets or sets the up nav index.
@@ -62,27 +73,28 @@ public class HorizontalListNode : LayoutListNode {
     /// <inheritdoc />
     protected override void OnRecalculateLayout() {
         var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
-        var contentWidth = visibleNodes.Sum(node => node.Width) + (visibleNodes.Count > 1 ? (visibleNodes.Count - 1) * ItemSpacing : 0.0f);
+        var contentWidth = visibleNodes.Sum(node => node.Width * node.ScaleX)
+                         + Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing;
 
         var startX = Alignment switch {
-            HorizontalListAnchor.Left => 0.0f + FirstItemSpacing,
-            HorizontalListAnchor.Right => Width - FirstItemSpacing,
-            HorizontalListAnchor.Center => (Width - contentWidth) / 2.0f,
+            HorizontalListAnchor.Left => FirstItemSpacing,
+            HorizontalListAnchor.Right => -FirstItemSpacing,
+            HorizontalListAnchor.Center => -contentWidth / 2.0f,
             _ => 0.0f,
         };
 
-        foreach (var node in NodeList) {
-            if (!node.IsVisible) continue;
+        foreach (var node in visibleNodes) {
+            var nodeWidth = node.Width * node.ScaleX;
 
             if (Alignment is HorizontalListAnchor.Right) {
-                startX -= node.Width;
+                startX -= nodeWidth;
             }
 
             node.X = startX;
             AdjustNode(node);
 
             if (Alignment is HorizontalListAnchor.Left or HorizontalListAnchor.Center) {
-                startX += node.Width + ItemSpacing;
+                startX += nodeWidth + ItemSpacing;
             }
             else if (Alignment is HorizontalListAnchor.Right) {
                 startX -= ItemSpacing;
@@ -94,13 +106,22 @@ public class HorizontalListNode : LayoutListNode {
         }
 
         if (FitToContentHeight) {
-            Height = NodeList.Max(node => node.Height);
+            var contentHeight = visibleNodes.Select(node => node.Height).DefaultIfEmpty().Max();
+
+            if (Height != contentHeight) {
+                Height = contentHeight;
+            }
         }
+    }
+
+    protected override void OnSizeChanged() {
+        base.OnSizeChanged();
+        RecalculateLayout();
     }
 
     /// <inheritdoc />
     protected override void OnRecalculateNavigation() {
-        var componentNodes = NodeList.OfType<ComponentNode>().ToList();
+        var componentNodes = NodeList.OfType<ComponentNode>().Where(node => node.IsVisible).ToList();
         if (componentNodes.Count is 0) return;
 
         if (Alignment is HorizontalListAnchor.Right) {

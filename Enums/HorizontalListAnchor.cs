@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace KamiToolKit.Enums;
 
@@ -8,7 +8,7 @@ namespace KamiToolKit.Enums;
 public enum HorizontalListAnchor {
 
     /// <summary>
-    /// Anchors contents to the left, this is the default.
+    /// Anchors the left edge of the contents to the node position.
     /// </summary>
     [Description("Left")]
     Left,
@@ -17,7 +17,7 @@ public enum HorizontalListAnchor {
     Center,
 
     /// <summary>
-    /// Anchor contents to the right.
+    /// Anchors the right edge of the contents to the node position.
     /// </summary>
     [Description("Right")]
     Right,

@@ -55,12 +55,24 @@ public abstract class LayoutListNode : ResNode, ILayoutListNode {
     /// <summary>
     /// Spacing between items, does not apply to the first item.
     /// </summary>
-    public float ItemSpacing { get; set; }
+    public float ItemSpacing {
+        get;
+        set {
+            field = value;
+            RecalculateLayout();
+        }
+    }
 
     /// <summary>
     /// Spacing to apply before the first item.
     /// </summary>
-    public float FirstItemSpacing { get; set; }
+    public float FirstItemSpacing {
+        get;
+        set {
+            field = value;
+            RecalculateLayout();
+        }
+    }
 
     /// <summary>
     /// Recalculates the contained layout, and controller navigation values if applicable.

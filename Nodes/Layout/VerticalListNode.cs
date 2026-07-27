@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Enums;
@@ -94,7 +95,10 @@ public class VerticalListNode : LayoutListNode {
         }
 
         if (FitContents) {
-            Height = NodeList.Sum(node => node.IsVisible ? node.Height + ItemSpacing : 0.0f) + FirstItemSpacing - ItemSpacing;
+            var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+            Height = visibleNodes.Sum(node => node.Height)
+                   + Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing
+                   + FirstItemSpacing;
         }
     }
 
