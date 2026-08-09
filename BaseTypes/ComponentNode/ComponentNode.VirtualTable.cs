@@ -33,7 +33,7 @@ public abstract unsafe partial class ComponentNode {
     protected void RegisterVirtualTable() {
         originalVirtualTable = ComponentBase->VirtualTable;
 
-        modifiedVirtualTable = (AtkComponentBase.AtkComponentBaseVirtualTable*) NativeMemoryHelper.Malloc(0x8 * VirtualTableEntryCount);
+        modifiedVirtualTable = (AtkComponentBase.AtkComponentBaseVirtualTable*)NativeMemoryHelper.Malloc(0x8 * VirtualTableEntryCount);
         NativeMemory.Copy(ComponentBase->VirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
         ComponentBase->VirtualTable = modifiedVirtualTable;
 

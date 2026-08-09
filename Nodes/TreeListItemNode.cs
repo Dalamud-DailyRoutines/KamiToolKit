@@ -1,4 +1,4 @@
-﻿namespace KamiToolKit.Nodes;
+namespace KamiToolKit.Nodes;
 
 /// <summary>
 /// Abstract class for use with <see cref="TreeListNode{T,TU}"/>
@@ -19,6 +19,14 @@ public abstract class TreeListItemNode<T> : SelectableNode {
             IsVisible = value is not null;
         }
     }
+
+    /// <summary>
+    /// Update function that is called each frame the list is called to be updated.
+    /// </summary>
+    /// <remarks>
+    /// This can be useful for displaying list data that changes as the player moves for example.
+    /// </remarks>
+    public virtual void Update() { }
 
     /// <summary>
     /// Function that is called when this list item entry needs to update what data is being displayed.

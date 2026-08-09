@@ -1,4 +1,4 @@
-﻿namespace KamiToolKit.Enums;
+namespace KamiToolKit.Enums;
 
 /// <summary>
 /// Enumeration of available pre-defined fonts to use for <see cref="Nodes.CounterNode"/>
@@ -14,4 +14,9 @@ public enum CounterFont {
     /// Font used for Chocobo Racing.
     /// </summary>
     ChocoboRace,
+
+    /// <summary>
+    /// Island Sanctuary font.
+    /// </summary>
+    Emj,
 }

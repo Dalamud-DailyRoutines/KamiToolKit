@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.Addon.Lifecycle;
@@ -11,7 +11,6 @@ using KamiToolKit.BaseTypes;
 using KamiToolKit.Enums;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Internal.Enums;
-using KamiToolKit.Internal.Extensions;
 
 namespace KamiToolKit.UiOverlay;
 

@@ -98,7 +98,7 @@ public abstract unsafe partial class ComponentNode {
     private AtkEventListener* Destructor(AtkComponentBase* thisPtr, byte freeFlags) {
         var result = originalVirtualTable->Dtor(thisPtr, freeFlags);
 
-        if ((freeFlags & 1) != 0) {
+        if ((freeFlags & 1) != 0 && modifiedVirtualTable is not null) {
             // Free our custom virtual table, the game doesn't know this exists and won't clear it on its own.
             NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
             modifiedVirtualTable = null;

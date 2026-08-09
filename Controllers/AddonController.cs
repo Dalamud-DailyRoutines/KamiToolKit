@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
@@ -83,7 +83,6 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
 
         if (AddonPointer is not null) {
             OnSetup?.Invoke(AddonPointer);
-            isSetupComplete = true;
         }
 
         IsEnabled = true;
@@ -112,31 +111,29 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
         switch (type) {
             case AddonEvent.PostSetup:
                 OnSetup?.Invoke(addon);
-                isSetupComplete = true;
                 return;
 
             case AddonEvent.PreFinalize:
                 OnFinalize?.Invoke(addon);
-                isSetupComplete = false;
                 return;
 
-            case AddonEvent.PreRefresh or AddonEvent.PreRequestedUpdate when isSetupComplete:
+            case AddonEvent.PreRefresh or AddonEvent.PreRequestedUpdate when args.Addon.IsReady:
                 OnPreRefresh?.Invoke(addon);
                 break;
 
-            case AddonEvent.PostRefresh or AddonEvent.PostRequestedUpdate when isSetupComplete:
+            case AddonEvent.PostRefresh or AddonEvent.PostRequestedUpdate when args.Addon.IsReady:
                 OnRefresh?.Invoke(addon);
                 return;
 
-            case AddonEvent.PreUpdate when isSetupComplete:
+            case AddonEvent.PreUpdate when args.Addon.IsReady:
                 OnPreUpdate?.Invoke(addon);
                 break;
 
-            case AddonEvent.PostUpdate when isSetupComplete:
+            case AddonEvent.PostUpdate when args.Addon.IsReady:
                 OnUpdate?.Invoke(addon);
                 return;
 
-            case AddonEvent.PreDraw when isSetupComplete:
+            case AddonEvent.PreDraw when args.Addon.IsReady:
                 OnDraw?.Invoke(addon);
                 return;
         }
@@ -145,5 +142,4 @@ public unsafe class AddonController<T> : IAddonEventController<T>, IDisposable w
     private T* AddonPointer => (T*)RaptureAtkUnitManager.Instance()->GetAddonByName(AddonName);
 
     private bool IsEnabled { get; set; }
-    private bool isSetupComplete;
 }

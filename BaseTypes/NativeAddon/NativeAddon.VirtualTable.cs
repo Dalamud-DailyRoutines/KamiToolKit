@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;

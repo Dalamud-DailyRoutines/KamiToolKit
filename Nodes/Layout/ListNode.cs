@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -6,7 +6,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Interfaces;
 using KamiToolKit.Internal.Classes;
 using Lumina.Data.Parsing.Uld;
-using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit.Nodes;
 
@@ -61,20 +60,9 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
     public int NavDown { get; set; }
 
     /// <summary>
-    /// Gets or sets the string to show when there are no items in the list.
+    /// Gets or sets whether the "No results found." placeholder text should show when there are no elements.
     /// </summary>
-    public ReadOnlySeString? NoResultsString {
-        get;
-        set {
-            field = value;
-            if (value is { } stringValue) {
-                NoResultsTextNode.String = stringValue;
-            }
-            else {
-                NoResultsTextNode.String = string.Empty;
-            }
-        }
-    }
+    public bool ShowNoResultsPlaceholder { get; set; } = true;
 
     /// <summary>
     /// Gets or sets the action to be invoked when an item is selected.
@@ -122,7 +110,7 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
                 RecalculateScroll();
             }
 
-            NoResultsTextNodeContainer.IsVisible = value.Count is 0;
+            NoResultsTextNodeContainer.IsVisible = value.Count is 0 && ShowNoResultsPlaceholder;
 
             if (AutoResetScroll) {
                 ResetScroll();
@@ -167,7 +155,7 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
     /// Updates the data being displayed.
     /// </summary>
     public void Update() {
-        NoResultsTextNodeContainer.IsVisible = !NoResultsTextNode.String.IsEmpty && OptionsList.Count is 0;
+        NoResultsTextNodeContainer.IsVisible = !NoResultsTextNode.String.IsEmpty && OptionsList.Count is 0 && ShowNoResultsPlaceholder;
 
         PopulateNodes();
 
@@ -247,6 +235,7 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
         NoResultsTextNode.AttachNode(NoResultsTextNodeContainer);
 
         AddEvent(AtkEventType.MouseWheel, OnMouseWheel);
+        AddNodeFlags(NodeFlags.HasCollision);
     }
 
     /// <inheritdoc />

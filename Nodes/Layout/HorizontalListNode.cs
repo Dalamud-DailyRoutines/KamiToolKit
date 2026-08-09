@@ -36,9 +36,20 @@ public class HorizontalListNode : LayoutListNode {
     }
 
     /// <summary>
-    /// Resizes the horizontal list node to fit all contents
+    /// Resizes the horizontal list node to fit the height of all contents
     /// </summary>
     public bool FitToContentHeight {
+        get;
+        set {
+            field = value;
+            RecalculateLayout();
+        }
+    }
+
+    /// <summary>
+    /// Resizes the horizontal list node to fit the width of all contents
+    /// </summary>
+    public bool FitToContentWidth {
         get;
         set {
             field = value;
@@ -75,6 +86,14 @@ public class HorizontalListNode : LayoutListNode {
         var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
         var contentWidth = visibleNodes.Sum(node => node.Width * node.ScaleX)
                          + Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing;
+
+        if (FitToContentWidth) {
+            var fittedWidth = contentWidth + (Alignment is HorizontalListAnchor.Center ? 0.0f : FirstItemSpacing);
+
+            if (Width != fittedWidth) {
+                base.Width = fittedWidth;
+            }
+        }
 
         var startX = Alignment switch {
             HorizontalListAnchor.Left => FirstItemSpacing,
