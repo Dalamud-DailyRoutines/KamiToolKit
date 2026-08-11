@@ -80,8 +80,12 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
     public float ItemSpacing {
         get;
         set {
+            if (field == value) return;
+
             field = value;
-            FullRebuild();
+            if (Height > 0.0f) {
+                FullRebuild();
+            }
         }
     }
 
