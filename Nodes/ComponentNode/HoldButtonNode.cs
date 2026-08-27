@@ -102,9 +102,7 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
             Position = new Vector2(16.0f, 8.0f),
             Size = new Vector2(68.0f, 20.0f),
             AlignmentType = AlignmentType.Center,
-            TextColor = ColorHelper.GetColor(50),
-            TextId = 1,
-            SheetType = NodeData.SheetType.Addon,
+            TextColor = ColorHelper.GetColor(50)
         };
         TextNode.AttachNode(this);
 
