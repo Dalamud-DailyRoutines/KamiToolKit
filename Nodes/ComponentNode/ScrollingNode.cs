@@ -166,7 +166,7 @@ public class ScrollingNode<T> : ResNode where T : NodeBase, new() {
             ContentNode.Height = Height;
         }
         else {
-            ContentNode.Width = Width;
+            ContentNode.Width = Width - 12f;
         }
 
         ClippingContentNode.Size = Size;
