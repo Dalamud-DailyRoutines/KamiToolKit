@@ -361,7 +361,8 @@ public unsafe class MapOverlayController : IDisposable {
         if (mapScale is 0.0f) return false;
 
         var selectedOffset = new Vector2(agentMap->SelectedOffsetX, agentMap->SelectedOffsetY);
-        mapPosition = ((localPosition - new Vector2(1024.0f)) - selectedOffset) / mapScale + selectedOffset;
+        // Invert the marker mapping: node = (world * scale) + offset * (scale - 1) + 1024
+        mapPosition = (localPosition - new Vector2(1024.0f) + selectedOffset) / mapScale - selectedOffset;
         return true;
     }
 

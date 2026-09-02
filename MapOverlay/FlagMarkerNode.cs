@@ -15,7 +15,6 @@ public unsafe class FlagMarkerNode : MapMarkerNode {
     public FlagMarkerNode() {
         IconId = 60561;
         AllowAnyMap = true;
-        UseRawPosition = true;
         Size = new Vector2(32.0f, 32.0f);
     }
 
@@ -29,12 +28,11 @@ public unsafe class FlagMarkerNode : MapMarkerNode {
             IconId = flagMarker.MapMarker.IconId;
         }
 
-        // The flag is stored in world coordinates; remap it into the overlay marker space by
-        // removing the map offset, scaling by the size factor, then adding the offset back
-        var markerXPos = (flagMarker.XFloat - agentMap->SelectedOffsetX) * agentMap->SelectedMapSizeFactorFloat + agentMap->SelectedOffsetX;
-        var markerYPos = (flagMarker.YFloat - agentMap->SelectedOffsetY) * agentMap->SelectedMapSizeFactorFloat + agentMap->SelectedOffsetY;
+        // Follow the currently selected map so Update() can convert the world position
+        MapId = agentMap->SelectedMapId;
 
-        Position = new Vector2(markerXPos, markerYPos);
+        // The flag position is already in world coordinates
+        Position = new Vector2(flagMarker.XFloat, flagMarker.YFloat);
         IsVisible = agentMap->FlagMarkerCount is not 0 && flagMarker.TerritoryId == agentMap->SelectedTerritoryId;
 
         base.OnUpdate();
