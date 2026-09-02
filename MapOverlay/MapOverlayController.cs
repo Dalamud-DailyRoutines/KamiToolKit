@@ -228,7 +228,7 @@ public unsafe class MapOverlayController : IDisposable {
                 TexturePath = markerInfo.TexturePath,
                 Size = markerInfo.Size ?? new Vector2(16.0f, 16.0f),
                 Origin = (markerInfo.Size ?? new Vector2(16.0f, 16.0f)) / 2.0f,
-                Position = markerInfo.Position ?? new Vector2(1024.0f, 1024.0f),
+                WorldPosition = markerInfo.Position ?? new Vector2(1024.0f, 1024.0f),
                 TextTooltip = markerInfo.Tooltip ?? string.Empty,
                 AllowAnyMap = markerInfo.AllowAnyMap,
             };

@@ -51,7 +51,7 @@ public unsafe class MapMarkerNode : ResNode {
     /// <remarks>
     /// Expects a value between 0.0f and 1024.0f, where 0,0 is the center of the map.
     /// </remarks>
-    public new Vector2 Position { get; set; }
+    public new Vector2 WorldPosition { get; set; }
 
     /// <summary>
     /// Gets or sets the tooltip shown when hovering over this marker.
@@ -158,7 +158,7 @@ public unsafe class MapMarkerNode : ResNode {
         OnUpdate();
 
         var centerOffset = new Vector2(1024.0f, 1024.0f);
-        var markerPosition = Position;
+        var markerPosition = WorldPosition;
 
         if (!UseRawPosition) {
             if (!IDataManager.Get().GetExcelSheet<Map>().TryGetRow(MapId, out var mapRow)) {
@@ -168,7 +168,7 @@ public unsafe class MapMarkerNode : ResNode {
 
             var mapScale = mapRow.SizeFactor / 100.0f;
             var mapOffset = new Vector2(mapRow.OffsetX, mapRow.OffsetY) * (mapScale - 1);
-            markerPosition = (Position * mapScale) + mapOffset;
+            markerPosition = (WorldPosition * mapScale) + mapOffset;
         }
 
         base.Size = Size * MarkerScale;

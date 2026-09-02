@@ -34,7 +34,7 @@ public unsafe class FlagMarkerNode : MapMarkerNode {
         var markerXPos = (flagMarker.XFloat - agentMap->SelectedOffsetX) * agentMap->SelectedMapSizeFactorFloat + agentMap->SelectedOffsetX;
         var markerYPos = (flagMarker.YFloat - agentMap->SelectedOffsetY) * agentMap->SelectedMapSizeFactorFloat + agentMap->SelectedOffsetY;
 
-        Position = new Vector2(markerXPos, markerYPos);
+        WorldPosition = new Vector2(markerXPos, markerYPos);
         IsVisible = agentMap->FlagMarkerCount is not 0 && flagMarker.TerritoryId == agentMap->SelectedTerritoryId;
 
         base.OnUpdate();
