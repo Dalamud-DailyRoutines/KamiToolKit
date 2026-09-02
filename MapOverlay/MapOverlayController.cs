@@ -162,9 +162,8 @@ public unsafe class MapOverlayController : IDisposable {
 
         var agentMap = AgentMap.Instance();
 
-        if (showingTooltip && HideMarkersOnControlKey && agentMap->IsControlKeyPressed) {
+        if (HideMarkersOnControlKey && agentMap->IsControlKeyPressed && AnyMarkerTooltipShowing()) {
             AtkStage.Instance()->TooltipManager.HideTooltip(addon->Id);
-            showingTooltip = false;
         }
 
         ProcessQueues();
@@ -210,6 +209,9 @@ public unsafe class MapOverlayController : IDisposable {
             if (controlKeyPressed && HideMarkersOnControlKey) {
                 marker.ResNode->Visible = false;
             }
+
+            marker.RefreshInteractivity();
+            marker.UpdateTooltipFollowMouse();
         }
 
         UpdateFlagNode(areaMap);
@@ -283,6 +285,15 @@ public unsafe class MapOverlayController : IDisposable {
         }
     }
 
+    private bool AnyMarkerTooltipShowing() {
+        foreach (var marker in markerNodes) {
+            if (marker.TooltipShowing) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void ProcessMouseMove(AtkEventData* atkEventData) {
         if (clippingContainerNode is null) return;
 
@@ -293,7 +304,6 @@ public unsafe class MapOverlayController : IDisposable {
 
         if (mapAddon->NumBlockingAddons != 0) return;
 
-        var anyCollisions = false;
         var anyInteractions = false;
 
         if (!AgentMap.Instance()->IsControlKeyPressed || !HideMarkersOnControlKey) {
@@ -302,21 +312,12 @@ public unsafe class MapOverlayController : IDisposable {
                     continue;
                 }
 
-                node.ShowTextTooltip(node.TextTooltip);
-                showingTooltip = true;
-                anyCollisions = true;
-
                 if (node.OnClick is not null || node.OnRightClick is not null) {
                     IAddonEventManager.Get().SetCursor(AddonCursorType.Clickable);
                     showingInteractCursor = true;
                     anyInteractions = true;
                 }
             }
-        }
-
-        if (!anyCollisions && showingTooltip) {
-            AtkStage.Instance()->TooltipManager.HideTooltip(mapAddon->Id);
-            showingTooltip = false;
         }
 
         if (!anyInteractions && showingInteractCursor) {
@@ -332,22 +333,13 @@ public unsafe class MapOverlayController : IDisposable {
         var mapAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("AreaMap");
         if (mapAddon is null || mapAddon->NumBlockingAddons != 0) return;
 
-        for (var index = markerNodes.Count - 1; index >= 0; index--) {
-            var node = markerNodes[index];
-
-            if (node.IsActuallyVisible && node.CheckCollision(atkEventData)) {
-                if (isRightClick)
-                {
-                    if (node.OnRightClick is null) continue;
-
-                    node.OnRightClick.Invoke();
+        // Marker clicks are handled by the marker nodes themselves, but any click
+        // over an interactive marker must not fall through to the empty map click.
+        if (!isRightClick) {
+            foreach (var node in markerNodes) {
+                if (node.IsActuallyVisible && node.CheckCollision(atkEventData)) {
+                    return;
                 }
-                else
-                {
-                    node.OnClick?.Invoke();
-                }
-
-                return;
             }
         }
 
@@ -391,7 +383,6 @@ public unsafe class MapOverlayController : IDisposable {
     private ResNode? overlayNode;
     private ViewportEventListener? viewportEventListener;
 
-    private bool showingTooltip;
     private bool showingInteractCursor;
 
     private readonly List<MapMarkerNode> markerNodes = [];
