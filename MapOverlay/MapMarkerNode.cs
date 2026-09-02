@@ -34,7 +34,7 @@ public unsafe class MapMarkerNode : ResNode {
     public override bool IsVisible { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets the markers size. Default is 32x32.
+    /// Gets or sets the markers size in pixels.
     /// </summary>
     public new Vector2 Size { get; set; }
 
@@ -49,9 +49,9 @@ public unsafe class MapMarkerNode : ResNode {
     /// Gets or sets the markers position on the map.
     /// </summary>
     /// <remarks>
-    /// Expects a value between 0.0f and 1024.0f, where 0,0 is the center of the map.
+    /// Expects the position in world coordinates on the XZ plane.
     /// </remarks>
-    public Vector2 WorldPosition { get; set; }
+    public new Vector2 Position { get; set; }
 
     /// <summary>
     /// Gets or sets the tooltip shown when hovering over this marker.
@@ -158,7 +158,7 @@ public unsafe class MapMarkerNode : ResNode {
         OnUpdate();
 
         var centerOffset = new Vector2(1024.0f, 1024.0f);
-        var markerPosition = WorldPosition;
+        var markerPosition = Position;
 
         if (!UseRawPosition) {
             if (!IDataManager.Get().GetExcelSheet<Map>().TryGetRow(MapId, out var mapRow)) {
@@ -168,7 +168,7 @@ public unsafe class MapMarkerNode : ResNode {
 
             var mapScale = mapRow.SizeFactor / 100.0f;
             var mapOffset = new Vector2(mapRow.OffsetX, mapRow.OffsetY) * (mapScale - 1);
-            markerPosition = (WorldPosition * mapScale) + mapOffset;
+            markerPosition = (Position * mapScale) + mapOffset;
         }
 
         base.Size = Size * MarkerScale;

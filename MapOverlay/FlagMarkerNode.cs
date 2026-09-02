@@ -29,12 +29,12 @@ public unsafe class FlagMarkerNode : MapMarkerNode {
             IconId = flagMarker.MapMarker.IconId;
         }
 
-        // For flags, take the map positions of the flag, remove the offset from it
-        // then multiply by mapSize before adding offset back
+        // The flag is stored in world coordinates; remap it into the overlay marker space by
+        // removing the map offset, scaling by the size factor, then adding the offset back
         var markerXPos = (flagMarker.XFloat - agentMap->SelectedOffsetX) * agentMap->SelectedMapSizeFactorFloat + agentMap->SelectedOffsetX;
         var markerYPos = (flagMarker.YFloat - agentMap->SelectedOffsetY) * agentMap->SelectedMapSizeFactorFloat + agentMap->SelectedOffsetY;
 
-        WorldPosition = new Vector2(markerXPos, markerYPos);
+        Position = new Vector2(markerXPos, markerYPos);
         IsVisible = agentMap->FlagMarkerCount is not 0 && flagMarker.TerritoryId == agentMap->SelectedTerritoryId;
 
         base.OnUpdate();

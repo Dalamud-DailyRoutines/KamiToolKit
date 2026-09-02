@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Dalamud.Interface.Textures.TextureWraps;
 using Lumina.Text.ReadOnly;
 
@@ -15,7 +15,7 @@ public class MapMarkerInfo {
     public uint MapId { get; set; }
 
     /// <summary>
-    /// The 2-Dimensional position of this Map marker, range is [0 -> 2048] for both X and Y, with 1024,1024 being the center of the map.
+    /// The position of this map marker in world coordinates on the XZ plane.
     /// </summary>
     public Vector2? Position { get; set; }
 
