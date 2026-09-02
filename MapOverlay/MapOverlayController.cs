@@ -29,6 +29,11 @@ public unsafe class MapOverlayController : IDisposable {
     public bool IsVisible { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets whether markers are hidden while the control key is held down.
+    /// </summary>
+    public bool HideMarkersOnControlKey { get; set; } = false;
+
+    /// <summary>
     /// Enables the map controller.
     /// </summary>
     /// <remarks>
@@ -157,7 +162,7 @@ public unsafe class MapOverlayController : IDisposable {
 
         var agentMap = AgentMap.Instance();
 
-        if (showingTooltip && agentMap->IsControlKeyPressed) {
+        if (showingTooltip && HideMarkersOnControlKey && agentMap->IsControlKeyPressed) {
             AtkStage.Instance()->TooltipManager.HideTooltip(addon->Id);
             showingTooltip = false;
         }
@@ -169,7 +174,9 @@ public unsafe class MapOverlayController : IDisposable {
         var mapComponent = areaMap.ComponentMap;
         if (mapComponent is null) return;
 
-        clippingContainerNode.IsVisible = !agentMap->IsControlKeyPressed && IsVisible;
+        var controlKeyPressed = agentMap->IsControlKeyPressed;
+
+        clippingContainerNode.IsVisible = IsVisible;
 
         clippingContainerNode.Size = mapComponent->OwnerNode->AtkResNode.Size;
         clippingContainerNode.Position = mapComponent->OwnerNode->AtkResNode.Position;
@@ -197,6 +204,12 @@ public unsafe class MapOverlayController : IDisposable {
         foreach (var marker in markerNodes) {
             marker.Update();
             marker.Scale = Vector2.One / new Vector2(areaMap.MarkerPositionScaling, areaMap.MarkerPositionScaling);
+
+            // Hide markers while the control key is held down, without touching the
+            // markers own IsVisible value so it recovers automatically
+            if (controlKeyPressed && HideMarkersOnControlKey) {
+                marker.ResNode->Visible = false;
+            }
         }
 
         UpdateFlagNode(areaMap);
@@ -264,7 +277,7 @@ public unsafe class MapOverlayController : IDisposable {
                 ProcessMouseMove(atkEventData);
                 break;
 
-            case AtkEventType.MouseDown when !AgentMap.Instance()->IsControlKeyPressed:
+            case AtkEventType.MouseDown when !AgentMap.Instance()->IsControlKeyPressed || !HideMarkersOnControlKey:
                 ProcessMouseClick(atkEventData);
                 break;
         }
@@ -278,10 +291,12 @@ public unsafe class MapOverlayController : IDisposable {
 
         if (RaptureAtkModule.Instance()->AtkCollisionManager.IntersectingAddon != mapAddon) return;
 
+        if (mapAddon->NumBlockingAddons != 0) return;
+
         var anyCollisions = false;
         var anyInteractions = false;
 
-        if (!AgentMap.Instance()->IsControlKeyPressed) {
+        if (!AgentMap.Instance()->IsControlKeyPressed || !HideMarkersOnControlKey) {
             foreach (var node in markerNodes) {
                 if (!node.IsActuallyVisible || !node.CheckCollision(atkEventData) || !clippingContainerNode.CheckCollision(atkEventData)) {
                     continue;
@@ -314,8 +329,12 @@ public unsafe class MapOverlayController : IDisposable {
         var isRightClick = atkEventData->MouseData.ButtonId is 1;
         if (!isRightClick && atkEventData->MouseData.ButtonId is not 0) return;
 
+        var mapAddon = RaptureAtkUnitManager.Instance()->GetAddonByName("AreaMap");
+        if (mapAddon is null || mapAddon->NumBlockingAddons != 0) return;
+
         for (var index = markerNodes.Count - 1; index >= 0; index--) {
             var node = markerNodes[index];
+
             if (node.IsActuallyVisible && node.CheckCollision(atkEventData)) {
                 if (isRightClick)
                 {
