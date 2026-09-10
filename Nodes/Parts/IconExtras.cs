@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System.Drawing;
+using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
@@ -56,7 +58,24 @@ public unsafe class IconExtras : ResNode {
     /// <summary>
     /// Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
+    public TextNode CooldownTextNode { get; }
+
+    /// <summary>
+    /// Not intended for public use, but it's here if you absolutely need it.
+    /// </summary>
     public ImageNode TimelineImageNode { get; }
+
+    /// <summary>
+    /// Gets or sets the current cost text color.
+    /// </summary>
+    public CostTextColor CostTextColor {
+        get;
+        set {
+            field = value;
+            ResourceCostTextNode.TextColor = value.TextColor;
+            ResourceCostTextNode.TextOutlineColor = value.TextOutlineColor;
+        }
+    } = CostTextColor.Mana;
 
     /// <summary>
     /// Constructs a new <see cref="IconExtras"/>
@@ -138,17 +157,33 @@ public unsafe class IconExtras : ResNode {
         };
         QuantityTextNode.AttachNode(this);
 
-        // Also cooldown time text for non-globals
         ResourceCostTextNode = new TextNode {
             NodeId = 8,
             Size = new Vector2(48.0f, 12.0f),
             Position = new Vector2(3.0f, 37.0f),
             NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents,
-            Color = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(51),
+            Color = CostTextColor.Mana.TextColor,
+            TextOutlineColor = CostTextColor.Mana.TextOutlineColor,
             AlignmentType = AlignmentType.Left,
+            FontType = FontType.Axis,
+            FontSize = 12,
+            TextFlags = TextFlags.Edge,
         };
         ResourceCostTextNode.AttachNode(this);
+
+        CooldownTextNode = new TextNode {
+            NodeId = 22,
+            Size = new Vector2(40.0f, 35.0f),
+            Position = new Vector2(4.0f, 7.0f),
+            NodeFlags = NodeFlags.Enabled | NodeFlags.EmitsEvents,
+            TextColor = KnownColor.White.Vector(),
+            TextOutlineColor = KnownColor.Black.Vector(),
+            AlignmentType = AlignmentType.Center,
+            TextFlags = TextFlags.Edge,
+            FontSize = 24,
+            FontType = FontType.TrumpGothic,
+        };
+        CooldownTextNode.AttachNode(this);
 
         ClickFlashImageNode = new ImageNode {
             NodeId = 7,

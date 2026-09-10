@@ -1,12 +1,15 @@
 using System;
 using System.Numerics;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.BaseTypes.ComponentNode;
+using KamiToolKit.Classes;
+using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
-using Lumina.Data.Parsing.Uld;
+using Lumina.Excel.Sheets;
 using Lumina.Text.ReadOnly;
+using Action = System.Action;
 
 namespace KamiToolKit.Nodes;
 
@@ -102,7 +105,8 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
             Position = new Vector2(16.0f, 8.0f),
             Size = new Vector2(68.0f, 20.0f),
             AlignmentType = AlignmentType.Center,
-            TextColor = ColorHelper.GetColor(50)
+            String = IDataManager.Get().GetExcelSheet<Addon>().GetRow(1).Text,
+            TextColor = ColorHelper.GetColor(50),
         };
         TextNode.AttachNode(this);
 

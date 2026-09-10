@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -75,7 +75,14 @@ public abstract unsafe partial class NodeBase {
         set {
             ResNode->SetWidth((ushort)value);
             if (value >= 0) {
-                OnSizeChanged();
+                if (isInsideSizeChanged) return;
+                isInsideSizeChanged = true;
+                try {
+                    OnSizeChanged();
+                }
+                finally {
+                    isInsideSizeChanged = false;
+                }
             }
         }
     }
@@ -92,7 +99,14 @@ public abstract unsafe partial class NodeBase {
             ResNode->SetHeight((ushort)value);
 
             if (value >= 0) {
-                OnSizeChanged();
+                if (isInsideSizeChanged) return;
+                isInsideSizeChanged = true;
+                try {
+                    OnSizeChanged();
+                }
+                finally {
+                    isInsideSizeChanged = false;
+                }
             }
         }
     }
@@ -110,7 +124,14 @@ public abstract unsafe partial class NodeBase {
             ResNode->SetHeight((ushort)value.Y);
 
             if (value is { X: >= 0, Y: >= 0}) {
-                OnSizeChanged();
+                if (isInsideSizeChanged) return;
+                isInsideSizeChanged = true;
+                try {
+                    OnSizeChanged();
+                }
+                finally {
+                    isInsideSizeChanged = false;
+                }
             }
         }
     }
@@ -423,4 +444,5 @@ public abstract unsafe partial class NodeBase {
     private Action<bool>? OnVisibilityToggled { get; set; }
 
     private bool? lastIsVisible;
+    private bool isInsideSizeChanged;
 }

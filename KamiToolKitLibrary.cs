@@ -1,14 +1,16 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
+using System.Threading.Tasks;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using KamiToolKit.BaseTypes;
+using KamiToolKit.Classes;
 using KamiToolKit.Debug;
 using KamiToolKit.Internal.Classes;
 using Serilog.Events;
@@ -23,7 +25,7 @@ public static class KamiToolKitLibrary {
 
     /// <summary>
     /// Gets the <see cref="IDalamudPluginInterface"/> used for KamiToolKit.
-    /// This can be accessed anytime after <see cref="Initialize"/> has been called.
+    /// This can be accessed anytime after <see cref="InitializeAsync"/> has been called.
     /// </summary>
     public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
 
@@ -36,6 +38,8 @@ public static class KamiToolKitLibrary {
     internal static ResourceManager? ResourceManager;
     internal static CultureInfo? CurrentCulture;
 
+    internal static AddonConfigFile? AddonConfigFile;
+
     private static bool debugMode;
     private static WindowSystem? debugWindowSystem;
     private static DebugWindow? debugWindow;
@@ -44,7 +48,7 @@ public static class KamiToolKitLibrary {
     /// Main initialization method for KamiToolKit. This method is required to be invoked before any KamiToolKit features are used.
     /// Failure to do so will not result in any direct warnings, but will result in undefined behavior.
     /// </summary>
-    public static void Initialize(IDalamudPluginInterface pluginInterface, string? defaultWindowSubtitle = null) {
+    public static async Task InitializeAsync(IDalamudPluginInterface pluginInterface, string? defaultWindowSubtitle = null) {
         DefaultWindowSubtitle = defaultWindowSubtitle;
         PluginInterface = pluginInterface;
 
@@ -60,7 +64,9 @@ public static class KamiToolKitLibrary {
 
         IPluginLog.Get().Info($"KamiToolKit initialized for {PluginInterface.InternalName} Default SubTitle: '{defaultWindowSubtitle}'");
 
-        NativeAddon.InitializeCloseCallback();
+        AddonConfigFile = await LoadAddonConfigFileAsync();
+
+        await IFramework.Get().Run(NativeAddon.InitializeCloseCallback);
 
         RegisterDebugHelpers();
     }
@@ -77,6 +83,16 @@ public static class KamiToolKitLibrary {
     /// </summary>
     public static void SetCurrentCulture(CultureInfo culture) {
         CurrentCulture = culture;
+    }
+
+    /// <summary>
+    /// Loads or creates AddonConfigFile, and then tries to migrate any {internalName}.addon.json files to new version.
+    /// </summary>
+    private static async Task<AddonConfigFile> LoadAddonConfigFileAsync() {
+        var configFile = await AddonConfigFile.LoadAsync();
+        await configFile.TryMigrateOldConfigs();
+
+        return configFile;
     }
 
     [Conditional("DEBUG")]
@@ -103,22 +119,14 @@ public static class KamiToolKitLibrary {
     }
 
     /// <summary>
-    /// Alias for Cleanup
+    /// Disposes KamiToolKit resources.
     /// </summary>
-    public static void Dispose() => Cleanup();
+    public static void Dispose() {
+        if (!ThreadSafety.IsMainThread) {
+            IPluginLog.Get().Error("Error, KamiToolKit tried to dispose while not on the main thread. Use DisposeAsync instead.");
+            return;
+        }
 
-    /// <summary>
-    /// Alias for Cleanup
-    /// </summary>
-    public static void Shutdown() => Cleanup();
-
-    /// <summary>
-    /// Cleans up any potentially leaked resources that KamiToolKit has allocated.
-    /// </summary>
-    /// <remarks>
-    /// Must be called from the main thread.
-    /// </remarks>
-    public static void Cleanup() {
         if (debugMode) {
             PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;
             ICommandManager.Get().RemoveHandler($"/ktkdebug_{PluginInterface.InternalName}");
@@ -127,7 +135,26 @@ public static class KamiToolKitLibrary {
 
         NativeAddon.DisposeCloseCallback();
 
-        if (IFramework.Get().IsFrameworkUnloading) return;
+        NodeBase.WarnLeakedNodes();
+        NativeAddon.WarnLeakedAddons();
+
+        NativeAddon.DisposeAddons();
+        NodeBase.DisposeNodes();
+
+        PluginInterface.RelinquishData(NodeDataShareKey);
+    }
+
+    /// <summary>
+    /// Disposes KamiToolkit resources async.
+    /// </summary>
+    public static async Task DisposeAsync() {
+        if (debugMode) {
+            PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;
+            ICommandManager.Get().RemoveHandler($"/ktkdebug_{PluginInterface.InternalName}");
+            debugWindowSystem.RemoveAllWindows();
+        }
+
+        await IFramework.Get().Run(NativeAddon.DisposeCloseCallback);
 
         NodeBase.WarnLeakedNodes();
         NativeAddon.WarnLeakedAddons();

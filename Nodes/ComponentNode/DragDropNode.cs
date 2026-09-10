@@ -18,7 +18,7 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
     /// <summary>
     /// Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
-    public ImageNode DragDropBackgroundNode { get; }
+    public SimpleImageNode DragDropBackgroundNode { get; }
 
     /// <summary>
     /// Not intended for public use, but it's here if you absolutely need it.
@@ -150,6 +150,14 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
     }
 
     /// <summary>
+    /// Gets or sets the visibility of the background frame.
+    /// </summary>
+    public bool IsBackgroundShown {
+        get => DragDropBackgroundNode.IsVisible;
+        set => DragDropBackgroundNode.IsVisible = value;
+    }
+
+    /// <summary>
     /// Gets or sets the text tooltip for this node.
     /// </summary>
     public override ReadOnlySeString TextTooltip {
@@ -162,6 +170,7 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
                     AddEvent(AtkEventType.DragDropRollOut, HideTooltip);
 
                     TooltipRegistered = true;
+                    base.TextTooltip = value;
                     break;
             }
         }
@@ -180,7 +189,6 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
     /// </summary>
     public override void ShowTooltip() {
         if (AtkStage.Instance()->DragDropManager.IsDragging) return;
-        ActionTooltip = (uint)Payload.Int2;
 
         base.ShowTooltip();
     }
@@ -194,12 +202,12 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         DragDropBackgroundNode = new SimpleImageNode {
             NodeId = 3,
             Size = new Vector2(44.0f, 44.0f),
-            TexturePath = "ui/uld/DragTargetA.tex",
             TextureCoordinates = new Vector2(0.0f, 0.0f),
             TextureSize = new Vector2(44.0f, 44.0f),
             WrapMode = WrapMode.Tile,
             NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents,
         };
+        DragDropBackgroundNode.LoadTexture("ui/uld/DragTargetA.tex", false);
         DragDropBackgroundNode.AttachNode(this);
 
         IconNode = new IconNode {
