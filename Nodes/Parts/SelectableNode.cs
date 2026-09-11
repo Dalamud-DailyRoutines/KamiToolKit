@@ -14,12 +14,12 @@ public abstract class SelectableNode : ResNode {
     /// <summary>
     /// Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
-    private NineGridNode HoveredBackgroundNode { get; }
+    public NineGridNode HoveredBackgroundNode { get; }
 
     /// <summary>
     /// Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
-    private NineGridNode SelectedBackgroundNode { get; }
+    public NineGridNode SelectedBackgroundNode { get; }
 
     /// <summary>
     /// Gets or sets the actions that is invoked when this node is clicked. Provides a reference to itself.
