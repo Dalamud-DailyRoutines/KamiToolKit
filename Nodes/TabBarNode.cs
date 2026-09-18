@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -29,6 +29,12 @@ public class TabBarNode : ResNode, IControllerNavigable {
 
     /// <inheritdoc/>
     public int NavDown { get; set; }
+
+    /// <summary>
+    /// Gets a read only collection of the tab buttons contained in this bar.
+    /// </summary>
+    public IReadOnlyList<TabBarRadioButtonNode> TabButtons
+        => radioButtons;
 
     /// <summary>
     /// Sets the initial nodes that this list will use.
