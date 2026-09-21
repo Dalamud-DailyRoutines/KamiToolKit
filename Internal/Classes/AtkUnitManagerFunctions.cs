@@ -7,7 +7,7 @@ namespace KamiToolKit.Internal.Classes;
 /// <summary>
 /// Wrappers for AtkUnitManager functions that FFXIVClientStructs does not declare.
 /// </summary>
-internal static class AtkUnitManagerFunctions {
+internal static unsafe class AtkUnitManagerFunctions {
     /// <summary>
     /// Resolves every signature used by this class.
     /// </summary>
@@ -24,7 +24,7 @@ internal static class AtkUnitManagerFunctions {
     /// The game resolves <paramref name="addonId"/> through its loaded unit list, so the target addon has to be registered already.
     /// Unblocking is performed by the game itself, see the BlockedParentId handling of AtkUnitBase.Hide.
     /// </remarks>
-    internal static unsafe void SetAddonBlocking
+    internal static void SetAddonBlocking
     (
         AtkUnitManager* unitManager,
         ushort          addonId,
