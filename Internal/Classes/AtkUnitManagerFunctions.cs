@@ -32,6 +32,7 @@ internal static class AtkUnitManagerFunctions {
     )
         => setAddonBlockingPtr(unitManager, addonId, isBlocking ? (byte)1 : (byte)0);
 
+    // TODO: FFCS
     private const string SetAddonBlockingSignature = "66 85 D2 0F 84 ?? ?? ?? ?? 48 89 6C 24 ?? 56";
 
     private static SetAddonBlockingDelegate setAddonBlockingPtr = null!;
