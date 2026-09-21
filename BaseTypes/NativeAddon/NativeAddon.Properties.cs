@@ -90,6 +90,22 @@ public unsafe partial class NativeAddon {
         => InternalAddon is null ? 0 : InternalAddon->Id;
 
     /// <summary>
+    /// Gets or inits the addons ID that this window reports to the game in its callbacks.
+    /// </summary>
+    /// <remarks>
+    /// AtkUnitBase.FireCallback passes AtkUnitBase.ParentId instead of the own ID, so setting this delegates the callback to another addon.
+    /// </remarks>
+    public int ParentAddonId { get; init; }
+
+    /// <summary>
+    /// Gets or inits the addons ID that this window blocks while it is shown.
+    /// </summary>
+    /// <remarks>
+    /// Setting this increments AtkUnitBase.NumBlockingAddons of the target addon, the game decrements it again when this window hides.
+    /// </remarks>
+    public int BlockedParentAddonId { get; init; }
+
+    /// <summary>
     /// Gets or sets whether this addon should remove its close position.
     /// </summary>
     public bool RememberClosePosition { get; set; } = true;

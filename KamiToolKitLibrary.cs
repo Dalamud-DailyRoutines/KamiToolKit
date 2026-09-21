@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -55,6 +55,8 @@ public static class KamiToolKitLibrary {
         // Inject non-Experimental Properties
         PluginInterface.Create<Services>();
         IGameInteropProvider.Get().InitializeFromAttributes(Experimental);
+
+        AtkUnitManagerFunctions.Initialize();
 
         // Create node data share
         AllocatedNodes = PluginInterface.GetOrCreateData(NodeDataShareKey, () => new ConcurrentDictionary<nint, Type>());

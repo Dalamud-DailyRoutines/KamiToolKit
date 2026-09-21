@@ -101,6 +101,8 @@ public unsafe partial class NativeAddon {
             Dispose();
             throw new Exception("Failed to initialize addon!");
         }
+
+        ApplyParentRelations();
     }
 
     private void SetInitialState() {
