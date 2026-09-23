@@ -22,6 +22,19 @@ public class IconButtonNode : ButtonBase {
     public IconImageNode ImageNode { get; }
 
     /// <summary>
+    /// Gets or sets the inner padding used for the displayed icon.
+    /// </summary>
+    public Vector2 InnerPadding {
+        get;
+        set {
+            if (field == value) return;
+
+            field = value;
+            OnSizeChanged();
+        }
+    } = new(16f);
+
+    /// <summary>
     /// Gets or sets the iconId used for the displayed icon.
     /// </summary>
     public uint IconId {
@@ -59,7 +72,7 @@ public class IconButtonNode : ButtonBase {
     protected override void OnSizeChanged() {
         base.OnSizeChanged();
 
-        ImageNode.Size = Size - new Vector2(16.0f, 16.0f);
+        ImageNode.Size = Size - InnerPadding;
         ImageNode.Position = BackgroundNode.Position + new Vector2(BackgroundNode.LeftOffset, BackgroundNode.TopOffset);
         BackgroundNode.Size = Size;
     }
