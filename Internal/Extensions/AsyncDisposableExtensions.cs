@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace KamiToolKit.Internal.Extensions;
+﻿namespace KamiToolKit.Internal.Extensions;
 
 /// <summary>
 ///     Extensions for handling IAsyncDispose a little easier.

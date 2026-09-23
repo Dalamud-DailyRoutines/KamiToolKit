@@ -1,4 +1,3 @@
-using System;
 using System.Numerics;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes.Simplified;

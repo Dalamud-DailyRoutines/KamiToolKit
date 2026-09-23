@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace KamiToolKit.Interfaces;
+﻿namespace KamiToolKit.Interfaces;
 
 /// <summary>
 ///     Interface representing the functions expected of various AddonEvent Controllers.

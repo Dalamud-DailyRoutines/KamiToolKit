@@ -1,4 +1,3 @@
-using System;
 using System.Numerics;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;

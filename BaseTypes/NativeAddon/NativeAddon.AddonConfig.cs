@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;

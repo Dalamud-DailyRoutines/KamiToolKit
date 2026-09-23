@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace KamiToolKit.Enums;
+﻿namespace KamiToolKit.Enums;
 
 /// <summary>
 ///     Enumeration of AtkResNode DrawFlags. ClientStructs didn't

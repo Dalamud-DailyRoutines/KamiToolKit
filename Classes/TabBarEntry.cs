@@ -1,5 +1,4 @@
-﻿using System;
-using Lumina.Data.Parsing.Uld;
+﻿using Lumina.Data.Parsing.Uld;
 using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit.Classes;

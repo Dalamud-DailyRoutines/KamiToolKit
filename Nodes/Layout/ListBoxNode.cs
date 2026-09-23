@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Enums;

@@ -1,5 +1,4 @@
-﻿using System;
-using KamiToolKit.BaseTypes;
+﻿using KamiToolKit.BaseTypes;
 
 namespace KamiToolKit.Enums;
 

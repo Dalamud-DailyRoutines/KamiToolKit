@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Common.Math;
 using FFXIVClientStructs.FFXIV.Component.GUI;

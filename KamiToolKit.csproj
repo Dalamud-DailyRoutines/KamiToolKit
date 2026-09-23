@@ -4,6 +4,7 @@
         <LangVersion>preview</LangVersion>
         <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
         <NoWarn>CS1591</NoWarn>
+        <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <!-- Dalamud.NET.Sdk settings -->
@@ -13,7 +14,7 @@
 
     <!-- Assets -->
     <ItemGroup>
-        <Content Include="Assets\**\*.png" CopyToOutputDirectory="Always"/>
+        <Content Include="Assets\**\*.png" CopyToOutputDirectory="Always" />
     </ItemGroup>
 
     <!-- FFXIVClientStructs -->
@@ -22,7 +23,7 @@
     </PropertyGroup>
 
     <ItemGroup Condition="Exists('..\FFXIVClientStructs')">
-        <ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="True"/>
-        <ProjectReference Include="..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="True"/>
+        <ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="True" />
+        <ProjectReference Include="..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="True" />
     </ItemGroup>
 </Project>

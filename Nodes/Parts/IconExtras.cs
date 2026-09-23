@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;

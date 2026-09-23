@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 
