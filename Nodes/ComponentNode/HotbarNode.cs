@@ -1,7 +1,8 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Numerics;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Keys;
+using Dalamud.Game.Gui;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -11,6 +12,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
+using KamiToolKit.Extensions;
 using KamiToolKit.Internal.Classes;
 using Lumina.Text.ReadOnly;
 
@@ -22,6 +24,7 @@ namespace KamiToolKit.Nodes;
 public class HotbarNode : DragDropNode
 {
     private static HotbarNode? dragSourceNode;
+    private static bool       settingSourceNodeData;
 
     private RaptureHotbarModule.HotbarSlot           hotbarData;
     private RaptureHotbarModule.HotbarUIIntermediate hotbarState;
@@ -49,6 +52,8 @@ public class HotbarNode : DragDropNode
         OnDiscard         = OnHotbarNodeDiscard;
         OnBegin           = OnDragDropBegin;
         OnEnd             = OnDragDropEnd;
+
+        IGameGui.Get().AgentUpdate += OnAgentUpdate;
     }
 
     /// <summary>
@@ -57,228 +62,21 @@ public class HotbarNode : DragDropNode
     public TextNode KeybindTextNode { get; }
 
     /// <summary>
-    ///     Gets or sets whether this action is available for use.
-    /// </summary>
-    public bool IsAvailable
-    {
-        get;
-        set
-        {
-            field = value;
-            IconNode.IconImage.MultiplyColor = value ?
-                                                   new Vector3(1.0f, 1.0f, 1.0f) :
-                                                   new Vector3(0.5f, 0.5f, 0.5f);
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets whether the gear icon representing a macro is shown.
-    /// </summary>
-    public bool ShowMacroIcon
-    {
-        get;
-        set
-        {
-            field = value;
-
-            if (value)
-                IconNode.IconIndicator2.IconNode.PartId = 14;
-            IconNode.IconIndicator2.IconNode.IsVisible = value;
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets the primary resource cost text.
-    /// </summary>
-    public uint ResourceCost
-    {
-        get;
-        set
-        {
-            field                                           = value;
-            IconNode.IconExtras.ResourceCostTextNode.String = value.ToString();
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets whether the resource cost node should be visible.
-    /// </summary>
-    public bool ShowResourceCost
-    {
-        get => IconNode.IconExtras.ResourceCostTextNode.IsVisible;
-        set => IconNode.IconExtras.ResourceCostTextNode.IsVisible = value;
-    }
-
-    /// <summary>
-    ///     Gets or sets the charge count.
-    /// </summary>
-    public uint ChargeCount
-    {
-        get;
-        set
-        {
-            field                                           = value;
-            IconNode.IconExtras.ChargeCountImageNode.PartId = value;
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets the charge cooldown percentage.
-    /// </summary>
-    public float ChargePercent
-    {
-        get;
-        set
-        {
-            field                                                          = value;
-            IconNode.IconExtras.AlternateCooldownNode.CooldownImage.PartId = (uint)((value * 80) + 81);
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets a value indicating whether the charge count node should be shown.
-    /// </summary>
-    public bool ShowChargeCount
-    {
-        get;
-        set
-        {
-            field                                               = value;
-            IconNode.IconExtras.AlternateCooldownNode.IsVisible = value;
-            IconNode.IconExtras.ChargeCountImageNode.IsVisible  = value;
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets the cooldown percent background.
-    /// </summary>
-    public uint CooldownSeconds
-    {
-        get;
-        set
-        {
-            field                                       = value;
-            IconNode.IconExtras.CooldownTextNode.String = value.ToString();
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets whether the cooldown text should be shown.
-    /// </summary>
-    public bool ShowCooldownSeconds
-    {
-        get;
-        set
-        {
-            field                                          = value;
-            IconNode.IconExtras.CooldownTextNode.IsVisible = value;
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets the cooldown percentage.
-    /// </summary>
-    public float CooldownPercent
-    {
-        get;
-        set
-        {
-            field                                                 = value;
-            IconNode.IconExtras.CooldownNode.CooldownImage.PartId = (uint)(value * 80);
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets a value indicating whether the cooldown progress should display.
-    /// </summary>
-    public bool ShowCooldownPercent
-    {
-        get;
-        set
-        {
-            field                                                       = value;
-            IconNode.IconExtras.CooldownNode.GlossyImageFrame.IsVisible = !value;
-            IconNode.IconExtras.CooldownNode.CooldownImage.IsVisible    = value;
-        }
-    }
-
-    /// <summary>
-    ///     Gets or sets the color used for the cost text.
-    /// </summary>
-    public CostTextColor CostTextColor
-    {
-        get => IconNode.IconExtras.CostTextColor;
-        set => IconNode.IconExtras.CostTextColor = value;
-    }
-
-    /// <summary>
     ///     Gets or sets the keybind that will activate this slot.
     /// </summary>
     public KeySetting? KeyBind { get; set; }
 
     /// <summary>
+    ///     Gets whether this slot is empty.
+    /// </summary>
+    public bool IsEmpty => Payload.Type is 0 or DragDropType.Nothing;
+
+    /// <summary>
     ///     Updates the hotbar slots current state, cost, icon, and various other fields.
     /// </summary>
-    public unsafe void Update()
+    public void Update()
     {
-        var hotbarModule = RaptureHotbarModule.Instance();
-        if (hotbarModule is null) return;
-
-        hotbarState.Ctor();
-
-        // Update hotbar data each frame, this is probably wasteful,
-        // but we're still triggering like 1/10th the updates native does, so sue me.
-        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
-
-        var isMacro = hotbarData.CommandType is RaptureHotbarModule.HotbarSlotType.Macro;
-
-        fixed (RaptureHotbarModule.HotbarSlot* data = &hotbarData)
-        fixed (RaptureHotbarModule.HotbarUIIntermediate* state = &hotbarState)
-        {
-            RaptureHotbarModule.HotbarSlotType outType;
-            uint                               outActionId;
-            ushort                             unkC4;
-
-            RaptureHotbarModule.GetSlotAppearance(&outType, &outActionId, &unkC4, hotbarModule, data);
-            hotbarData.ApparentActionId = outActionId;
-            hotbarData.ApparentSlotType = outType;
-
-            RaptureHotbarModule.Instance()->PrepareSlotForRender(data, state);
-
-            IconId = hotbarState.IconId;
-
-            // IsBackgroundShow tells us we wanna force this slot to be visible.
-            IsVisible = !hotbarData.IsEmpty || IsBackgroundShown;
-
-            var isAvailable = hotbarState.ActionAvailable1 || hotbarState.ActionAvailable2;
-
-            IsAvailable   = isAvailable || isMacro;
-            ShowMacroIcon = isMacro;
-
-            ShowResourceCost = hotbarState.CostType is 2 or 5; // Mana or GP
-            ResourceCost     = hotbarState.CostValue;
-            CostTextColor = hotbarState.CostType switch
-            {
-                2 => CostTextColor.Mana,
-                5 => CostTextColor.DoL,
-                _ => CostTextColor.Mana
-            };
-
-            ShowChargeCount = hotbarState.CooldownMode is 3;
-            ChargeCount     = hotbarState.CurrentCharges;
-            ChargePercent   = hotbarState.ChargePercent / 100.0f;
-
-            ShowCooldownSeconds = hotbarState.CooldownSeconds is not 0;
-            CooldownSeconds     = hotbarState.CooldownSeconds;
-
-            ShowCooldownPercent = hotbarState.CooldownPercent is not 0;
-            CooldownPercent     = hotbarState.CooldownPercent / 100.0f;
-
-            KeybindTextNode.String = KeyBind is null ?
-                                         string.Empty :
-                                         GetKeybindText(KeyBind);
-            KeybindTextNode.IsVisible = (KeyBind is not null && !hotbarData.IsEmpty) || IsBackgroundShown;
-        }
+        UpdateSlotAppearance();
 
         TryProcessKeybind();
 
@@ -289,8 +87,22 @@ public class HotbarNode : DragDropNode
         }
     }
 
+    /// <inheritdoc />
+    protected override void Dispose
+    (
+        bool disposing,
+        bool isNativeDestructor
+    )
+    {
+        if (IsDisposed) return;
+
+        base.Dispose(disposing, isNativeDestructor);
+
+        IGameGui.Get().AgentUpdate -= OnAgentUpdate;
+    }
+
     /// <summary>
-    ///     Gets this hotbar slot to the specific type and id.
+    ///     Sets this hotbar slot to the specific type and id.
     /// </summary>
     public void SetSlot
     (
@@ -305,10 +117,24 @@ public class HotbarNode : DragDropNode
     }
 
     /// <summary>
+    ///     Sets this hotbar slot to the specific type and id.
+    /// </summary>
+    public void SetSlot
+    (
+        DragDropType payloadType,
+        int          payloadInt
+    )
+        => SetSlot(payloadType, (uint)payloadInt);
+
+    /// <summary>
     ///     Function that is called when the associated <see cref="KeyBind" /> is pressed.
     /// </summary>
     protected virtual void OnKeybindPressed()
-        => OnHotbarNodeClicked(this);
+    {
+        OnHotbarNodeClicked(this);
+        IconNode.IconExtras.Timeline?.PlayAnimation(3, true);
+        lastClickTime = DateTime.UtcNow;
+    }
 
     /// <summary>
     ///     Sets this hotbar slot to the specified action.
@@ -324,6 +150,13 @@ public class HotbarNode : DragDropNode
         hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
     }
 
+    private void OnAgentUpdate(AgentUpdateFlag agentFlags)
+    {
+        if (!agentFlags.HasFlag(AgentUpdateFlag.ActionBarUpdate)) return;
+
+        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
+    }
+
     private void OnHotbarNodeRollOver
     (
         DragDropNode thisNode
@@ -331,7 +164,7 @@ public class HotbarNode : DragDropNode
     {
         HideTooltip();
 
-        if (hotbarData.IsEmpty) return;
+        if (!hotbarData.IsValid) return;
 
         switch (hotbarData.CommandType)
         {
@@ -345,6 +178,11 @@ public class HotbarNode : DragDropNode
 
                 if (hotbarData.ApparentSlotType is RaptureHotbarModule.HotbarSlotType.Action)
                     ActionTooltip = hotbarData.ApparentActionId;
+                break;
+
+            default:
+                ActionTooltip = 0;
+                TextTooltip   = string.Empty;
                 break;
         }
 
@@ -363,17 +201,55 @@ public class HotbarNode : DragDropNode
         DragDropPayload payload
     )
     {
-        Payload.Type = payload.Type;
-        Payload.Int2 = payload.Int2;
+        if (settingSourceNodeData) return;
 
-        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(payload.Type), (uint)payload.Int2);
-
-        // Discard the source nod eif it's known.
+        // If source is another KTK Node
         if (dragSourceNode is not null)
         {
-            dragSourceNode.OnDiscard?.Invoke(dragSourceNode);
+
+            // And we are not empty, we need to swap our slots.
+            if (hotbarData.IsValid)
+            {
+                var sourcePayload = dragSourceNode.Payload.Clone();
+
+                // Call OnPayloadAccepted to trigger any down-stream events that are listening for payload change.
+                try
+                {
+                    settingSourceNodeData = true;
+                    dragSourceNode.OnPayloadAccepted?.Invoke(dragSourceNode, Payload);
+                }
+
+                // Ensure this gets cleared, or this'll prevent all HotbarNodes from accepting payloads.
+                finally
+                {
+                    settingSourceNodeData = false;
+                }
+
+                dragSourceNode.Payload = Payload.Clone();
+                Payload                = sourcePayload;
+            }
+
+            // If we are empty, take the sources payload, and tell it to discard what it has
+            else
+            {
+                Payload = dragSourceNode.Payload.Clone();
+                dragSourceNode.OnDiscard?.Invoke(dragSourceNode);
+            }
+
             dragSourceNode.Update();
         }
+
+        // Source is a vanilla node
+        else
+        {
+
+            // If source is a native slot, eventually write this code to get the HotbarSlot* and clear it
+            // But too lazy for that right now.
+            Payload = payload.Clone();
+        }
+
+        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
+        Update();
     }
 
     private unsafe void OnHotbarNodeClicked
@@ -387,8 +263,6 @@ public class HotbarNode : DragDropNode
         fixed (RaptureHotbarModule.HotbarSlot* hotbarSlotData = &hotbarData)
         {
             hotbarModule->ExecuteSlot(hotbarSlotData);
-            IconNode.IconExtras.Timeline?.PlayAnimation(3, true);
-            lastClickTime = DateTime.UtcNow;
         }
     }
 
@@ -399,7 +273,6 @@ public class HotbarNode : DragDropNode
     {
         Payload.Clear();
 
-        hotbarState = new RaptureHotbarModule.HotbarUIIntermediate();
         hotbarState.Ctor();
 
         hotbarData.Set(RaptureHotbarModule.HotbarSlotType.Empty, 0);
@@ -508,5 +381,68 @@ public class HotbarNode : DragDropNode
         };
 
         return $"{modifierKey}{(char)keyBind.Key}";
+    }
+
+    private unsafe void UpdateSlotAppearance()
+    {
+        var hotbarModule = RaptureHotbarModule.Instance();
+        if (hotbarModule is null) return;
+
+        var isMacro = hotbarData.CommandType is RaptureHotbarModule.HotbarSlotType.Macro;
+
+        // Clear hotbar state to get fresh data.
+        hotbarState.Ctor();
+
+        fixed (RaptureHotbarModule.HotbarSlot* data = &hotbarData)
+        fixed (RaptureHotbarModule.HotbarUIIntermediate* state = &hotbarState)
+        {
+            RaptureHotbarModule.HotbarSlotType outType;
+            uint                               outActionId;
+            ushort                             unkC4;
+
+            RaptureHotbarModule.GetSlotAppearance(&outType, &outActionId, &unkC4, hotbarModule, data);
+            hotbarData.ApparentActionId = outActionId;
+            hotbarData.ApparentSlotType = outType;
+
+            RaptureHotbarModule.Instance()->PrepareSlotForRender(data, state);
+
+            IconId = hotbarState.IconId;
+
+            // IsBackgroundShow tells us we wanna force this slot to be visible.
+            IsVisible = hotbarData.IsValid || IsBackgroundShown;
+
+            var isAvailable = hotbarState is { ActionAvailable1: true, ActionAvailable2: true };
+
+            IconNode.IsFaded       = !isAvailable && !isMacro;
+            IconNode.ShowMacroIcon = isMacro;
+
+            IconNode.ResourceCostVisible = hotbarState.CostType is 2 or 5; // Mana or GP
+            IconNode.ResourceCostValue   = hotbarState.CostValue;
+
+            IconNode.CostTextColor = hotbarState.CostType switch
+            {
+                2 => CostTextColor.Mana,
+                5 => CostTextColor.DoL,
+                _ => CostTextColor.Mana
+            };
+            IconNode.IsInvalid = !hotbarState.ActionTargetSatisfied;
+
+            IconNode.ChargeCountVisible = hotbarState.CooldownMode is 3;
+            IconNode.ChargeCount        = hotbarState.CurrentCharges;
+            IconNode.ChargePercent      = hotbarState.ChargePercent / 100.0f;
+
+            IconNode.CooldownSecondsVisible = hotbarState.CooldownSeconds is not 0;
+            IconNode.CooldownSeconds        = hotbarState.CooldownSeconds;
+
+            IconNode.CooldownPercentVisible = hotbarState.CooldownPercent is not 0;
+            IconNode.CooldownPercent        = hotbarState.CooldownPercent / 100.0f;
+
+            IconNode.IsAnts = hotbarState.DrawAnts;
+
+            KeybindTextNode.String = KeyBind is null ?
+                                         string.Empty :
+                                         GetKeybindText(KeyBind);
+            KeybindTextNode.IsVisible = (KeyBind is not null && hotbarData.IsValid) || IsBackgroundShown;
+        }
     }
 }

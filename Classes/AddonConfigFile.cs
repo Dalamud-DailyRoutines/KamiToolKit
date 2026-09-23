@@ -1,11 +1,11 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Dalamud.Plugin.Services;
 using KamiToolKit.Internal.Classes;
 
 namespace KamiToolKit.Classes;
 
 /// <summary>
-///     Data model for reading and writing addon configs to and from a single file instead of one file per addon./plus
+///     Data model for reading and writing addon configs to and from a single file instead of one file per addon.
 /// </summary>
 internal class AddonConfigFile
 {

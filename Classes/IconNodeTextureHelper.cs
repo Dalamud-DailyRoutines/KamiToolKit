@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using KamiToolKit.Nodes;
 
 namespace KamiToolKit.Classes;
@@ -73,7 +73,6 @@ public static unsafe class IconNodeTextureHelper
     /// <summary>
     ///     Loads the IconARecast2 Parts into the provided image node. Not intended for external use.
     /// </summary>
-    /// <param name="imageNode"></param>
     public static void LoadIconARecast2Texture
     (
         ImageNode imageNode
@@ -115,7 +114,6 @@ public static unsafe class IconNodeTextureHelper
     /// <summary>
     ///     Loads the IconARecast1 Parts into the provided image node. Not intended for external use.
     /// </summary>
-    /// <param name="imageNode"></param>
     public static void LoadIconARecastTexture
     (
         ImageNode imageNode

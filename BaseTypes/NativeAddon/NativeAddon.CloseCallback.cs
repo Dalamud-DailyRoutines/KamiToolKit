@@ -1,4 +1,4 @@
-﻿using Dalamud.Hooking;
+using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
@@ -23,15 +23,22 @@ public unsafe partial class NativeAddon
         bool         close
     )
     {
-        IPluginLog.Get().Excessive($"[{thisPtr->NameString}] OnFireCallback");
-
-        foreach (var addon in CreatedAddons)
+        try
         {
-            if (addon == thisPtr && close && addon is { RespectCloseAll: true, IsOverlayAddon: false })
+            IPluginLog.Get().Excessive($"[{thisPtr->NameString}] OnFireCallback");
+
+            foreach (var addon in CreatedAddons)
             {
-                addon.Close();
-                return true;
+                if (addon == thisPtr && close && addon is { RespectCloseAll: true, IsOverlayAddon: false })
+                {
+                    addon.Close();
+                    return true;
+                }
             }
+        }
+        catch (Exception e)
+        {
+            IPluginLog.Get().Exception(e);
         }
 
         return fireCallbackHook!.Original(thisPtr, valueCount, values, close);

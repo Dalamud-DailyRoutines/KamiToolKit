@@ -1,8 +1,10 @@
 using System.Numerics;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
+using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
 using Lumina.Text.ReadOnly;
@@ -219,6 +221,8 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         get;
         set
         {
+            if (field == value) return;
+
             field = value;
 
             switch (value)
@@ -253,6 +257,29 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         if (AtkStage.Instance()->DragDropManager.IsDragging) return;
 
         base.ShowTooltip();
+    }
+
+    /// <inheritdoc />
+    protected override void OnReceiveEvent
+    (
+        AtkComponentBase* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
+    )
+    {
+        try
+        {
+            if (!IsClickable && eventType is AtkEventType.MouseDown)
+                return;
+        }
+        catch (Exception e)
+        {
+            IPluginLog.Get().Exception(e);
+        }
+
+        base.OnReceiveEvent(thisPtr, eventType, eventParam, atkEvent, atkEventData);
     }
 
     private void DragDropBeginHandler
@@ -290,9 +317,6 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         atkEvent->State.ReturnFlags =  1;
 
         var payload = DragDropPayload.FromDragDropInterface(atkEventData->DragDropData.DragDropInterface);
-
-        Payload.Clear();
-        IconId = 0;
 
         OnPayloadAccepted?.Invoke(this, payload);
     }
