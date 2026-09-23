@@ -10,77 +10,93 @@ using Vector4 = System.Numerics.Vector4;
 
 namespace KamiToolKit.BaseTypes;
 
-public abstract unsafe partial class NodeBase {
+public abstract unsafe partial class NodeBase
+{
+    private bool isInsideSizeChanged;
+
+    private bool? lastIsVisible;
 
     /// <summary>
-    /// Gets or sets the nodes X position relative to its parent node.
+    ///     Gets or sets the nodes X position relative to its parent node.
     /// </summary>
-    public virtual float X {
+    public virtual float X
+    {
         get => ResNode->GetXFloat();
         set => ResNode->SetXFloat(value);
     }
 
     /// <summary>
-    /// Gets or sets the nodes Y position relative to its parent node.
+    ///     Gets or sets the nodes Y position relative to its parent node.
     /// </summary>
-    public virtual float Y {
+    public virtual float Y
+    {
         get => ResNode->GetYFloat();
         set => ResNode->SetYFloat(value);
     }
 
     /// <summary>
-    /// Gets or sets the nodes position relative to its parent node.
+    ///     Gets or sets the nodes position relative to its parent node.
     /// </summary>
-    public virtual Vector2 Position {
+    public virtual Vector2 Position
+    {
         get => ResNode->Position;
         set => ResNode->Position = value;
     }
 
     /// <summary>
-    /// Gets or sets the nodes ScreenX position.
+    ///     Gets or sets the nodes ScreenX position.
     /// </summary>
     /// <remarks>
-    /// Setting this doesn't seem to do anything.
+    ///     Setting this doesn't seem to do anything.
     /// </remarks>
-    public virtual float ScreenX {
+    public virtual float ScreenX
+    {
         get => ResNode->ScreenX;
         set => ResNode->ScreenX = value;
     }
 
     /// <summary>
-    /// Gets or sets the nodes ScreenY position.
+    ///     Gets or sets the nodes ScreenY position.
     /// </summary>
     /// <remarks>
-    /// Setting this doesn't seem to do anything.
+    ///     Setting this doesn't seem to do anything.
     /// </remarks>
-    public virtual float ScreenY {
+    public virtual float ScreenY
+    {
         get => ResNode->ScreenY;
         set => ResNode->ScreenY = value;
     }
 
     /// <summary>
-    /// Gets the nodes screen position.
+    ///     Gets the nodes screen position.
     /// </summary>
     public virtual Vector2 ScreenPosition
         => ResNode->ScreenPosition;
 
     /// <summary>
-    /// Gets or sets this nodes Width.
+    ///     Gets or sets this nodes Width.
     /// </summary>
     /// <remarks>
-    /// Triggers <see cref="OnSizeChanged"/>.
+    ///     Triggers <see cref="OnSizeChanged" />.
     /// </remarks>
-    public virtual float Width {
+    public virtual float Width
+    {
         get => ResNode->GetWidth();
-        set {
+        set
+        {
             ResNode->SetWidth((ushort)value);
-            if (value >= 0) {
+
+            if (value >= 0)
+            {
                 if (isInsideSizeChanged) return;
                 isInsideSizeChanged = true;
-                try {
+
+                try
+                {
                     OnSizeChanged();
                 }
-                finally {
+                finally
+                {
                     isInsideSizeChanged = false;
                 }
             }
@@ -88,23 +104,29 @@ public abstract unsafe partial class NodeBase {
     }
 
     /// <summary>
-    /// Gets or sets this nodes Height.
+    ///     Gets or sets this nodes Height.
     /// </summary>
     /// <remarks>
-    /// Triggers <see cref="OnSizeChanged"/>
+    ///     Triggers <see cref="OnSizeChanged" />
     /// </remarks>
-    public virtual float Height {
+    public virtual float Height
+    {
         get => ResNode->GetHeight();
-        set {
+        set
+        {
             ResNode->SetHeight((ushort)value);
 
-            if (value >= 0) {
+            if (value >= 0)
+            {
                 if (isInsideSizeChanged) return;
                 isInsideSizeChanged = true;
-                try {
+
+                try
+                {
                     OnSizeChanged();
                 }
-                finally {
+                finally
+                {
                     isInsideSizeChanged = false;
                 }
             }
@@ -112,24 +134,30 @@ public abstract unsafe partial class NodeBase {
     }
 
     /// <summary>
-    /// Gets or sets this nodes Size.
+    ///     Gets or sets this nodes Size.
     /// </summary>
     /// <remarks>
-    /// Triggers <see cref="OnSizeChanged"/>
+    ///     Triggers <see cref="OnSizeChanged" />
     /// </remarks>
-    public virtual Vector2 Size {
+    public virtual Vector2 Size
+    {
         get => ResNode->Size;
-        set {
+        set
+        {
             ResNode->SetWidth((ushort)value.X);
             ResNode->SetHeight((ushort)value.Y);
 
-            if (value is { X: >= 0, Y: >= 0}) {
+            if (value is { X: >= 0, Y: >= 0 })
+            {
                 if (isInsideSizeChanged) return;
                 isInsideSizeChanged = true;
-                try {
+
+                try
+                {
                     OnSizeChanged();
                 }
-                finally {
+                finally
+                {
                     isInsideSizeChanged = false;
                 }
             }
@@ -137,101 +165,113 @@ public abstract unsafe partial class NodeBase {
     }
 
     /// <summary>
-    /// Gets this node's bounds.
+    ///     Gets this node's bounds.
     /// </summary>
     public Bounds Bounds
         => ResNode->Bounds;
 
     /// <summary>
-    /// Gets this node's center point.
+    ///     Gets this node's center point.
     /// </summary>
     public Vector2 Center
         => ResNode->Center;
 
     /// <summary>
-    /// Gets or sets this node's scale in the X direction.
+    ///     Gets or sets this node's scale in the X direction.
     /// </summary>
-    public virtual float ScaleX {
+    public virtual float ScaleX
+    {
         get => ResNode->GetScaleX();
         set => ResNode->SetScaleX(value);
     }
 
     /// <summary>
-    /// Gets or sets this node's scale in the Y direction.
+    ///     Gets or sets this node's scale in the Y direction.
     /// </summary>
-    public virtual float ScaleY {
+    public virtual float ScaleY
+    {
         get => ResNode->GetScaleY();
         set => ResNode->SetScaleY(value);
     }
 
     /// <summary>
-    /// Gets or sets this node's scale.
+    ///     Gets or sets this node's scale.
     /// </summary>
-    public virtual Vector2 Scale {
+    public virtual Vector2 Scale
+    {
         get => ResNode->Scale;
         set => ResNode->Scale = value;
     }
 
     /// <summary>
-    /// Gets or sets this nodes rotation <em>in Radians</em>.
+    ///     Gets or sets this nodes rotation <em>in Radians</em>.
     /// </summary>
-    public virtual float Rotation {
+    public virtual float Rotation
+    {
         get => ResNode->GetRotation();
         set => ResNode->SetRotation(value);
     }
 
     /// <summary>
-    /// Gets or sets this nodes rotation in degrees.
+    ///     Gets or sets this nodes rotation in degrees.
     /// </summary>
-    public virtual float RotationDegrees {
+    public virtual float RotationDegrees
+    {
         get => ResNode->RotationDegrees;
         set => ResNode->RotationDegrees = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's origin's X position.
+    ///     Gets or sets this node's origin's X position.
     /// </summary>
     /// <remarks>
-    /// This is used as the reference position for animations.
+    ///     This is used as the reference position for animations.
     /// </remarks>
-    public virtual float OriginX {
+    public virtual float OriginX
+    {
         get => ResNode->OriginX;
         set => ResNode->OriginX = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's origin's Y position.
+    ///     Gets or sets this node's origin's Y position.
     /// </summary>
     /// <remarks>
-    /// This is used as the reference position for animations.
+    ///     This is used as the reference position for animations.
     /// </remarks>
-    public virtual float OriginY {
+    public virtual float OriginY
+    {
         get => ResNode->OriginY;
         set => ResNode->OriginY = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's origin.
+    ///     Gets or sets this node's origin.
     /// </summary>
     /// <remarks>
-    /// This is used as the reference position for animations.
+    ///     This is used as the reference position for animations.
     /// </remarks>
-    public virtual Vector2 Origin {
+    public virtual Vector2 Origin
+    {
         get => ResNode->Origin;
         set => ResNode->Origin = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's visibility.
+    ///     Gets or sets this node's visibility.
     /// </summary>
     /// <remarks>
-    /// Triggers <see cref="OnVisibilityToggled"/> if the visibility has changed.
+    ///     Triggers <see cref="OnVisibilityToggled" /> if the visibility has changed.
     /// </remarks>
-    public virtual bool IsVisible {
+    public virtual bool IsVisible
+    {
         get => ResNode->Visible;
-        set {
+        set
+        {
             ResNode->Visible = value;
-            if (lastIsVisible is null || lastIsVisible != value) {
+
+            if (lastIsVisible is null || lastIsVisible != value)
+            {
                 OnVisibilityToggled?.Invoke(value);
                 lastIsVisible = value;
             }
@@ -239,210 +279,245 @@ public abstract unsafe partial class NodeBase {
     }
 
     /// <summary>
-    /// Gets or sets the nodes flags.
+    ///     Gets or sets the nodes flags.
     /// </summary>
-    public NodeFlags NodeFlags {
+    public NodeFlags NodeFlags
+    {
         get => ResNode->NodeFlags;
         set => ResNode->NodeFlags = value;
     }
 
     /// <summary>
-    /// Gets or sets this nodes Color.
+    ///     Gets or sets this nodes Color.
     /// </summary>
     /// <remarks>
-    /// Expected value ranges are from 0.0f to 1.0f.
+    ///     Expected value ranges are from 0.0f to 1.0f.
     /// </remarks>
-    public virtual Vector4 Color {
+    public virtual Vector4 Color
+    {
         get => ResNode->ColorVector;
         set => ResNode->ColorVector = value;
     }
 
     /// <summary>
-    /// Gets or sets this nodes Color via HSVA.
+    ///     Gets or sets this nodes Color via HSVA.
     /// </summary>
     /// <remarks>
-    /// Due to converting to and from HSVA there may be some error.
+    ///     Due to converting to and from HSVA there may be some error.
     /// </remarks>
-    public virtual ColorHelpers.HsvaColor ColorHsva {
+    public virtual ColorHelpers.HsvaColor ColorHsva
+    {
         get => ResNode->ColorHsva;
         set => ResNode->ColorHsva = value;
     }
 
     /// <summary>
-    /// Gets or sets this nodes Alpha value.
+    ///     Gets or sets this nodes Alpha value.
     /// </summary>
     /// <remarks>
-    /// Expected value ranges are from 0.0f to 1.0f.
+    ///     Expected value ranges are from 0.0f to 1.0f.
     /// </remarks>
-    public virtual float Alpha {
+    public virtual float Alpha
+    {
         get => ResNode->Color.A;
         set => ResNode->SetAlpha((byte)(value * 255.0f));
     }
 
     /// <summary>
-    /// Gets or sets this node's AddColor.
+    ///     Gets or sets this node's AddColor.
     /// </summary>
     /// <remarks>
-    /// Expected value ranges from 0.0f to 1.0f.
+    ///     Expected value ranges from 0.0f to 1.0f.
     /// </remarks>
-    public virtual Vector3 AddColor {
+    public virtual Vector3 AddColor
+    {
         get => ResNode->AddColor;
         set => ResNode->AddColor = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's AddColor via HSVA.
+    ///     Gets or sets this node's AddColor via HSVA.
     /// </summary>
     /// <remarks>
-    /// Due to converting to and from HSVA there may be some error.
+    ///     Due to converting to and from HSVA there may be some error.
     /// </remarks>
-    public virtual ColorHelpers.HsvaColor AddColorHsva {
+    public virtual ColorHelpers.HsvaColor AddColorHsva
+    {
         get => ResNode->AddColorHsva;
         set => ResNode->AddColorHsva = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's MultiplyColor.
+    ///     Gets or sets this node's MultiplyColor.
     /// </summary>
     /// <remarks>
-    /// Expected value ranges from 0.0f to 1.0f.
+    ///     Expected value ranges from 0.0f to 1.0f.
     /// </remarks>
-    public virtual Vector3 MultiplyColor {
+    public virtual Vector3 MultiplyColor
+    {
         get => ResNode->MultiplyColor;
         set => ResNode->MultiplyColor = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's MultiplyColor via HSVA.
+    ///     Gets or sets this node's MultiplyColor via HSVA.
     /// </summary>
     /// <remarks>
-    /// Due to converting to and from HSVA there may be some error.
+    ///     Due to converting to and from HSVA there may be some error.
     /// </remarks>
-    public virtual ColorHelpers.HsvaColor MultiplyColorHsva {
+    public virtual ColorHelpers.HsvaColor MultiplyColorHsva
+    {
         get => ResNode->MultiplyColorHsva;
         set => ResNode->MultiplyColorHsva = value;
     }
 
     /// <summary>
-    /// Gets or sets this nodes id.
+    ///     Gets or sets this nodes id.
     /// </summary>
-    public uint NodeId {
+    public uint NodeId
+    {
         get => ResNode->NodeId;
         set => ResNode->NodeId = value;
     }
 
     /// <summary>
-    /// Gets or sets this node's DrawFlags.
+    ///     Gets or sets this node's DrawFlags.
     /// </summary>
-    public virtual DrawFlags DrawFlags {
+    public virtual DrawFlags DrawFlags
+    {
         get => (DrawFlags)ResNode->DrawFlags;
-        set => ResNode->DrawFlags = (uint)value & 0b1111_1111_1111_1100_0000_0011_1111_1111 |
-                                    ResNode->DrawFlags & 0b0000_0000_0000_0011_1111_1100_0000_0000;
+        set => ResNode->DrawFlags = ((uint)value        & 0b1111_1111_1111_1100_0000_0011_1111_1111) |
+                                    (ResNode->DrawFlags & 0b0000_0000_0000_0011_1111_1100_0000_0000);
     }
 
     /// <summary>
-    /// Gets or sets this node's ClipCount.
+    ///     Gets or sets this node's ClipCount.
     /// </summary>
-    public virtual int ClipCount {
+    public virtual int ClipCount
+    {
         get => (int)((ResNode->DrawFlags & 0b0000_0000_0000_0011_1111_1100_0000_0000) >> 10);
-        set => ResNode->DrawFlags = (uint)(value << 10 & 0b0000_0000_0000_0011_1111_1100_0000_0000)
-                                    | ResNode->DrawFlags & 0b1111_1111_1111_1100_0000_0011_1111_1111;
+        set => ResNode->DrawFlags = (uint)((value << 10) & 0b0000_0000_0000_0011_1111_1100_0000_0000) |
+                                    (ResNode->DrawFlags & 0b1111_1111_1111_1100_0000_0011_1111_1111);
     }
 
     /// <summary>
-    /// Add the specified draw flags to this node's DrawFlags.
+    ///     Gets or sets this nodes Priority.
     /// </summary>
-    public void AddDrawFlags(params DrawFlags[] flags) {
-        foreach (var flag in flags) {
-            DrawFlags |= flag;
-        }
-    }
-
-    /// <summary>
-    /// Removes the specified draw flags from this node's DrawFlags.
-    /// </summary>
-    public void RemoveDrawFlags(params DrawFlags[] flags) {
-        foreach (var flag in flags) {
-            DrawFlags &= ~flag;
-        }
-    }
-
-    /// <summary>
-    /// Gets or sets this nodes Priority.
-    /// </summary>
-    public int Priority {
+    public int Priority
+    {
         get => ResNode->GetPriority();
         set => ResNode->SetPriority((ushort)value);
     }
 
     /// <summary>
-    /// Gets this nodes child count.
+    ///     Gets this nodes child count.
     /// </summary>
     public virtual int ChildCount
         => ResNode->ChildCount;
 
     /// <summary>
-    /// Add the specified node flags to this node's NodeFlags.
+    ///     Gets or sets this nodes transform value.
     /// </summary>
-    /// <param name="flags"></param>
-    public void AddNodeFlags(params NodeFlags[] flags) {
-        foreach (var flag in flags) {
-            NodeFlags |= flag;
-        }
-    }
-
-    /// <summary>
-    /// Remove the specified node flags from this node's NodeFlags.
-    /// </summary>
-    public void RemoveNodeFlags(params NodeFlags[] flags) {
-        foreach (var flag in flags) {
-            NodeFlags &= ~flag;
-        }
-    }
-
-    /// <summary>
-    /// Marks this node and all of its children as dirty causing the game to update them next frame.
-    /// </summary>
-    public void MarkDirty() {
-        foreach (var child in GetAllChildren(this)) {
-            child.ResNode->AddDrawFlag([DrawFlags.IsDirty]);
-        }
-        ResNode->AddDrawFlag([DrawFlags.IsDirty]);
-    }
-
-    /// <summary>
-    /// Check collision with this node using short-value coords.
-    /// </summary>
-    public bool CheckCollision(short x, short y, bool inclusive = true)
-        => ResNode->CheckCollision(x, y, inclusive);
-
-    /// <summary>
-    /// Check collision with this node using short-value coords.
-    /// </summary>
-    public bool CheckCollision(Vector2 position, bool inclusive = true)
-        => ResNode->CheckCollision((short)position.X, (short)position.Y, inclusive);
-
-    /// <summary>
-    /// Check collision with this node using coords read from a AtkEventData object.
-    /// </summary>
-    public bool CheckCollision(AtkEventData* eventData, bool inclusive = true)
-        => ResNode->CheckCollision(eventData, inclusive);
-
-    /// <summary>
-    /// Gets or sets this nodes transform value.
-    /// </summary>
-    public Matrix2x2 Transform {
+    public Matrix2x2 Transform
+    {
         get => ResNode->Transform;
         set => ResNode->Transform = value;
     }
 
-    /// <summary>
-    /// Overridable function that is called whenever this node's size is changed.
-    /// </summary>
-    protected virtual void OnSizeChanged() {}
-
     private Action<bool>? OnVisibilityToggled { get; set; }
 
-    private bool? lastIsVisible;
-    private bool isInsideSizeChanged;
+    /// <summary>
+    ///     Add the specified draw flags to this node's DrawFlags.
+    /// </summary>
+    public void AddDrawFlags
+    (
+        params DrawFlags[] flags
+    )
+    {
+        foreach (var flag in flags)
+            DrawFlags |= flag;
+    }
+
+    /// <summary>
+    ///     Removes the specified draw flags from this node's DrawFlags.
+    /// </summary>
+    public void RemoveDrawFlags
+    (
+        params DrawFlags[] flags
+    )
+    {
+        foreach (var flag in flags)
+            DrawFlags &= ~flag;
+    }
+
+    /// <summary>
+    ///     Add the specified node flags to this node's NodeFlags.
+    /// </summary>
+    /// <param name="flags"></param>
+    public void AddNodeFlags
+    (
+        params NodeFlags[] flags
+    )
+    {
+        foreach (var flag in flags)
+            NodeFlags |= flag;
+    }
+
+    /// <summary>
+    ///     Remove the specified node flags from this node's NodeFlags.
+    /// </summary>
+    public void RemoveNodeFlags
+    (
+        params NodeFlags[] flags
+    )
+    {
+        foreach (var flag in flags)
+            NodeFlags &= ~flag;
+    }
+
+    /// <summary>
+    ///     Marks this node and all of its children as dirty causing the game to update them next frame.
+    /// </summary>
+    public void MarkDirty()
+    {
+        foreach (var child in GetAllChildren(this))
+            child.ResNode->AddDrawFlag(DrawFlags.IsDirty);
+        ResNode->AddDrawFlag(DrawFlags.IsDirty);
+    }
+
+    /// <summary>
+    ///     Check collision with this node using short-value coords.
+    /// </summary>
+    public bool CheckCollision
+    (
+        short x,
+        short y,
+        bool  inclusive = true
+    )
+        => ResNode->CheckCollision(x, y, inclusive);
+
+    /// <summary>
+    ///     Check collision with this node using short-value coords.
+    /// </summary>
+    public bool CheckCollision
+    (
+        Vector2 position,
+        bool    inclusive = true
+    )
+        => ResNode->CheckCollision((short)position.X, (short)position.Y, inclusive);
+
+    /// <summary>
+    ///     Check collision with this node using coords read from a AtkEventData object.
+    /// </summary>
+    public bool CheckCollision
+    (
+        AtkEventData* eventData,
+        bool          inclusive = true
+    )
+        => ResNode->CheckCollision(eventData, inclusive);
+
+    /// <summary>
+    ///     Overridable function that is called whenever this node's size is changed.
+    /// </summary>
+    protected virtual void OnSizeChanged() { }
 }

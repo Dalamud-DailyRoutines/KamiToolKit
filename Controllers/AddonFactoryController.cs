@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using InteropGenerator.Runtime;
@@ -12,58 +11,72 @@ using KamiToolKit.Internal.Classes;
 namespace KamiToolKit.Controllers;
 
 /// <summary>
-/// Controller intended to interact with the games native Addon Factory system
-/// to fully replace a built-in game addon with a custom <see cref="NativeAddon"/>.
+///     Controller intended to interact with the games native Addon Factory system
+///     to fully replace a built-in game addon with a custom <see cref="NativeAddon" />.
 /// </summary>
-public class AddonFactoryController : IDisposable, IAsyncDisposable {
+public class AddonFactoryController : IDisposable, IAsyncDisposable
+{
+    private NativeAddon? nativeAddon;
+
+    private nint?                                             originalFactoryCreateAddress;
+    private RaptureAtkModule.AddonFactoryInfo.CreateDelegate? pinnedFactoryCreateMethod;
 
     /// <summary>
-    /// Addon name to bind to.
+    ///     Addon name to bind to.
     /// </summary>
     public required string AddonName { get; init; }
 
     /// <summary>
-    /// Function to allocate the <see cref="NativeAddon"/> that will replace the named addon.
+    ///     Function to allocate the <see cref="NativeAddon" /> that will replace the named addon.
     /// </summary>
     /// <remarks>
-    /// KamiToolKit will take ownership of the created addon.
+    ///     KamiToolKit will take ownership of the created addon.
     /// </remarks>
     public required Func<NativeAddon> CreateNativeAddonFunction { get; init; }
 
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync() =>
+        await DisableAsync();
+
+    /// <inheritdoc />
+    public void Dispose()
+        => Disable();
+
     /// <summary>
-    /// Enables the addon factory replacement.
+    ///     Enables the addon factory replacement.
     /// </summary>
     /// <remarks>
-    /// Must be invoked from the main game thread.
+    ///     Must be invoked from the main game thread.
     /// </remarks>
-    public unsafe void Enable() {
+    public unsafe void Enable()
+    {
         var factoryInfo = RaptureAtkModule.Instance()->GetAddonFactoryInfo(AddonName);
         if (factoryInfo is null) return;
 
         originalFactoryCreateAddress = (nint?)factoryInfo->Create;
-        pinnedFactoryCreateMethod = CreateCustomAddon;
-        factoryInfo->Create = (delegate* unmanaged<RaptureAtkModule*, CStringPointer, uint, AtkValue*, AtkUnitBase*>) Marshal.GetFunctionPointerForDelegate(pinnedFactoryCreateMethod);
+        pinnedFactoryCreateMethod    = CreateCustomAddon;
+        factoryInfo->Create = (delegate* unmanaged<RaptureAtkModule*, CStringPointer, uint, AtkValue*, AtkUnitBase*>)Marshal.GetFunctionPointerForDelegate
+            (pinnedFactoryCreateMethod);
     }
 
     /// <summary>
-    /// Enables the addon factory replacement.
+    ///     Enables the addon factory replacement.
     /// </summary>
     /// <remarks>
-    /// Activation will be delayed until the next game tick.
+    ///     Activation will be delayed until the next game tick.
     /// </remarks>
-    public async Task EnableAsync() {
-
+    public async Task EnableAsync() =>
         // Just run enable, there's not really any optimizing that we can do here.
         await IFramework.Get().Run(Enable);
-    }
 
     /// <summary>
-    /// Disables addon factory replacement and disposes any open replaced addons.
+    ///     Disables addon factory replacement and disposes any open replaced addons.
     /// </summary>
     /// <remarks>
-    /// Must be invoked from the main game thread.
+    ///     Must be invoked from the main game thread.
     /// </remarks>
-    public unsafe void Disable() {
+    public unsafe void Disable()
+    {
 
         nativeAddon?.Dispose();
         nativeAddon = null;
@@ -72,40 +85,35 @@ public class AddonFactoryController : IDisposable, IAsyncDisposable {
         if (factoryInfo is null) return;
 
         // This is dumb, but the compiler will warn otherwise.
-        if (originalFactoryCreateAddress is null) {
+        if (originalFactoryCreateAddress is null)
             factoryInfo->Create = null;
-        }
-        else {
-            factoryInfo->Create = (delegate* unmanaged<RaptureAtkModule*, CStringPointer, uint, AtkValue*, AtkUnitBase*>) originalFactoryCreateAddress;
-        }
+        else
+            factoryInfo->Create = (delegate* unmanaged<RaptureAtkModule*, CStringPointer, uint, AtkValue*, AtkUnitBase*>)originalFactoryCreateAddress;
 
-        pinnedFactoryCreateMethod = null;
+        pinnedFactoryCreateMethod    = null;
         originalFactoryCreateAddress = null;
     }
 
     /// <summary>
-    /// Disable the addon factory replacement.
+    ///     Disable the addon factory replacement.
     /// </summary>
     /// <remarks>
-    /// Applies after the next game tick.
+    ///     Applies after the next game tick.
     /// </remarks>
-    public async Task DisableAsync() {
-
+    public async Task DisableAsync() =>
         // Just run disable, there's not really any optimizing that we can do here.
         await IFramework.Get().Run(Disable);
-    }
 
-    /// <inheritdoc />
-    public void Dispose()
-        => Disable();
-
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync() {
-        await DisableAsync();
-    }
-
-    private unsafe AtkUnitBase* CreateCustomAddon(RaptureAtkModule* raptureAtkModule, CStringPointer addonName, uint valueCount, AtkValue* values) {
-        try {
+    private unsafe AtkUnitBase* CreateCustomAddon
+    (
+        RaptureAtkModule* raptureAtkModule,
+        CStringPointer    addonName,
+        uint              valueCount,
+        AtkValue*         values
+    )
+    {
+        try
+        {
 
             // We have no reasonable way to reuse the current instance, so dispose the previous and make a new one.
             nativeAddon?.Dispose();
@@ -115,14 +123,11 @@ public class AddonFactoryController : IDisposable, IAsyncDisposable {
 
             return nativeAddon;
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
         return null;
     }
-
-    private nint? originalFactoryCreateAddress;
-    private RaptureAtkModule.AddonFactoryInfo.CreateDelegate? pinnedFactoryCreateMethod;
-    private NativeAddon? nativeAddon;
 }

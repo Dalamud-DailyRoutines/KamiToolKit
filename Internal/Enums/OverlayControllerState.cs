@@ -1,7 +1,8 @@
 ﻿namespace KamiToolKit.Internal.Enums;
 
-internal enum ControllerState {
+internal enum ControllerState
+{
     WaitForNameplate,
     WaitForReady,
-    Ready,
+    Ready
 }

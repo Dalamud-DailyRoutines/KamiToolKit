@@ -3,16 +3,17 @@
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Which side to anchor node within a <see cref="VerticalListNode"/>.
+///     Which side to anchor node within a <see cref="VerticalListNode" />.
 /// </summary>
-public enum VerticalListAnchor {
+public enum VerticalListAnchor
+{
     /// <summary>
-    /// Top
+    ///     Top
     /// </summary>
     Top,
 
     /// <summary>
-    /// Bottom
+    ///     Bottom
     /// </summary>
-    Bottom,
+    Bottom
 }

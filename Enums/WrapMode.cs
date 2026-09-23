@@ -3,29 +3,30 @@
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Wrap Mode flags for <see cref="ImageNode"/>
+///     Wrap Mode flags for <see cref="ImageNode" />
 /// </summary>
 /// <remarks>
-/// For most cases you likely just want to use <see cref="ImageNode.FitTexture"/>.
+///     For most cases you likely just want to use <see cref="ImageNode.FitTexture" />.
 /// </remarks>
-public enum WrapMode {
+public enum WrapMode
+{
     /// <summary>
-    /// None
+    ///     None
     /// </summary>
     None = 0,
 
     /// <summary>
-    /// Tile
+    ///     Tile
     /// </summary>
     Tile = 1,
 
     /// <summary>
-    /// Stretch
+    ///     Stretch
     /// </summary>
     Stretch = 2,
 
     /// <summary>
-    /// TileMirrored
+    ///     TileMirrored
     /// </summary>
-    TileMirrored = 3,
+    TileMirrored = 3
 }

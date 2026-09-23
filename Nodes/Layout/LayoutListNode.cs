@@ -9,128 +9,152 @@ using KamiToolKit.Interfaces;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// Abstract base class for nodes that are intended to help with laying out other nodes.
+///     Abstract base class for nodes that are intended to help with laying out other nodes.
 /// </summary>
-public abstract class LayoutListNode : ResNode, ILayoutListNode {
+public abstract class LayoutListNode : ResNode, ILayoutListNode
+{
+    private bool suppressRecalculateLayout;
 
     /// <summary>
-    /// Nav index for use with setting contained nodes controller nav values.
+    ///     Gets the list of nodes that this <see cref="LayoutListNode" /> is managing.
+    /// </summary>
+    protected List<NodeBase> NodeList { get; } = [];
+
+    /// <summary>
+    ///     Nav index for use with setting contained nodes controller nav values.
     /// </summary>
     /// <remarks>
-    /// Must be non-zero to apply nav to contained nodes.
+    ///     Must be non-zero to apply nav to contained nodes.
     /// </remarks>
     public int NavIndex { get; set; }
 
     /// <summary>
-    /// Get a readonly enumerable of the contained nodes of the specified type.
+    ///     Get a readonly enumerable of the contained nodes of the specified type.
     /// </summary>
     /// <typeparam name="T">The NodeType to search for.</typeparam>
     /// <returns>An IEnumerable of Nodes.</returns>
     public IEnumerable<T> GetNodes<T>() where T : NodeBase => NodeList.OfType<T>();
 
     /// <summary>
-    /// Get a readonly list of the contained nodes.
+    ///     Get a readonly list of the contained nodes.
     /// </summary>
     public IReadOnlyList<NodeBase> Nodes => NodeList;
 
     /// <summary>
-    /// When true, will clip the nodes contents, preventing any contained nodes
-    /// outside the area of this node from being visible.
+    ///     When true, will clip the nodes contents, preventing any contained nodes
+    ///     outside the area of this node from being visible.
     /// </summary>
     /// <remarks>
-    /// If a node is being partially clipped, it will be un-interactable.
+    ///     If a node is being partially clipped, it will be un-interactable.
     /// </remarks>
-    public bool ClipListContents {
+    public bool ClipListContents
+    {
         get => NodeFlags.HasFlag(NodeFlags.Clip);
-        set {
-            if (value) {
+        set
+        {
+            if (value)
                 AddNodeFlags(NodeFlags.Clip);
-            }
-            else {
+            else
                 RemoveNodeFlags(NodeFlags.Clip);
-            }
         }
     }
 
     /// <summary>
-    /// Spacing between items, does not apply to the first item.
+    ///     Spacing between items, does not apply to the first item.
     /// </summary>
-    public float ItemSpacing {
+    public float ItemSpacing
+    {
         get;
-        set {
+        set
+        {
             field = value;
             RecalculateLayout();
         }
     }
 
     /// <summary>
-    /// Spacing to apply before the first item.
+    ///     Spacing to apply before the first item.
     /// </summary>
-    public float FirstItemSpacing {
+    public float FirstItemSpacing
+    {
         get;
-        set {
+        set
+        {
             field = value;
             RecalculateLayout();
         }
     }
 
     /// <summary>
-    /// Recalculates the contained layout, and controller navigation values if applicable.
+    ///     Recalculates the contained layout, and controller navigation values if applicable.
     /// </summary>
-    public void RecalculateLayout() {
+    public void RecalculateLayout()
+    {
         if (suppressRecalculateLayout) return;
 
-        foreach (var node in NodeList) {
-            if (node is ILayoutListNode subNode) {
+        foreach (var node in NodeList)
+        {
+            if (node is ILayoutListNode subNode)
                 subNode.RecalculateLayout();
-            }
         }
 
         OnRecalculateLayout();
 
-        if (NavIndex is not 0) {
+        if (NavIndex is not 0)
             OnRecalculateNavigation();
-        }
 
-        foreach (var node in NodeList) {
-            if (node is ILayoutListNode subNode) {
+        foreach (var node in NodeList)
+        {
+            if (node is ILayoutListNode subNode)
                 subNode.RecalculateLayout();
-            }
         }
     }
 
     /// <summary>
-    /// An init only collection of nodes, to add a predefined amount of nodes to the list.
-    /// This is the preferred way of adding nodes.
+    ///     An init only collection of nodes, to add a predefined amount of nodes to the list.
+    ///     This is the preferred way of adding nodes.
     /// </summary>
-    public ICollection<NodeBase> InitialNodes {
+    public ICollection<NodeBase> InitialNodes
+    {
         set => AddNode(value);
     }
 
     /// <summary>
-    /// Adds multiple nodes to the list. Added nodes are considered to be owned by the list.
+    ///     Adds multiple nodes to the list. Added nodes are considered to be owned by the list.
     /// </summary>
     /// <param name="nodes">The nodes to add.</param>
-    public virtual void AddNode(IEnumerable<NodeBase> nodes) {
+    public virtual void AddNode
+    (
+        IEnumerable<NodeBase> nodes
+    )
+    {
         suppressRecalculateLayout = true;
-        try {
-            foreach (var node in nodes) {
+
+        try
+        {
+            foreach (var node in nodes)
                 AddNode(node);
-            }
-        } finally {
+        }
+        finally
+        {
             suppressRecalculateLayout = false;
         }
+
         RecalculateLayout();
     }
 
     /// <summary>
-    /// Adds a single node to the list.
+    ///     Adds a single node to the list.
     /// </summary>
     /// <param name="node">Node to add.</param>
     /// <remarks>
-    /// While this function accepts a nullable node, that's just for convenience, if the node is null it will not be added.
+    ///     While this function accepts a nullable node, that's just for convenience, if the node is null it will not be added.
     /// </remarks>
-    public virtual void AddNode(NodeBase? node) {
+    public virtual void AddNode
+    (
+        NodeBase? node
+    )
+    {
         if (node is null) return;
 
         NodeList.Add(node);
@@ -141,26 +165,38 @@ public abstract class LayoutListNode : ResNode, ILayoutListNode {
     }
 
     /// <summary>
-    /// Removes multiple nodes from the list. Removed nodes are disposed by the list.
+    ///     Removes multiple nodes from the list. Removed nodes are disposed by the list.
     /// </summary>
     /// <param name="items">Nodes to remove.</param>
-    public void RemoveNode(IEnumerable<NodeBase> items) {
+    public void RemoveNode
+    (
+        IEnumerable<NodeBase> items
+    )
+    {
         suppressRecalculateLayout = true;
-        try {
-            foreach (var node in items) {
+
+        try
+        {
+            foreach (var node in items)
                 RemoveNode(node);
-            }
-        } finally {
+        }
+        finally
+        {
             suppressRecalculateLayout = false;
         }
+
         RecalculateLayout();
     }
 
     /// <summary>
-    /// Remove a single node from the list. Removed nodes are disposed by the list.
+    ///     Remove a single node from the list. Removed nodes are disposed by the list.
     /// </summary>
     /// <param name="node">Node to remove.</param>
-    public virtual void RemoveNode(NodeBase node) {
+    public virtual void RemoveNode
+    (
+        NodeBase node
+    )
+    {
         if (!NodeList.Contains(node)) return;
 
         NodeList.Remove(node);
@@ -170,60 +206,72 @@ public abstract class LayoutListNode : ResNode, ILayoutListNode {
     }
 
     /// <summary>
-    /// Adds a dummy node to the list, a standard ResNode with no contents for spacing/positioning.
+    ///     Adds a dummy node to the list, a standard ResNode with no contents for spacing/positioning.
     /// </summary>
     /// <param name="size">The size of the dummy to add.</param>
-    public void AddDummy(float size = 0.0f) {
-        var dummyNode = new ResNode {
-            Size = new Vector2(size, size),
+    public void AddDummy
+    (
+        float size = 0.0f
+    )
+    {
+        var dummyNode = new ResNode
+        {
+            Size = new Vector2(size, size)
         };
 
         AddNode(dummyNode);
     }
 
     /// <summary>
-    /// Removes all nodes from the list. All nodes are disposed.
+    ///     Removes all nodes from the list. All nodes are disposed.
     /// </summary>
-    public virtual void Clear() {
+    public virtual void Clear()
+    {
         suppressRecalculateLayout = true;
-        try {
-            foreach (var node in NodeList.ToList()) {
+
+        try
+        {
+            foreach (var node in NodeList.ToList())
                 RemoveNode(node);
-            }
-        } finally {
+        }
+        finally
+        {
             suppressRecalculateLayout = false;
         }
+
         RecalculateLayout();
     }
 
     /// <summary>
-    /// Sorts the contained nodes using the provided comparison.
+    ///     Sorts the contained nodes using the provided comparison.
     /// </summary>
     /// <param name="comparison"></param>
-    public void ReorderNodes(Comparison<NodeBase> comparison) {
+    public void ReorderNodes
+    (
+        Comparison<NodeBase> comparison
+    )
+    {
         NodeList.Sort(comparison);
         RecalculateLayout();
     }
 
     /// <summary>
-    /// Gets the list of nodes that this <see cref="LayoutListNode"/> is managing.
-    /// </summary>
-    protected List<NodeBase> NodeList { get; }= [];
-
-    /// <summary>
-    /// Function that is invoked when this node needs to rebuild its layout.
+    ///     Function that is invoked when this node needs to rebuild its layout.
     /// </summary>
     protected abstract void OnRecalculateLayout();
 
     /// <summary>
-    /// Function that is invoked when this node needs to rebuild its controller navigation layout.
+    ///     Function that is invoked when this node needs to rebuild its controller navigation layout.
     /// </summary>
     protected abstract void OnRecalculateNavigation();
 
     /// <summary>
-    /// Adjusts the nodes properties when <see cref="RecalculateLayout"/> is invoked.
+    ///     Adjusts the nodes properties when <see cref="RecalculateLayout" /> is invoked.
     /// </summary>
-    protected virtual void AdjustNode(NodeBase node) { }
-
-    private bool suppressRecalculateLayout;
+    protected virtual void AdjustNode
+    (
+        NodeBase node
+    )
+    {
+    }
 }

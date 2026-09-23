@@ -1,16 +1,17 @@
 ﻿namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Which side a vertical list node should anchor nodes to.
+///     Which side a vertical list node should anchor nodes to.
 /// </summary>
-public enum VerticalListAlignment {
+public enum VerticalListAlignment
+{
     /// <summary>
-    /// Left
+    ///     Left
     /// </summary>
     Left,
 
     /// <summary>
-    /// Right
+    ///     Right
     /// </summary>
-    Right,
+    Right
 }

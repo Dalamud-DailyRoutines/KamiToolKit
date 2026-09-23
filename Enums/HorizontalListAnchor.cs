@@ -3,12 +3,12 @@ using System.ComponentModel;
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Anchor definitions for <see cref="Nodes.HorizontalListNode"/>
+///     Anchor definitions for <see cref="Nodes.HorizontalListNode" />
 /// </summary>
-public enum HorizontalListAnchor {
-
+public enum HorizontalListAnchor
+{
     /// <summary>
-    /// Anchors the left edge of the contents to the node position.
+    ///     Anchors the left edge of the contents to the node position.
     /// </summary>
     [Description("Left")]
     Left,
@@ -17,8 +17,8 @@ public enum HorizontalListAnchor {
     Center,
 
     /// <summary>
-    /// Anchors the right edge of the contents to the node position.
+    ///     Anchors the right edge of the contents to the node position.
     /// </summary>
     [Description("Right")]
-    Right,
+    Right
 }

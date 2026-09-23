@@ -1,52 +1,53 @@
 ﻿namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Enumeration for key frame group types,
-/// this represents the array index that stores these types of keyframes.
+///     Enumeration for key frame group types,
+///     this represents the array index that stores these types of keyframes.
 /// </summary>
-public enum KeyFrameGroupType {
+public enum KeyFrameGroupType
+{
     /// <summary>
-    /// Position
+    ///     Position
     /// </summary>
     Position = 0,
 
     /// <summary>
-    /// Rotation
+    ///     Rotation
     /// </summary>
     Rotation = 1,
 
     /// <summary>
-    /// Scale
+    ///     Scale
     /// </summary>
     Scale = 2,
 
     /// <summary>
-    /// Alpha
+    ///     Alpha
     /// </summary>
     Alpha = 3,
 
     /// <summary>
-    /// Tint
+    ///     Tint
     /// </summary>
     Tint = 4,
 
     /// <summary>
-    /// PartId
+    ///     PartId
     /// </summary>
     PartId = 5,
 
     /// <summary>
-    /// TextColor
+    ///     TextColor
     /// </summary>
     TextColor = 5,
 
     /// <summary>
-    /// TextEdge
+    ///     TextEdge
     /// </summary>
     TextEdge = 6,
 
     /// <summary>
-    /// TextLabel
+    ///     TextLabel
     /// </summary>
-    TextLabel = 7,
+    TextLabel = 7
 }

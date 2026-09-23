@@ -9,132 +9,45 @@ using KamiToolKit.Nodes;
 namespace KamiToolKit.BaseTypes.ComponentNode;
 
 /// <summary>
-/// Generic Implementation of the games ComponentNode as a base class for use in KTK.
+///     Generic Implementation of the games ComponentNode as a base class for use in KTK.
 /// </summary>
 /// <typeparam name="T">The component type</typeparam>
 /// <typeparam name="TU">The component uld data type</typeparam>
-public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unmanaged, ICreatable<T> where TU : unmanaged {
-
-    /// <inheritdoc/>>
-    public sealed override CollisionNode CollisionNode { get; }
-
-    /// <inheritdoc/>>
-    public sealed override AtkComponentBase* ComponentBase
-        => Node->Component;
-
+public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unmanaged, ICreatable<T> where TU : unmanaged
+{
     /// <summary>
-    /// Gets the typed component.
+    ///     Constructs a new instance of <see cref="ComponentNode" />
     /// </summary>
-    public T* Component
-        => (T*)ComponentBase;
-
-    /// <inheritdoc/>>
-    public sealed override AtkUldComponentDataBase* DataBase
-        => Node->Component->UldManager.ComponentData;
-
-    /// <summary>
-    /// Gets the typed uld data.
-    /// </summary>
-    public TU* Data => (TU*)DataBase;
-
-    /// <summary>
-    /// Implicit conversion to AtkEventListener for seamless game interop.
-    /// </summary>
-    public static implicit operator AtkEventListener*(ComponentNode<T, TU> node)
-        => &node.ComponentBase->AtkEventListener;
-
-    /// <summary>
-    /// Implicit conversion to the components type for seamless game interop.
-    /// </summary>
-    public static implicit operator T*(ComponentNode<T, TU> node)
-        => node.Component;
-
-    /// <summary>
-    /// Implicit conversion to the components uld data type for seamless game interop.
-    /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
-    public static implicit operator TU*(ComponentNode<T, TU> node)
-        => node.Data;
-
-    /// <summary>
-    /// Gets or sets whether the component is in an enabled state. Default is enabled.
-    /// </summary>
-    public virtual bool IsEnabled {
-        get => NodeFlags.HasFlag(NodeFlags.Enabled);
-        set {
-            if (IsEnabled != value) {
-                ComponentBase->SetEnabledState(value);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Sets this node as focused using the <see cref="ComponentNode.FocusNode"/> property.
-    /// </summary>
-    public void SetFocus() {
-        var addon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
-        if (addon is null) return;
-
-        AtkStage.Instance()->AtkInputManager->SetFocus(FocusNode, addon, 0);
-    }
-
-    /// <summary>
-    /// Sets the AtkUldComponent's internal type.
-    /// </summary>
-    protected void SetInternalComponentType(ComponentType type) {
-        var componentInfo = (AtkUldComponentInfo*)ComponentBase->UldManager.Objects;
-
-        componentInfo->ComponentType = type;
-    }
-
-    /// <summary>
-    /// Performs post-construction initialization of components based on their actual created type.
-    /// </summary>
-    /// <remarks>
-    /// The game does a bunch of its own magic here to wire things up for us.
-    /// </remarks>
-    protected void InitializeComponentEvents() {
-        ComponentBase->InitializeFromComponentData(DataBase);
-        ComponentBase->Setup();
-        ComponentBase->SetEnabledState(true);
-    }
-
-    /// <inheritdoc />
-    protected override void OnSizeChanged() {
-        base.OnSizeChanged();
-
-        CollisionNode.Size = Size;
-        ComponentBase->UldManager.RootNodeHeight = (ushort)Height;
-        ComponentBase->UldManager.RootNodeWidth = (ushort)Width;
-    }
-
-    /// <summary>
-    /// Constructs a new instance of <see cref="ComponentNode"/>
-    /// </summary>
-    protected ComponentNode() : base(NodeType.Component) {
-        Node->Component = (AtkComponentBase*)NativeMemoryHelper.Create<T>();
+    protected ComponentNode() : base(NodeType.Component)
+    {
+        Node->Component                           = (AtkComponentBase*)NativeMemoryHelper.Create<T>();
         Node->Component->UldManager.ComponentData = (AtkUldComponentDataBase*)NativeMemoryHelper.UiAlloc<TU>();
 
         RegisterVirtualTable();
 
         ComponentBase->Initialize();
 
-        CollisionNode = new CollisionNode {
-            NodeId = 1,
+        CollisionNode = new CollisionNode
+        {
+            NodeId          = 1,
             LinkedComponent = ComponentBase,
-            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.HasCollision |
-                        NodeFlags.RespondToMouse | NodeFlags.Focusable | NodeFlags.EmitsEvents | NodeFlags.Fill,
+            NodeFlags = NodeFlags.Visible        |
+                        NodeFlags.Enabled        |
+                        NodeFlags.HasCollision   |
+                        NodeFlags.RespondToMouse |
+                        NodeFlags.Focusable      |
+                        NodeFlags.EmitsEvents    |
+                        NodeFlags.Fill
         };
 
         FocusNode = CollisionNode;
 
         CollisionNode.ResNode->ParentNode = ResNode;
-        CollisionNode.ParentUldManager = &((AtkComponentBase*)Component)->UldManager;
+        CollisionNode.ParentUldManager    = &((AtkComponentBase*)Component)->UldManager;
 
         ChildNodes.Add(CollisionNode);
 
-        ComponentBase->OwnerNode = Node;
+        ComponentBase->OwnerNode      = Node;
         ComponentBase->ComponentFlags = 1;
 
         ref var uldManager = ref ComponentBase->UldManager;
@@ -145,41 +58,166 @@ public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unma
 
         SetInternalComponentType(ComponentType.Base);
 
-        objects->NodeList = (AtkResNode**)NativeMemoryHelper.Malloc(8);
+        objects->NodeList    = (AtkResNode**)NativeMemoryHelper.Malloc(8);
         objects->NodeList[0] = CollisionNode;
-        objects->NodeCount = 1;
-        objects->Id = 1000;
+        objects->NodeCount   = 1;
+        objects->Id          = 1000;
 
         uldManager.InitializeResourceRendererManager();
         uldManager.RootNode = CollisionNode;
 
         uldManager.UpdateDrawNodeList();
         uldManager.ResourceFlags = AtkUldManagerResourceFlag.Initialized | AtkUldManagerResourceFlag.ArraysAllocated;
-        uldManager.LoadedState = AtkLoadState.Loaded;
+        uldManager.LoadedState   = AtkLoadState.Loaded;
 
         AddNodeFlags(NodeFlags.EmitsEvents);
     }
 
     /// <inheritdoc />
-    protected override void Dispose(bool disposing, bool isNativeDestructor) {
-        if (disposing) {
-            try {
-                if (!isNativeDestructor && Node is not null && Node->Component is not null) {
+    /// >
+    public sealed override CollisionNode CollisionNode { get; }
+
+    /// <inheritdoc />
+    /// >
+    public sealed override AtkComponentBase* ComponentBase
+        => Node->Component;
+
+    /// <summary>
+    ///     Gets the typed component.
+    /// </summary>
+    public T* Component
+        => (T*)ComponentBase;
+
+    /// <inheritdoc />
+    /// >
+    public sealed override AtkUldComponentDataBase* DataBase
+        => Node->Component->UldManager.ComponentData;
+
+    /// <summary>
+    ///     Gets the typed uld data.
+    /// </summary>
+    public TU* Data => (TU*)DataBase;
+
+    /// <summary>
+    ///     Gets or sets whether the component is in an enabled state. Default is enabled.
+    /// </summary>
+    public virtual bool IsEnabled
+    {
+        get => NodeFlags.HasFlag(NodeFlags.Enabled);
+        set
+        {
+            if (IsEnabled != value)
+                ComponentBase->SetEnabledState(value);
+        }
+    }
+
+    /// <summary>
+    ///     Implicit conversion to AtkEventListener for seamless game interop.
+    /// </summary>
+    public static implicit operator AtkEventListener*
+    (
+        ComponentNode<T, TU> node
+    )
+        => &node.ComponentBase->AtkEventListener;
+
+    /// <summary>
+    ///     Implicit conversion to the components type for seamless game interop.
+    /// </summary>
+    public static implicit operator T*
+    (
+        ComponentNode<T, TU> node
+    )
+        => node.Component;
+
+    /// <summary>
+    ///     Implicit conversion to the components uld data type for seamless game interop.
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    public static implicit operator TU*
+    (
+        ComponentNode<T, TU> node
+    )
+        => node.Data;
+
+    /// <summary>
+    ///     Sets this node as focused using the <see cref="ComponentNode.FocusNode" /> property.
+    /// </summary>
+    public void SetFocus()
+    {
+        var addon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
+        if (addon is null) return;
+
+        AtkStage.Instance()->AtkInputManager->SetFocus(FocusNode, addon, 0);
+    }
+
+    /// <summary>
+    ///     Sets the AtkUldComponent's internal type.
+    /// </summary>
+    protected void SetInternalComponentType
+    (
+        ComponentType type
+    )
+    {
+        var componentInfo = (AtkUldComponentInfo*)ComponentBase->UldManager.Objects;
+
+        componentInfo->ComponentType = type;
+    }
+
+    /// <summary>
+    ///     Performs post-construction initialization of components based on their actual created type.
+    /// </summary>
+    /// <remarks>
+    ///     The game does a bunch of its own magic here to wire things up for us.
+    /// </remarks>
+    protected void InitializeComponentEvents()
+    {
+        ComponentBase->InitializeFromComponentData(DataBase);
+        ComponentBase->Setup();
+        ComponentBase->SetEnabledState(true);
+    }
+
+    /// <inheritdoc />
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+
+        CollisionNode.Size                       = Size;
+        ComponentBase->UldManager.RootNodeHeight = (ushort)Height;
+        ComponentBase->UldManager.RootNodeWidth  = (ushort)Width;
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose
+    (
+        bool disposing,
+        bool isNativeDestructor
+    )
+    {
+        if (disposing)
+        {
+            try
+            {
+                if (!isNativeDestructor && Node is not null && Node->Component is not null)
+                {
                     ref var uldManager = ref Node->Component->UldManager;
 
-                    if (uldManager.Objects is not null) {
-                        if (uldManager.Objects->NodeList is not null) {
+                    if (uldManager.Objects is not null)
+                    {
+                        if (uldManager.Objects->NodeList is not null)
+                        {
                             NativeMemoryHelper.Free(uldManager.Objects->NodeList, (ulong)(8 * uldManager.Objects->NodeCount));
                             uldManager.Objects->NodeList = null;
                         }
 
                         uldManager.Objects->NodeCount = 0;
                         NativeMemoryHelper.UiFree(uldManager.Objects);
-                        uldManager.Objects = null;
+                        uldManager.Objects     = null;
                         uldManager.ObjectCount = 0;
                     }
 
-                    if (uldManager.ComponentData is not null) {
+                    if (uldManager.ComponentData is not null)
+                    {
                         NativeMemoryHelper.UiFree(uldManager.ComponentData);
                         uldManager.ComponentData = null;
                     }
@@ -189,10 +227,12 @@ public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unma
                     Node->Component = null;
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 IPluginLog.Get().Exception(e);
             }
-            finally {
+            finally
+            {
                 RestoreComponentVirtualTable();
                 base.Dispose(disposing, isNativeDestructor);
             }

@@ -4,8 +4,10 @@ using KamiToolKit.BaseTypes;
 
 namespace KamiToolKit.Debug;
 
-internal static class AddonDebugTab {
-    public static unsafe void Draw() {
+internal static class AddonDebugTab
+{
+    public static unsafe void Draw()
+    {
         using var tabItem = ImRaii.TabItem("Addons");
         if (!tabItem) return;
 
@@ -19,7 +21,8 @@ internal static class AddonDebugTab {
 
         ImGui.TableHeadersRow();
 
-        foreach (var addon in NativeAddon.CreatedAddons) {
+        foreach (var addon in NativeAddon.CreatedAddons)
+        {
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.Text(addon.GetType().Name);

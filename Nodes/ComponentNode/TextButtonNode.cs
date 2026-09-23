@@ -9,66 +9,23 @@ using Lumina.Text.ReadOnly;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// Specialization of a button representing a standard text button.
+///     Specialization of a button representing a standard text button.
 /// </summary>
-public unsafe class TextButtonNode : ButtonBase {
+public unsafe class TextButtonNode : ButtonBase
+{
     /// <summary>
-    /// Not intended for public use, but it's here if you absolutely need it.
+    ///     Constructs a new <see cref="TextButtonNode" />
     /// </summary>
-    public NineGridNode BackgroundNode { get; }
-
-    /// <summary>
-    /// Not intended for public use, but it's here if you absolutely need it.
-    /// </summary>
-    public TextNode LabelNode { get; }
-
-    /// <summary>
-    /// Gets or sets the label displayed for this button.
-    /// </summary>
-    public ReadOnlySeString String {
-        get => LabelNode.String;
-        set => LabelNode.String = value;
-    }
-
-    /// <summary>
-    /// Gets or sets the text id that reads a label from the datasheets instead.
-    /// </summary>
-    public uint TextId {
-        get => LabelNode.TextId;
-        set => LabelNode.TextId = value;
-    }
-
-    /// <summary>
-    /// Gets or sets which datasheet should be used to resolve <see cref="TextId"/>
-    /// </summary>
-    public NodeData.SheetType SheetType {
-        get => LabelNode.SheetType;
-        set => LabelNode.SheetType = value;
-    }
-
-    /// <summary>
-    /// Gets or sets which background texture this button draws.
-    /// </summary>
-    public ButtonTextureType TextureType {
-        get;
-        set {
-            field = value;
-            ApplyTexture();
-            UpdateLabelLayout();
-        }
-    }
-
-    /// <summary>
-    /// Constructs a new <see cref="TextButtonNode"/>
-    /// </summary>
-    public TextButtonNode() {
+    public TextButtonNode()
+    {
         BackgroundNode = new SimpleNineGridNode();
         BackgroundNode.AttachNode(this);
 
-        LabelNode = new TextNode {
+        LabelNode = new TextNode
+        {
             AlignmentType = AlignmentType.Center,
             Position      = new Vector2(16.0f, 3.0f),
-            TextColor     = ColorHelper.GetColor(50),
+            TextColor     = ColorHelper.GetColor(50)
         };
         LabelNode.AttachNode(this);
 
@@ -80,8 +37,60 @@ public unsafe class TextButtonNode : ButtonBase {
         InitializeComponentEvents();
     }
 
+    /// <summary>
+    ///     Not intended for public use, but it's here if you absolutely need it.
+    /// </summary>
+    public NineGridNode BackgroundNode { get; }
+
+    /// <summary>
+    ///     Not intended for public use, but it's here if you absolutely need it.
+    /// </summary>
+    public TextNode LabelNode { get; }
+
+    /// <summary>
+    ///     Gets or sets the label displayed for this button.
+    /// </summary>
+    public ReadOnlySeString String
+    {
+        get => LabelNode.String;
+        set => LabelNode.String = value;
+    }
+
+    /// <summary>
+    ///     Gets or sets the text id that reads a label from the datasheets instead.
+    /// </summary>
+    public uint TextId
+    {
+        get => LabelNode.TextId;
+        set => LabelNode.TextId = value;
+    }
+
+    /// <summary>
+    ///     Gets or sets which datasheet should be used to resolve <see cref="TextId" />
+    /// </summary>
+    public NodeData.SheetType SheetType
+    {
+        get => LabelNode.SheetType;
+        set => LabelNode.SheetType = value;
+    }
+
+    /// <summary>
+    ///     Gets or sets which background texture this button draws.
+    /// </summary>
+    public ButtonTextureType TextureType
+    {
+        get;
+        set
+        {
+            field = value;
+            ApplyTexture();
+            UpdateLabelLayout();
+        }
+    }
+
     /// <inheritdoc />
-    protected override void OnSizeChanged() {
+    protected override void OnSizeChanged()
+    {
         base.OnSizeChanged();
 
         BackgroundNode.Size = Size;
@@ -93,17 +102,20 @@ public unsafe class TextButtonNode : ButtonBase {
     (
         ButtonTextureType textureType
     )
-        => textureType switch {
+        => textureType switch
+        {
             ButtonTextureType.ButtonB => (new Vector2(16.0f, 6.0f), 12.0f),
-            _                         => (new Vector2(16.0f, 3.0f), 8.0f),
+            _                         => (new Vector2(16.0f, 3.0f), 8.0f)
         };
 
-    private void ApplyTexture() {
+    private void ApplyTexture()
+    {
         var backgroundNode = (SimpleNineGridNode)BackgroundNode;
 
-        var (texturePath, textureSize, leftOffset, rightOffset) = TextureType switch {
+        var (texturePath, textureSize, leftOffset, rightOffset) = TextureType switch
+        {
             ButtonTextureType.ButtonB => ("ui/uld/ButtonB.tex", new Vector2(80.0f,  36.0f), 20.0f, 20.0f),
-            _                         => ("ui/uld/ButtonA.tex", new Vector2(100.0f, 28.0f), 16.0f, 16.0f),
+            _                         => ("ui/uld/ButtonA.tex", new Vector2(100.0f, 28.0f), 16.0f, 16.0f)
         };
 
         backgroundNode.TexturePath = texturePath;
@@ -114,7 +126,8 @@ public unsafe class TextButtonNode : ButtonBase {
         LoadThreePartTimelines(this, BackgroundNode, LabelNode, GetLabelLayout(TextureType).Position);
     }
 
-    private void UpdateLabelLayout() {
+    private void UpdateLabelLayout()
+    {
         var (labelPosition, labelPaddingY) = GetLabelLayout(TextureType);
 
         LabelNode.Position = labelPosition;

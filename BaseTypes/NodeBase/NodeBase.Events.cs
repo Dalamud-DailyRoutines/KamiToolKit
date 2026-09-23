@@ -8,109 +8,139 @@ using KamiToolKit.Internal.Classes;
 
 namespace KamiToolKit.BaseTypes;
 
-public abstract unsafe partial class NodeBase {
+public abstract unsafe partial class NodeBase
+{
+    private readonly Dictionary<AtkEventType, EventHandlerInfo> eventHandlers = [];
+
+    private CustomEventListener? nodeEventListener;
 
     /// <summary>
-    /// Gets or sets whether this node should show a clickable cursor when hovered.
+    ///     Gets or sets whether this node should show a clickable cursor when hovered.
     /// </summary>
-    public bool ShowClickableCursor {
+    public bool ShowClickableCursor
+    {
         get => DrawFlags.HasFlag(DrawFlags.ClickableCursor);
-        set {
-            if (value) {
+        set
+        {
+            if (value)
                 DrawFlags |= DrawFlags.ClickableCursor;
-            }
-            else {
+            else
                 DrawFlags &= ~DrawFlags.ClickableCursor;
-            }
         }
     }
 
     /// <summary>
-    /// Adds a no-arg callback action for the specified event type.
+    ///     Adds a no-arg callback action for the specified event type.
     /// </summary>
-    public void AddEvent(AtkEventType eventType, Action callback) {
+    public void AddEvent
+    (
+        AtkEventType eventType,
+        Action       callback
+    )
+    {
         nodeEventListener ??= new CustomEventListener(HandleEvents);
 
         SetNodeEventFlags(eventType);
 
-        if (eventHandlers.TryAdd(eventType, new EventHandlerInfo { OnActionDelegate = callback })) {
+        if (eventHandlers.TryAdd(eventType, new EventHandlerInfo { OnActionDelegate = callback }))
+        {
             IPluginLog.Get().Verbose($"[{eventType}] Registered for {GetType()} [{(nint)ResNode:X}]");
             ResNode->AtkEventManager.RegisterEvent(eventType, 0, this, this, nodeEventListener, false);
         }
-        else {
+        else
             eventHandlers[eventType].OnActionDelegate += callback;
-        }
     }
 
     /// <summary>
-    /// Adds a ReceiveEvent styled callback for the specified event type.
+    ///     Adds a ReceiveEvent styled callback for the specified event type.
     /// </summary>
-    public void AddEvent(AtkEventType eventType, AtkEventListener.Delegates.ReceiveEvent callback) {
+    public void AddEvent
+    (
+        AtkEventType                            eventType,
+        AtkEventListener.Delegates.ReceiveEvent callback
+    )
+    {
         nodeEventListener ??= new CustomEventListener(HandleEvents);
 
         SetNodeEventFlags(eventType);
 
-        if (eventHandlers.TryAdd(eventType, new EventHandlerInfo { OnReceiveEventDelegate = callback })) {
+        if (eventHandlers.TryAdd(eventType, new EventHandlerInfo { OnReceiveEventDelegate = callback }))
+        {
             IPluginLog.Get().Verbose($"[{eventType}] Registered for {GetType()} [{(nint)ResNode:X}]");
             ResNode->AtkEventManager.RegisterEvent(eventType, 0, this, this, nodeEventListener, false);
         }
-        else {
+        else
             eventHandlers[eventType].OnReceiveEventDelegate += callback;
-        }
     }
 
     /// <summary>
-    /// Removes all event handlers for the specified event type.
+    ///     Removes all event handlers for the specified event type.
     /// </summary>
-    public void RemoveEvent(AtkEventType eventType) {
+    public void RemoveEvent
+    (
+        AtkEventType eventType
+    )
+    {
         if (nodeEventListener is null) return;
 
-        if (eventHandlers.Remove(eventType)) {
+        if (eventHandlers.Remove(eventType))
+        {
             IPluginLog.Get().Verbose($"[{eventType}] Unregistered from {GetType()} [{(nint)ResNode:X}]");
             ResNode->AtkEventManager.UnregisterEvent(eventType, 0, nodeEventListener, false);
         }
 
         // If we have removed the last event, free the event listener
-        if (eventHandlers.Keys.Count is 0) {
+        if (eventHandlers.Keys.Count is 0)
+        {
             nodeEventListener.Dispose();
             nodeEventListener = null;
         }
     }
 
     /// <summary>
-    /// Removes the provided callback from the list of listeners for the specified event type.
+    ///     Removes the provided callback from the list of listeners for the specified event type.
     /// </summary>
-    public void RemoveEvent(AtkEventType eventType, Action callback) {
+    public void RemoveEvent
+    (
+        AtkEventType eventType,
+        Action       callback
+    )
+    {
         if (nodeEventListener is null) return;
 
-        if (eventHandlers.TryGetValue(eventType, out var handler)) {
+        if (eventHandlers.TryGetValue(eventType, out var handler))
+        {
             handler.OnActionDelegate -= callback;
 
-            if (handler.OnReceiveEventDelegate is null && handler.OnActionDelegate is null) {
+            if (handler.OnReceiveEventDelegate is null && handler.OnActionDelegate is null)
                 RemoveEvent(eventType);
-            }
         }
     }
 
     /// <summary>
-    /// Removes the provided callback from the list of listeners for the specified event type.
+    ///     Removes the provided callback from the list of listeners for the specified event type.
     /// </summary>
-    public void RemoveEvent(AtkEventType eventType, AtkEventListener.Delegates.ReceiveEvent callback) {
+    public void RemoveEvent
+    (
+        AtkEventType                            eventType,
+        AtkEventListener.Delegates.ReceiveEvent callback
+    )
+    {
         if (nodeEventListener is null) return;
 
-        if (eventHandlers.TryGetValue(eventType, out var handler)) {
+        if (eventHandlers.TryGetValue(eventType, out var handler))
+        {
             handler.OnReceiveEventDelegate -= callback;
 
-            if (handler.OnReceiveEventDelegate is null && handler.OnActionDelegate is null) {
+            if (handler.OnReceiveEventDelegate is null && handler.OnActionDelegate is null)
                 RemoveEvent(eventType);
-            }
         }
     }
 
-    private void DisposeEvents() {
-        if (nodeEventListener is not null) {
+    private void DisposeEvents()
+    {
+        if (nodeEventListener is not null)
             ResNode->AtkEventManager.UnregisterEvent(AtkEventType.UnregisterAll, 0, nodeEventListener, false);
-        }
 
         eventHandlers.Clear();
 
@@ -118,33 +148,53 @@ public abstract unsafe partial class NodeBase {
         nodeEventListener = null;
     }
 
-    private void HandleEvents(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
+    private void HandleEvents
+    (
+        AtkEventListener* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
+    )
+    {
         if (!IsVisible) return;
 
-        if (eventHandlers.TryGetValue(eventType, out var handler)) {
+        if (eventHandlers.TryGetValue(eventType, out var handler))
+        {
 
-            foreach (var noArgHandler in Delegate.EnumerateInvocationList(handler.OnActionDelegate)) {
-                try {
+            foreach (var noArgHandler in Delegate.EnumerateInvocationList(handler.OnActionDelegate))
+            {
+                try
+                {
                     noArgHandler();
                 }
-                catch (Exception e) {
+                catch (Exception e)
+                {
                     IPluginLog.Get().Exception(e);
                 }
             }
 
-            foreach (var argHandler in Delegate.EnumerateInvocationList(handler.OnReceiveEventDelegate)) {
-                try {
+            foreach (var argHandler in Delegate.EnumerateInvocationList(handler.OnReceiveEventDelegate))
+            {
+                try
+                {
                     argHandler(thisPtr, eventType, eventParam, atkEvent, atkEventData);
                 }
-                catch (Exception e) {
+                catch (Exception e)
+                {
                     IPluginLog.Get().Exception(e);
                 }
             }
         }
     }
 
-    private void SetNodeEventFlags(AtkEventType eventType) {
-        switch (eventType) {
+    private void SetNodeEventFlags
+    (
+        AtkEventType eventType
+    )
+    {
+        switch (eventType)
+        {
             // Hover events need to propagate down to trigger various timelines
             case AtkEventType.MouseOver:
             case AtkEventType.MouseOut:
@@ -167,7 +217,4 @@ public abstract unsafe partial class NodeBase {
                 break;
         }
     }
-
-    private CustomEventListener? nodeEventListener;
-    private readonly Dictionary<AtkEventType, EventHandlerInfo> eventHandlers = [];
 }

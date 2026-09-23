@@ -1,7 +1,8 @@
 ﻿namespace KamiToolKit.Internal.Enums;
 
-internal enum OverlayAddonState {
+internal enum OverlayAddonState
+{
     None,
     WaitForReady,
-    Ready,
+    Ready
 }

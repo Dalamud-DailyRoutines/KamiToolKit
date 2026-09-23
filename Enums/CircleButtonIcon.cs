@@ -3,231 +3,232 @@
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Enumeration of available icons for use with <see cref="CircleButtonNode"/>
+///     Enumeration of available icons for use with <see cref="CircleButtonNode" />
 /// </summary>
-public enum CircleButtonIcon {
+public enum CircleButtonIcon
+{
     /// <summary>
-    /// GearCog
+    ///     GearCog
     /// </summary>
     GearCog,
 
     /// <summary>
-    /// Filter
+    ///     Filter
     /// </summary>
     Filter,
 
     /// <summary>
-    /// Sort
+    ///     Sort
     /// </summary>
     Sort,
 
     /// <summary>
-    /// QuestionMark
+    ///     QuestionMark
     /// </summary>
     QuestionMark,
 
     /// <summary>
-    /// Refresh
+    ///     Refresh
     /// </summary>
     Refresh,
 
     /// <summary>
-    /// ChatBubble
+    ///     ChatBubble
     /// </summary>
     ChatBubble,
 
     /// <summary>
-    /// LeftArrow
+    ///     LeftArrow
     /// </summary>
     LeftArrow,
 
     /// <summary>
-    /// UpArrow
+    ///     UpArrow
     /// </summary>
     UpArrow,
 
     /// <summary>
-    /// Chest
+    ///     Chest
     /// </summary>
     Chest,
 
     /// <summary>
-    /// Document
+    ///     Document
     /// </summary>
     Document,
 
     /// <summary>
-    /// Edit
+    ///     Edit
     /// </summary>
     Edit,
 
     /// <summary>
-    /// Add
+    ///     Add
     /// </summary>
     Add,
 
     /// <summary>
-    /// RightArrow
+    ///     RightArrow
     /// </summary>
     RightArrow,
 
     /// <summary>
-    /// MusicNote
+    ///     MusicNote
     /// </summary>
     MusicNote,
 
     /// <summary>
-    /// Sprout
+    ///     Sprout
     /// </summary>
     Sprout,
 
     /// <summary>
-    /// Dice
+    ///     Dice
     /// </summary>
     Dice,
 
     /// <summary>
-    /// ArrowDown
+    ///     ArrowDown
     /// </summary>
     ArrowDown,
 
     /// <summary>
-    /// Eye
+    ///     Eye
     /// </summary>
     Eye,
 
     /// <summary>
-    /// Envelope
+    ///     Envelope
     /// </summary>
     Envelope,
 
     /// <summary>
-    /// Volume
+    ///     Volume
     /// </summary>
     Volume,
 
     /// <summary>
-    /// Mute
+    ///     Mute
     /// </summary>
     Mute,
 
     /// <summary>
-    /// WavePulse
+    ///     WavePulse
     /// </summary>
     WavePulse,
 
     /// <summary>
-    /// CheckedBox
+    ///     CheckedBox
     /// </summary>
     CheckedBox,
 
     /// <summary>
-    /// Cross
+    ///     Cross
     /// </summary>
     Cross,
 
     /// <summary>
-    /// Globe
+    ///     Globe
     /// </summary>
     Globe,
 
     /// <summary>
-    /// ActiveGearCog
+    ///     ActiveGearCog
     /// </summary>
     ActiveGearCog,
 
     /// <summary>
-    /// ActiveFilter
+    ///     ActiveFilter
     /// </summary>
     ActiveFilter,
 
     /// <summary>
-    /// Update
+    ///     Update
     /// </summary>
     Update,
 
     /// <summary>
-    /// ActiveRing
+    ///     ActiveRing
     /// </summary>
     ActiveRing,
 
     /// <summary>
-    /// Exclamation
+    ///     Exclamation
     /// </summary>
     Exclamation,
 
     /// <summary>
-    /// InsetDocument
+    ///     InsetDocument
     /// </summary>
     InsetDocument,
 
     /// <summary>
-    /// GearCogWithChatBubble
+    ///     GearCogWithChatBubble
     /// </summary>
     GearCogWithChatBubble,
 
     /// <summary>
-    /// FlatbedCartBoxes
+    ///     FlatbedCartBoxes
     /// </summary>
     FlatbedCartBoxes,
 
     /// <summary>
-    /// MagnifyingGlass
+    ///     MagnifyingGlass
     /// </summary>
     MagnifyingGlass,
 
     /// <summary>
-    /// EditSmall
+    ///     EditSmall
     /// </summary>
     EditSmall,
 
     /// <summary>
-    /// WeaponDraw
+    ///     WeaponDraw
     /// </summary>
     WeaponDraw,
 
     /// <summary>
-    /// Headgear
+    ///     Headgear
     /// </summary>
     Headgear,
 
     /// <summary>
-    /// Sword
+    ///     Sword
     /// </summary>
     Sword,
 
     /// <summary>
-    /// Emotes
+    ///     Emotes
     /// </summary>
     Emotes,
 
     /// <summary>
-    /// PersonStanding
+    ///     PersonStanding
     /// </summary>
     PersonStanding,
 
     /// <summary>
-    /// PaintBucket
+    ///     PaintBucket
     /// </summary>
     PaintBucket,
 
     /// <summary>
-    /// EyeSmall
+    ///     EyeSmall
     /// </summary>
     EyeSmall,
 
     /// <summary>
-    /// Undo
+    ///     Undo
     /// </summary>
     Undo,
 
     /// <summary>
-    /// PinPaper
+    ///     PinPaper
     /// </summary>
     PinPaper,
 
     /// <summary>
-    /// CrossSmall
+    ///     CrossSmall
     /// </summary>
-    CrossSmall,
+    CrossSmall
 }

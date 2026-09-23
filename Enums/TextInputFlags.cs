@@ -4,72 +4,73 @@ using KamiToolKit.Nodes;
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Flags for enabling various <see cref="TextInputNode"/> features.
+///     Flags for enabling various <see cref="TextInputNode" /> features.
 /// </summary>
 [Flags]
-public enum TextInputFlags : ushort {
+public enum TextInputFlags : ushort
+{
     /// <summary>
-    /// Capitalize
+    ///     Capitalize
     /// </summary>
     Capitalize = 0x1,
 
     /// <summary>
-    /// Mask
+    ///     Mask
     /// </summary>
     Mask = 0x2,
 
     /// <summary>
-    /// EnableDictionary
+    ///     EnableDictionary
     /// </summary>
     EnableDictionary = 0x4,
 
     /// <summary>
-    /// EnableHistory
+    ///     EnableHistory
     /// </summary>
     EnableHistory = 0x8,
 
     /// <summary>
-    /// EnableIme
+    ///     EnableIme
     /// </summary>
     EnableIme = 0x10,
 
     /// <summary>
-    /// EscapeClears
+    ///     EscapeClears
     /// </summary>
     EscapeClears = 0x20,
 
     /// <summary>
-    /// AllowUpperCase
+    ///     AllowUpperCase
     /// </summary>
     AllowUpperCase = 0x40,
 
     /// <summary>
-    /// AllowLowerCase
+    ///     AllowLowerCase
     /// </summary>
     AllowLowerCase = 0x80,
 
     /// <summary>
-    /// AllowNumberInput
+    ///     AllowNumberInput
     /// </summary>
     AllowNumberInput = 0x100,
 
     /// <summary>
-    /// AllowSymbolInput
+    ///     AllowSymbolInput
     /// </summary>
     AllowSymbolInput = 0x200,
 
     /// <summary>
-    /// WordWrap
+    ///     WordWrap
     /// </summary>
     WordWrap = 0x400,
 
     /// <summary>
-    /// MultiLine
+    ///     MultiLine
     /// </summary>
     MultiLine = 0x800,
 
     /// <summary>
-    /// AutoMaxWidth
+    ///     AutoMaxWidth
     /// </summary>
-    AutoMaxWidth = 0x1000,
+    AutoMaxWidth = 0x1000
 }

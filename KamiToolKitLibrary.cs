@@ -18,16 +18,11 @@ using Serilog.Events;
 namespace KamiToolKit;
 
 /// <summary>
-/// Primary entry point for KamiToolKit, contains initialization and disposal code.
+///     Primary entry point for KamiToolKit, contains initialization and disposal code.
 /// </summary>
-public static class KamiToolKitLibrary {
+public static class KamiToolKitLibrary
+{
     private const string NodeDataShareKey = "TypeMappedCustomNodes";
-
-    /// <summary>
-    /// Gets the <see cref="IDalamudPluginInterface"/> used for KamiToolKit.
-    /// This can be accessed anytime after <see cref="InitializeAsync"/> has been called.
-    /// </summary>
-    public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
 
     internal static ConcurrentDictionary<nint, Type>? AllocatedNodes;
 
@@ -36,21 +31,33 @@ public static class KamiToolKitLibrary {
     internal static Experimental Experimental = new();
 
     internal static ResourceManager? ResourceManager;
-    internal static CultureInfo? CurrentCulture;
+    internal static CultureInfo?     CurrentCulture;
 
     internal static AddonConfigFile? AddonConfigFile;
 
-    private static bool debugMode;
+    private static bool          debugMode;
     private static WindowSystem? debugWindowSystem;
-    private static DebugWindow? debugWindow;
+    private static DebugWindow?  debugWindow;
 
     /// <summary>
-    /// Main initialization method for KamiToolKit. This method is required to be invoked before any KamiToolKit features are used.
-    /// Failure to do so will not result in any direct warnings, but will result in undefined behavior.
+    ///     Gets the <see cref="IDalamudPluginInterface" /> used for KamiToolKit.
+    ///     This can be accessed anytime after <see cref="InitializeAsync" /> has been called.
     /// </summary>
-    public static async Task InitializeAsync(IDalamudPluginInterface pluginInterface, string? defaultWindowSubtitle = null) {
+    public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
+
+    /// <summary>
+    ///     Main initialization method for KamiToolKit. This method is required to be invoked before any KamiToolKit features
+    ///     are used.
+    ///     Failure to do so will not result in any direct warnings, but will result in undefined behavior.
+    /// </summary>
+    public static async Task InitializeAsync
+    (
+        IDalamudPluginInterface pluginInterface,
+        string?                 defaultWindowSubtitle = null
+    )
+    {
         DefaultWindowSubtitle = defaultWindowSubtitle;
-        PluginInterface = pluginInterface;
+        PluginInterface       = pluginInterface;
 
         // Inject non-Experimental Properties
         PluginInterface.Create<Services>();
@@ -74,23 +81,28 @@ public static class KamiToolKitLibrary {
     }
 
     /// <summary>
-    /// Sets the resource manager that KTK will use to resolve enums.
+    ///     Sets the resource manager that KTK will use to resolve enums.
     /// </summary>
-    public static void SetResourceManager(ResourceManager resourceManager) {
+    public static void SetResourceManager
+    (
+        ResourceManager resourceManager
+    ) =>
         ResourceManager = resourceManager;
-    }
 
     /// <summary>
-    /// Sets the current culture that KTK will use to resolve enums.
+    ///     Sets the current culture that KTK will use to resolve enums.
     /// </summary>
-    public static void SetCurrentCulture(CultureInfo culture) {
+    public static void SetCurrentCulture
+    (
+        CultureInfo culture
+    ) =>
         CurrentCulture = culture;
-    }
 
     /// <summary>
-    /// Loads or creates AddonConfigFile, and then tries to migrate any {internalName}.addon.json files to new version.
+    ///     Loads or creates AddonConfigFile, and then tries to migrate any {internalName}.addon.json files to new version.
     /// </summary>
-    private static async Task<AddonConfigFile> LoadAddonConfigFileAsync() {
+    private static async Task<AddonConfigFile> LoadAddonConfigFileAsync()
+    {
         var configFile = await AddonConfigFile.LoadAsync();
         await configFile.TryMigrateOldConfigs();
 
@@ -98,14 +110,20 @@ public static class KamiToolKitLibrary {
     }
 
     [Conditional("DEBUG")]
-    private static void RegisterDebugHelpers() {
+    private static void RegisterDebugHelpers()
+    {
         debugMode = true;
 
         debugWindowSystem = new WindowSystem($"KamiToolKit - {PluginInterface.InternalName}");
 
-        ICommandManager.Get().AddHandler($"/ktkdebug_{PluginInterface.InternalName}", new CommandInfo(CommandHandler) {
-            HelpMessage = "Plugin was built in debug mode, enabling debug command.",
-        });
+        ICommandManager.Get().AddHandler
+        (
+            $"/ktkdebug_{PluginInterface.InternalName}",
+            new CommandInfo(CommandHandler)
+            {
+                HelpMessage = "Plugin was built in debug mode, enabling debug command."
+            }
+        );
 
         PluginInterface.UiBuilder.Draw += debugWindowSystem.Draw;
 
@@ -113,7 +131,12 @@ public static class KamiToolKitLibrary {
         debugWindowSystem.AddWindow(debugWindow);
     }
 
-    private static void CommandHandler(string command, string arguments) {
+    private static void CommandHandler
+    (
+        string command,
+        string arguments
+    )
+    {
         if (command != $"/ktkdebug_{PluginInterface.InternalName}") return;
 
         IPluginLog.Get().Debug($"Command Received, opening KTK Debug Window for {PluginInterface.InternalName}");
@@ -121,15 +144,18 @@ public static class KamiToolKitLibrary {
     }
 
     /// <summary>
-    /// Disposes KamiToolKit resources.
+    ///     Disposes KamiToolKit resources.
     /// </summary>
-    public static void Dispose() {
-        if (!ThreadSafety.IsMainThread) {
+    public static void Dispose()
+    {
+        if (!ThreadSafety.IsMainThread)
+        {
             IPluginLog.Get().Error("Error, KamiToolKit tried to dispose while not on the main thread. Use DisposeAsync instead.");
             return;
         }
 
-        if (debugMode) {
+        if (debugMode)
+        {
             PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;
             ICommandManager.Get().RemoveHandler($"/ktkdebug_{PluginInterface.InternalName}");
             debugWindowSystem.RemoveAllWindows();
@@ -147,10 +173,12 @@ public static class KamiToolKitLibrary {
     }
 
     /// <summary>
-    /// Disposes KamiToolkit resources async.
+    ///     Disposes KamiToolkit resources async.
     /// </summary>
-    public static async Task DisposeAsync() {
-        if (debugMode) {
+    public static async Task DisposeAsync()
+    {
+        if (debugMode)
+        {
             PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;
             ICommandManager.Get().RemoveHandler($"/ktkdebug_{PluginInterface.InternalName}");
             debugWindowSystem.RemoveAllWindows();
@@ -161,10 +189,13 @@ public static class KamiToolKitLibrary {
         NodeBase.WarnLeakedNodes();
         NativeAddon.WarnLeakedAddons();
 
-        try {
+        try
+        {
             NativeAddon.DisposeAddons();
             NodeBase.DisposeNodes();
-        } finally {
+        }
+        finally
+        {
             NodeBase.RestoreAllNodeVirtualTables();
             PluginInterface.RelinquishData(NodeDataShareKey);
         }

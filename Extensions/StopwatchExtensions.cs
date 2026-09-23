@@ -5,16 +5,24 @@ using KamiToolKit.Internal.Classes;
 namespace KamiToolKit.Extensions;
 
 /// <summary>
-/// Stopwatch extension methods. For easily logging how long multiple stages take.
+///     Stopwatch extension methods. For easily logging how long multiple stages take.
 /// </summary>
-public static class StopwatchExtensions {
-    extension(Stopwatch stopwatch) {
-
+public static class StopwatchExtensions
+{
+    extension
+    (
+        Stopwatch stopwatch
+    )
+    {
         /// <summary>
-        /// Logs the current stopwatch time and resets the stopwatch.
+        ///     Logs the current stopwatch time and resets the stopwatch.
         /// </summary>
         /// <param name="logMessage">Label to print to the log for this time period.</param>
-        public void LogTime(string logMessage) {
+        public void LogTime
+        (
+            string logMessage
+        )
+        {
             IPluginLog.Get().Debug($"{logMessage,-15}: {stopwatch,15} :: {stopwatch.ElapsedMilliseconds} ms");
             stopwatch.Restart();
         }

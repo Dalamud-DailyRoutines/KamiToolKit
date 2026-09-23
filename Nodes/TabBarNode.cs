@@ -11,46 +11,59 @@ using Lumina.Text.ReadOnly;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// Custom implementation of a tab bar.
+///     Custom implementation of a tab bar.
 /// </summary>
-public class TabBarNode : ResNode, IControllerNavigable {
-
-    /// <inheritdoc/>
-    public int NavIndex { get; set; }
-
-    /// <inheritdoc/>
-    public int NavLeft { get; set; }
-
-    /// <inheritdoc/>
-    public int NavRight { get; set; }
-
-    /// <inheritdoc/>
-    public int NavUp { get; set; }
-
-    /// <inheritdoc/>
-    public int NavDown { get; set; }
+public class TabBarNode : ResNode, IControllerNavigable
+{
+    private readonly List<TabBarRadioButtonNode> radioButtons = [];
 
     /// <summary>
-    /// Gets a read only collection of the tab buttons contained in this bar.
+    ///     Constructs a new <see cref="TabBarNode" />
+    /// </summary>
+    public TabBarNode() =>
+        BuildTimelines();
+
+    /// <summary>
+    ///     Gets a read only collection of the tab buttons contained in this bar.
     /// </summary>
     public IReadOnlyList<TabBarRadioButtonNode> TabButtons
         => radioButtons;
 
     /// <summary>
-    /// Sets the initial nodes that this list will use.
+    ///     Sets the initial nodes that this list will use.
     /// </summary>
-    public ICollection<TabBarEntry> InitialEntries {
-        init {
-            foreach (var tabBarEntry in value) {
+    public ICollection<TabBarEntry> InitialEntries
+    {
+        init
+        {
+            foreach (var tabBarEntry in value)
                 AddTab(tabBarEntry);
-            }
         }
     }
 
+    /// <inheritdoc />
+    public int NavIndex { get; set; }
+
+    /// <inheritdoc />
+    public int NavLeft { get; set; }
+
+    /// <inheritdoc />
+    public int NavRight { get; set; }
+
+    /// <inheritdoc />
+    public int NavUp { get; set; }
+
+    /// <inheritdoc />
+    public int NavDown { get; set; }
+
     /// <summary>
-    /// Selects the tab matching the given label.
+    ///     Selects the tab matching the given label.
     /// </summary>
-    public void SelectTab(ReadOnlySeString label) {
+    public void SelectTab
+    (
+        ReadOnlySeString label
+    )
+    {
         var button = radioButtons.FirstOrDefault(button => button.String == label);
         if (button is null) return;
 
@@ -58,50 +71,64 @@ public class TabBarNode : ResNode, IControllerNavigable {
     }
 
     /// <summary>
-    /// Disables a tab matching the given label, the tab won't be selectable or interactable.
+    ///     Disables a tab matching the given label, the tab won't be selectable or interactable.
     /// </summary>
-    public void DisableTab(ReadOnlySeString label) {
+    public void DisableTab
+    (
+        ReadOnlySeString label
+    )
+    {
         var button = radioButtons.FirstOrDefault(button => button.String == label);
         if (button is null) return;
 
-        button.IsEnabled = false;
+        button.IsEnabled     = false;
         button.MultiplyColor = new Vector3(0.6f, 0.6f, 0.6f);
     }
 
     /// <summary>
-    /// Enables a tab matching the given label.
+    ///     Enables a tab matching the given label.
     /// </summary>
-    public void EnableTab(ReadOnlySeString label) {
+    public void EnableTab
+    (
+        ReadOnlySeString label
+    )
+    {
         var button = radioButtons.FirstOrDefault(button => button.String == label);
         if (button is null) return;
 
-        button.IsEnabled = true;
+        button.IsEnabled     = true;
         button.MultiplyColor = Vector3.One;
     }
 
     /// <summary>
-    /// Toggles a tab matching the given label's enabled/disabled state.
+    ///     Toggles a tab matching the given label's enabled/disabled state.
     /// </summary>
     /// <param name="label"></param>
-    public void ToggleTab(ReadOnlySeString label) {
+    public void ToggleTab
+    (
+        ReadOnlySeString label
+    )
+    {
         var button = radioButtons.FirstOrDefault(button => button.String == label);
         if (button is null) return;
 
         button.IsEnabled = !button.IsEnabled;
 
-        if (button.IsEnabled) {
+        if (button.IsEnabled)
             button.MultiplyColor = Vector3.One;
-        }
-        else {
+        else
             button.MultiplyColor = new Vector3(0.6f, 0.6f, 0.6f);
-        }
     }
 
     /// <summary>
-    /// Removes a tab matching the given label.
+    ///     Removes a tab matching the given label.
     /// </summary>
     /// <param name="label"></param>
-    public void RemoveTab(ReadOnlySeString label) {
+    public void RemoveTab
+    (
+        ReadOnlySeString label
+    )
+    {
         var button = radioButtons.FirstOrDefault(button => button.String == label);
         if (button is null) return;
 
@@ -111,42 +138,41 @@ public class TabBarNode : ResNode, IControllerNavigable {
     }
 
     /// <summary>
-    /// Clear all tab nodes.
+    ///     Clear all tab nodes.
     /// </summary>
-    public void Clear() {
-        foreach (var node in radioButtons) {
+    public void Clear()
+    {
+        foreach (var node in radioButtons)
             node.Dispose();
-        }
 
         radioButtons.Clear();
     }
 
-    /// <summary>
-    /// Constructs a new <see cref="TabBarNode"/>
-    /// </summary>
-    public TabBarNode() {
-        BuildTimelines();
-    }
-
     /// <inheritdoc />
-    protected override void OnSizeChanged() {
+    protected override void OnSizeChanged()
+    {
         base.OnSizeChanged();
         RecalculateLayout();
     }
 
     /// <summary>
-    /// Add a new tab via <see cref="TabBarEntry"/>.
+    ///     Add a new tab via <see cref="TabBarEntry" />.
     /// </summary>
-    public void AddTab(TabBarEntry entry) {
-        var newButton = new TabBarRadioButtonNode {
-            Height = Height,
-            String = entry.Label,
-            TextId = entry.TextId,
-            SheetType = entry.SheetType,
-            OnClick = entry.OnClick,
-            IsEnabled = true,
-            TextTooltip = entry.Tooltip ?? string.Empty,
-            MultiplyColor = Vector3.One,
+    public void AddTab
+    (
+        TabBarEntry entry
+    )
+    {
+        var newButton = new TabBarRadioButtonNode
+        {
+            Height        = Height,
+            String        = entry.Label,
+            TextId        = entry.TextId,
+            SheetType     = entry.SheetType,
+            OnClick       = entry.OnClick,
+            IsEnabled     = true,
+            TextTooltip   = entry.Tooltip ?? string.Empty,
+            MultiplyColor = Vector3.One
         };
 
         newButton.AddEvent(AtkEventType.ButtonClick, () => ClickHandler(newButton));
@@ -154,24 +180,33 @@ public class TabBarNode : ResNode, IControllerNavigable {
         radioButtons.Add(newButton);
         newButton.AttachNode(this);
 
-        if (radioButtons.Count is 1) {
+        if (radioButtons.Count is 1)
             newButton.IsSelected = true;
-        }
 
         RecalculateLayout();
     }
 
     /// <summary>
-    /// Add a new tab with the provided callback and option tooltip.
+    ///     Add a new tab with the provided callback and option tooltip.
     /// </summary>
-    public void AddTab(ReadOnlySeString label, Action callback, ReadOnlySeString? tooltip = null, bool isEnabled = true) {
-        var newButton = new TabBarRadioButtonNode {
-            Height = Height,
-            String = label,
-            OnClick = callback,
-            IsEnabled = isEnabled,
+    public void AddTab
+    (
+        ReadOnlySeString  label,
+        Action            callback,
+        ReadOnlySeString? tooltip   = null,
+        bool              isEnabled = true
+    )
+    {
+        var newButton = new TabBarRadioButtonNode
+        {
+            Height      = Height,
+            String      = label,
+            OnClick     = callback,
+            IsEnabled   = isEnabled,
             TextTooltip = tooltip ?? string.Empty,
-            MultiplyColor = isEnabled ? Vector3.One : new Vector3(0.6f, 0.6f, 0.6f),
+            MultiplyColor = isEnabled ?
+                                Vector3.One :
+                                new Vector3(0.6f, 0.6f, 0.6f)
         };
 
         newButton.AddEvent(AtkEventType.ButtonClick, () => ClickHandler(newButton));
@@ -179,65 +214,67 @@ public class TabBarNode : ResNode, IControllerNavigable {
         radioButtons.Add(newButton);
         newButton.AttachNode(this);
 
-        if (radioButtons.Count is 1) {
+        if (radioButtons.Count is 1)
             newButton.IsSelected = true;
-        }
 
         RecalculateLayout();
     }
 
-    private void ClickHandler(TabBarRadioButtonNode button) {
-        foreach (var radioButton in radioButtons) {
-            radioButton.IsChecked = false;
+    private void ClickHandler
+    (
+        TabBarRadioButtonNode button
+    )
+    {
+        foreach (var radioButton in radioButtons)
+        {
+            radioButton.IsChecked  = false;
             radioButton.IsSelected = false;
         }
 
-        button.IsChecked = true;
+        button.IsChecked  = true;
         button.IsSelected = true;
     }
 
-    private void RecalculateLayout() {
+    private void RecalculateLayout()
+    {
         var step = Width / radioButtons.Count;
 
-        foreach (var index in Enumerable.Range(0, radioButtons.Count)) {
+        foreach (var index in Enumerable.Range(0, radioButtons.Count))
+        {
             var button = radioButtons[index];
 
-            button.Width = step + 5.0f;
-            button.X = step * index - 5.0f;
+            button.Width  = step           + 5.0f;
+            button.X      = (step * index) - 5.0f;
             button.Height = Height;
 
             button.NavIndex = NavIndex + index;
 
-            if (NavIndex is not 0) {
-                if (index is 0) {
+            if (NavIndex is not 0)
+            {
+                if (index is 0)
                     button.NavLeft = radioButtons.Count - 1 + NavIndex;
-                }
-                else {
+                else
                     button.NavLeft = index - 1 + NavIndex;
-                }
 
-                if (index == radioButtons.Count - 1) {
+                if (index == radioButtons.Count - 1)
                     button.NavRight = NavIndex;
-                }
-                else {
+                else
                     button.NavRight = index + 1 + NavIndex;
-                }
             }
 
-            button.NavUp = NavUp;
+            button.NavUp   = NavUp;
             button.NavDown = NavDown;
         }
     }
 
-    private void BuildTimelines() {
-        AddTimeline(new TimelineBuilder()
-            .BeginFrameSet(1, 20)
-            .AddLabel(1, 101, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(11, 102, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .EndFrameSet()
-            .Build()
+    private void BuildTimelines() =>
+        AddTimeline
+        (
+            new TimelineBuilder()
+                .BeginFrameSet(1, 20)
+                .AddLabel(1,  101, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(11, 102, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .EndFrameSet()
+                .Build()
         );
-    }
-
-    private readonly List<TabBarRadioButtonNode> radioButtons = [];
 }

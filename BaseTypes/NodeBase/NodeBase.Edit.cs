@@ -10,66 +10,84 @@ using KamiToolKit.Internal.Nodes;
 
 namespace KamiToolKit.BaseTypes;
 
-public abstract unsafe partial class NodeBase {
+public abstract unsafe partial class NodeBase
+{
+    private Vector2      clickStartPosition = Vector2.Zero;
+    private NodeEditMode currentEditMode    = 0;
+
+    private ViewportEventListener? editEventListener;
+
+    private bool isCursorSet;
+
+    private bool isMoving;
+    private bool isResizing;
+
+    private NodeEditOverlayNode? overlayNode;
 
     /// <summary>
-    /// Action that is called once the cursor is released after resizing this node.
+    ///     Action that is called once the cursor is released after resizing this node.
     /// </summary>
     public Action<NodeBase>? OnResizeComplete { get; set; }
 
     /// <summary>
-    /// Action that is called once the cursor is released after moving this node.
+    ///     Action that is called once the cursor is released after moving this node.
     /// </summary>
     public Action<NodeBase>? OnMoveComplete { get; set; }
 
     /// <summary>
-    /// Action that is called after a resize or a move is completed.
+    ///     Action that is called after a resize or a move is completed.
     /// </summary>
     public Action<NodeBase>? OnEditComplete { get; set; }
 
     /// <summary>
-    /// Gets or sets a whether this node is in moveable mode.
+    ///     Gets or sets a whether this node is in moveable mode.
     /// </summary>
-    public bool EnableMoving {
+    public bool EnableMoving
+    {
         get;
-        set {
+        set
+        {
             field = value;
-            if (value) {
+            if (value)
                 EnableEditMode(NodeEditMode.Move);
-            }
-            else {
+            else
                 DisableEditMode(NodeEditMode.Move);
-            }
         }
     }
 
     /// <summary>
-    /// Gets or sets a whether this node is in resizeable mode.
+    ///     Gets or sets a whether this node is in resizeable mode.
     /// </summary>
-    public bool EnableResizing {
+    public bool EnableResizing
+    {
         get;
-        set {
+        set
+        {
             field = value;
-            if (value) {
+            if (value)
                 EnableEditMode(NodeEditMode.Resize);
-            }
-            else {
+            else
                 DisableEditMode(NodeEditMode.Resize);
-            }
         }
     }
 
     /// <summary>
-    /// Enable edit mode for this node, which will readjust itself and create a editable parent node.
+    ///     Enable edit mode for this node, which will readjust itself and create a editable parent node.
     /// </summary>
-    public void EnableEditMode(NodeEditMode mode) {
+    public void EnableEditMode
+    (
+        NodeEditMode mode
+    )
+    {
 
         currentEditMode |= mode;
 
-        if (overlayNode is null) {
-            overlayNode = new NodeEditOverlayNode {
+        if (overlayNode is null)
+        {
+            overlayNode = new NodeEditOverlayNode
+            {
                 Position = new Vector2(-16.0f, -16.0f),
-                Size = Size + new Vector2(32.0f, 32.0f),
+                Size     = Size + new Vector2(32.0f, 32.0f)
             };
             overlayNode.AttachNode(this);
             ChildNodes.Add(overlayNode);
@@ -77,7 +95,8 @@ public abstract unsafe partial class NodeBase {
 
         overlayNode.ShowParts = currentEditMode.HasFlag(NodeEditMode.Resize);
 
-        if (editEventListener is null) {
+        if (editEventListener is null)
+        {
             editEventListener = new ViewportEventListener(OnEditEvent);
             editEventListener.AddEvent(AtkEventType.MouseMove, overlayNode);
             editEventListener.AddEvent(AtkEventType.MouseDown, overlayNode);
@@ -85,21 +104,27 @@ public abstract unsafe partial class NodeBase {
     }
 
     /// <summary>
-    /// Disables edit mode for this node, which will remove its parent edit container and restore the original node layout.
+    ///     Disables edit mode for this node, which will remove its parent edit container and restore the original node layout.
     /// </summary>
-    public void DisableEditMode(NodeEditMode mode) {
+    public void DisableEditMode
+    (
+        NodeEditMode mode
+    )
+    {
 
         currentEditMode &= ~mode;
 
         if (currentEditMode.HasFlag(NodeEditMode.Resize) || currentEditMode.HasFlag(NodeEditMode.Move)) return;
 
-        if (editEventListener is not null) {
+        if (editEventListener is not null)
+        {
             editEventListener.RemoveEvent(AtkEventType.UnregisterAll);
             editEventListener.Dispose();
             editEventListener = null;
         }
 
-        if (overlayNode is not null) {
+        if (overlayNode is not null)
+        {
             ChildNodes.Remove(overlayNode);
             overlayNode.DetachNode();
             overlayNode.Dispose();
@@ -107,34 +132,46 @@ public abstract unsafe partial class NodeBase {
         }
     }
 
-    private void OnEditEvent(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
+    private void OnEditEvent
+    (
+        AtkEventListener* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
+    )
+    {
         if (overlayNode is null) return;
         if (editEventListener is null) return;
 
-        ref var mouseData = ref atkEventData->MouseData;
-        var mousePosition = new Vector2(mouseData.PosX, mouseData.PosY);
-        var mouseDelta = mousePosition - clickStartPosition;
+        ref var mouseData     = ref atkEventData->MouseData;
+        var     mousePosition = new Vector2(mouseData.PosX, mouseData.PosY);
+        var     mouseDelta    = mousePosition - clickStartPosition;
 
-        switch (eventType) {
+        switch (eventType)
+        {
             // Move Logic
-            case AtkEventType.MouseMove when isMoving: {
-                Position += mouseDelta;
-                clickStartPosition = mousePosition;
+            case AtkEventType.MouseMove when isMoving:
+            {
+                Position           += mouseDelta;
+                clickStartPosition =  mousePosition;
 
                 atkEvent->SetEventIsHandled(true);
             }
                 break;
 
             // Update hover state when not resizing, as we latch that for the behavior
-            case AtkEventType.MouseMove when !isResizing: {
+            case AtkEventType.MouseMove when !isResizing:
+            {
                 overlayNode.UpdateHover(atkEventData);
             }
                 break;
 
             // Resize Logic
-            case AtkEventType.MouseMove when isResizing: {
+            case AtkEventType.MouseMove when isResizing:
+            {
                 Position += overlayNode.GetPositionDelta(mouseDelta);
-                Size += overlayNode.GetSizeDelta(mouseDelta);
+                Size     += overlayNode.GetSizeDelta(mouseDelta);
 
                 overlayNode.Size = Size + new Vector2(32.0f, 32.0f);
 
@@ -145,10 +182,11 @@ public abstract unsafe partial class NodeBase {
                 break;
 
             // Begin Resize Event
-            case AtkEventType.MouseDown when !isResizing && overlayNode.AnyHovered() && currentEditMode.HasFlag(NodeEditMode.Resize): {
+            case AtkEventType.MouseDown when !isResizing && overlayNode.AnyHovered() && currentEditMode.HasFlag(NodeEditMode.Resize):
+            {
                 editEventListener.AddEvent(AtkEventType.MouseUp, overlayNode);
 
-                isResizing = true;
+                isResizing         = true;
                 clickStartPosition = mousePosition;
 
                 atkEvent->SetEventIsHandled(true);
@@ -156,7 +194,8 @@ public abstract unsafe partial class NodeBase {
                 break;
 
             // End Resize Event
-            case AtkEventType.MouseUp when isResizing: {
+            case AtkEventType.MouseUp when isResizing:
+            {
                 OnResizeComplete?.Invoke(this);
                 OnEditComplete?.Invoke(this);
 
@@ -166,10 +205,12 @@ public abstract unsafe partial class NodeBase {
                 break;
 
             // Begin Move Event
-            case AtkEventType.MouseDown when !overlayNode.AnyHovered() && overlayNode.CheckCollision(atkEventData) && !isMoving && currentEditMode.HasFlag(NodeEditMode.Move): {
+            case AtkEventType.MouseDown
+                when !overlayNode.AnyHovered() && overlayNode.CheckCollision(atkEventData) && !isMoving && currentEditMode.HasFlag(NodeEditMode.Move):
+            {
                 editEventListener.AddEvent(AtkEventType.MouseUp, overlayNode);
 
-                isMoving = true;
+                isMoving           = true;
                 clickStartPosition = mousePosition;
 
                 atkEvent->SetEventIsHandled(true);
@@ -177,7 +218,8 @@ public abstract unsafe partial class NodeBase {
                 break;
 
             // End Move Event
-            case AtkEventType.MouseUp when isMoving: {
+            case AtkEventType.MouseUp when isMoving:
+            {
                 OnMoveComplete?.Invoke(this);
                 OnEditComplete?.Invoke(this);
 
@@ -187,43 +229,39 @@ public abstract unsafe partial class NodeBase {
                 break;
         }
 
-        if (isCursorSet) {
+        if (isCursorSet)
+        {
             ResetCursor();
             isCursorSet = false;
         }
 
-        if (currentEditMode.HasFlag(NodeEditMode.Move)) {
-            if (isMoving) {
+        if (currentEditMode.HasFlag(NodeEditMode.Move))
+        {
+            if (isMoving)
+            {
                 SetCursor(AddonCursorType.Grab);
                 isCursorSet = true;
             }
-            else if (CheckCollision(atkEventData)) {
+            else if (CheckCollision(atkEventData))
+            {
                 SetCursor(AddonCursorType.Hand);
                 isCursorSet = true;
             }
         }
 
-        if (overlayNode.AnyHovered() && currentEditMode.HasFlag(NodeEditMode.Resize)) {
+        if (overlayNode.AnyHovered() && currentEditMode.HasFlag(NodeEditMode.Resize))
+        {
             overlayNode.SetCursor();
             isCursorSet = true;
         }
     }
 
-    private static void SetCursor(AddonCursorType cursor)
+    private static void SetCursor
+    (
+        AddonCursorType cursor
+    )
         => IAddonEventManager.Get().SetCursor(cursor);
 
     private static void ResetCursor()
         => IAddonEventManager.Get().ResetCursor();
-
-    private Vector2 clickStartPosition = Vector2.Zero;
-    private NodeEditMode currentEditMode = 0;
-
-    private ViewportEventListener? editEventListener;
-
-    private bool isCursorSet;
-
-    private bool isMoving;
-    private bool isResizing;
-
-    private NodeEditOverlayNode? overlayNode;
 }

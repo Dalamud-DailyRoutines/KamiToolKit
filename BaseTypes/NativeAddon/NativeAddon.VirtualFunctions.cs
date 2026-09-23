@@ -9,106 +9,168 @@ using KamiToolKit.Timelines;
 
 namespace KamiToolKit.BaseTypes;
 
-public unsafe partial class NativeAddon {
+public unsafe partial class NativeAddon
+{
+    private bool isFinalized;
+
+    private bool isSetup;
 
     /// <summary>
-    /// OnSetup Callback for an addon, this is called to attach and save references to created nodes.
+    ///     OnSetup Callback for an addon, this is called to attach and save references to created nodes.
     /// </summary>
-    protected virtual void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan) { }
+    protected virtual void OnSetup
+    (
+        AtkUnitBase*   addon,
+        Span<AtkValue> atkValueSpan
+    )
+    {
+    }
 
     /// <summary>
-    /// OnShow Callback for an addon, this is called when the window is opened.
+    ///     OnShow Callback for an addon, this is called when the window is opened.
     /// </summary>
     /// <remarks>
-    /// KamiToolKit intentionally does not allow hiding addons, so this is only called when it's opened.
+    ///     KamiToolKit intentionally does not allow hiding addons, so this is only called when it's opened.
     /// </remarks>
-    protected virtual void OnShow(AtkUnitBase* addon) { }
+    protected virtual void OnShow
+    (
+        AtkUnitBase* addon
+    )
+    {
+    }
 
     /// <summary>
-    /// OnHide Callback for an addon, this is called when the window is opened.
+    ///     OnHide Callback for an addon, this is called when the window is opened.
     /// </summary>
     /// <remarks>
-    /// KamiToolKit intentionally does not allow hiding addons, so this will then trigger close and then subsequently <see cref="OnFinalize"/>.
+    ///     KamiToolKit intentionally does not allow hiding addons, so this will then trigger close and then subsequently
+    ///     <see cref="OnFinalize" />.
     /// </remarks>
-    protected virtual void OnHide(AtkUnitBase* addon) { }
+    protected virtual void OnHide
+    (
+        AtkUnitBase* addon
+    )
+    {
+    }
 
     /// <summary>
-    /// OnDraw Callback for an addon, this is called every frame the addon is visible.
+    ///     OnDraw Callback for an addon, this is called every frame the addon is visible.
     /// </summary>
-    protected virtual void OnDraw(AtkUnitBase* addon) { }
+    protected virtual void OnDraw
+    (
+        AtkUnitBase* addon
+    )
+    {
+    }
 
     /// <summary>
-    /// OnUpdate Callback for an addon, this is called every frame the addon exists before its opened, and after it's closed but not finalized yet.
+    ///     OnUpdate Callback for an addon, this is called every frame the addon exists before its opened, and after it's
+    ///     closed but not finalized yet.
     /// </summary>
-    protected virtual void OnUpdate(AtkUnitBase* addon) { }
+    protected virtual void OnUpdate
+    (
+        AtkUnitBase* addon
+    )
+    {
+    }
 
     /// <summary>
-    /// OnFinalize Callback for the addon, this is called immediately before it is deallocated/closed fully.
+    ///     OnFinalize Callback for the addon, this is called immediately before it is deallocated/closed fully.
     /// </summary>
-    protected virtual void OnFinalize(AtkUnitBase* addon) { }
+    protected virtual void OnFinalize
+    (
+        AtkUnitBase* addon
+    )
+    {
+    }
 
     /// <summary>
-    /// OnRequestedUpdate Callback for the addon, this is only called if you subscribe to string/number array data entries.
+    ///     OnRequestedUpdate Callback for the addon, this is only called if you subscribe to string/number array data entries.
     /// </summary>
-    protected virtual void OnRequestedUpdate(AtkUnitBase* addon, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) { }
+    protected virtual void OnRequestedUpdate
+    (
+        AtkUnitBase*      addon,
+        NumberArrayData** numberArrayData,
+        StringArrayData** stringArrayData
+    )
+    {
+    }
 
     /// <summary>
-    /// OnRefresh Callback for the addon, the game calls this once on open, and may trigger it under other unknown conditions.
+    ///     OnRefresh Callback for the addon, the game calls this once on open, and may trigger it under other unknown
+    ///     conditions.
     /// </summary>
-    protected virtual void OnRefresh(AtkUnitBase* addon, Span<AtkValue> atkValues) { }
+    protected virtual void OnRefresh
+    (
+        AtkUnitBase*   addon,
+        Span<AtkValue> atkValues
+    )
+    {
+    }
 
-    private void Initialize(AtkUnitBase* thisPtr) {
+    private void Initialize
+    (
+        AtkUnitBase* thisPtr
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Initialize");
 
         originalVirtualTable->Initialize(thisPtr);
 
         var widgetInfo = IMemorySpace.GetUISpace()->MallocZeroed<AtkUldWidgetInfo>();
-        widgetInfo->Id = 1;
+        widgetInfo->Id        = 1;
         widgetInfo->NodeCount = 0;
-        widgetInfo->NodeList = null;
-        widgetInfo->WidgetAlignment = new AtkWidgetAlignment {
+        widgetInfo->NodeList  = null;
+        widgetInfo->WidgetAlignment = new AtkWidgetAlignment
+        {
             AlignmentType = AlignmentType.Center,
-            X = 50.0f,
-            Y = 50.0f,
+            X             = 50.0f,
+            Y             = 50.0f
         };
 
         thisPtr->UldManager.InitializeResourceRendererManager();
         InternalAddon->UldManager.ResourceFlags |= AtkUldManagerResourceFlag.Initialized;
 
-        InternalAddon->UldManager.Objects = (AtkUldObjectInfo*)widgetInfo;
-        InternalAddon->UldManager.ObjectCount = 1;
+        InternalAddon->UldManager.Objects       =  (AtkUldObjectInfo*)widgetInfo;
+        InternalAddon->UldManager.ObjectCount   =  1;
         InternalAddon->UldManager.ResourceFlags |= AtkUldManagerResourceFlag.ArraysAllocated;
 
-        RootNode.AddTimeline(new TimelineBuilder()
-            .BeginFrameSet(1, 89)
-            .AddLabel(1, 101, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(10, 102, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(20, 103, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(30, 104, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(40, 105, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(50, 106, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(60, 107, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(70, 108, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .AddLabel(80, 109, AtkTimelineJumpBehavior.PlayOnce, 0)
-            .EndFrameSet()
-            .Build());
+        RootNode.AddTimeline
+        (
+            new TimelineBuilder()
+                .BeginFrameSet(1, 89)
+                .AddLabel(1,  101, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(10, 102, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(20, 103, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(30, 104, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(40, 105, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(50, 106, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(60, 107, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(70, 108, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .AddLabel(80, 109, AtkTimelineJumpBehavior.PlayOnce, 0)
+                .EndFrameSet()
+                .Build()
+        );
 
         InternalAddon->RootNode = RootNode;
         InternalAddon->UldManager.AddNodeToObjectList(RootNode);
 
-        if (!IsOverlayAddon && WindowNode is not null) {
+        if (!IsOverlayAddon && WindowNode is not null)
+        {
             WindowNode.AttachNode(this, NodePosition.AsFirstChild);
             InternalAddon->WindowNode = WindowNode;
             InternalAddon->UldManager.AddNodeToObjectList(WindowNode);
         }
 
         WindowNode?.WindowHeaderFocusNode.AddNodeFlags(NodeFlags.Focusable);
-        InternalAddon->FocusNode = WindowNode is not null ? WindowNode.WindowHeaderFocusNode : RootNode;
+        InternalAddon->FocusNode = WindowNode is not null ?
+                                       WindowNode.WindowHeaderFocusNode :
+                                       RootNode;
 
         InternalAddon->UldManager.UpdateDrawNodeList();
         InternalAddon->UldManager.LoadedState = AtkLoadState.Loaded;
 
-        InternalAddon->LoadState = AtkUnitBaseLoadState.LoadingUldResource;
+        InternalAddon->LoadState              = AtkUnitBaseLoadState.LoadingUldResource;
         InternalAddon->WasLoadUldByNameCalled = true;
         InternalAddon->UpdateCollisionNodeList(false);
 
@@ -116,13 +178,19 @@ public unsafe partial class NativeAddon {
         CreatedAddons.Add(this);
     }
 
-    private void Setup(AtkUnitBase* addon, uint valueCount, AtkValue* values) {
+    private void Setup
+    (
+        AtkUnitBase* addon,
+        uint         valueCount,
+        AtkValue*    values
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Setup");
 
-        if (!IsOverlayAddon) {
+        if (!IsOverlayAddon)
             SetInitialState();
-        }
-        else {
+        else
+        {
             ref var screenSize = ref AtkStage.Instance()->ScreenSize;
 
             addon->SetScale(1.0f / AtkUnitBase.GetGlobalUIScale(), true);
@@ -132,10 +200,12 @@ public unsafe partial class NativeAddon {
 
         originalVirtualTable->OnSetup(addon, valueCount, values);
 
-        try {
+        try
+        {
             OnSetup(addon, new Span<AtkValue>(values, (int)valueCount));
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
@@ -145,52 +215,82 @@ public unsafe partial class NativeAddon {
         isSetup = true;
     }
 
-    private void Show(AtkUnitBase* addon, bool silenceOpenSoundEffect, uint unsetShowHideFlags) {
+    private void Show
+    (
+        AtkUnitBase* addon,
+        bool         silenceOpenSoundEffect,
+        uint         unsetShowHideFlags
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Show");
 
-        try {
+        try
+        {
             OnShow(addon);
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
         originalVirtualTable->Show(addon, silenceOpenSoundEffect, unsetShowHideFlags);
     }
 
-    private void Update(AtkUnitBase* addon, float delta) {
+    private void Update
+    (
+        AtkUnitBase* addon,
+        float        delta
+    )
+    {
         IPluginLog.Get().Excessive($"[{InternalName}] Update");
 
-        try {
+        try
+        {
             OnUpdate(addon);
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
         originalVirtualTable->Update(addon, delta);
     }
 
-    private void Draw(AtkUnitBase* addon) {
+    private void Draw
+    (
+        AtkUnitBase* addon
+    )
+    {
         IPluginLog.Get().Excessive($"[{InternalName}] Draw");
 
-        try {
+        try
+        {
             OnDraw(addon);
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
         originalVirtualTable->Draw(addon);
     }
 
-    private void Hide(AtkUnitBase* addon, bool unkBool, bool callHideCallback, uint setShowHideFlags) {
+    private void Hide
+    (
+        AtkUnitBase* addon,
+        bool         unkBool,
+        bool         callHideCallback,
+        uint         setShowHideFlags
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Hide");
 
-        try {
+        try
+        {
             OnHide(addon);
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
@@ -200,37 +300,50 @@ public unsafe partial class NativeAddon {
         originalVirtualTable->Close(addon, false);
     }
 
-    private void Hide2(AtkUnitBase* addon) {
+    private void Hide2
+    (
+        AtkUnitBase* addon
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Hide2");
 
         originalVirtualTable->Hide2(addon);
     }
 
-    private void Finalizer(AtkUnitBase* addon) {
+    private void Finalizer
+    (
+        AtkUnitBase* addon
+    )
+    {
         if (isFinalized) return;
         isFinalized = true;
 
         IPluginLog.Get().Verbose($"[{InternalName}] Finalize");
 
-        try {
+        try
+        {
             OnFinalize(addon);
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
-        if (RememberClosePosition && InternalAddon is not null) {
+        if (RememberClosePosition && InternalAddon is not null)
             LastClosePosition = new Vector2(InternalAddon->X, InternalAddon->Y);
-        }
 
-        if (RootNode is not null && RootNode.ResNode is not null) {
+        if (RootNode is not null && RootNode.ResNode is not null)
+        {
             var timeline = RootNode.Timeline;
-            RootNode.Timeline = null;
+            RootNode.Timeline          = null;
             RootNode.ResNode->Timeline = null;
-            try {
+
+            try
+            {
                 timeline?.Dispose();
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 IPluginLog.Get().Exception(e);
             }
         }
@@ -241,12 +354,18 @@ public unsafe partial class NativeAddon {
         isSetup = false;
     }
 
-    private AtkEventListener* Destructor(AtkUnitBase* addon, byte flags) {
+    private AtkEventListener* Destructor
+    (
+        AtkUnitBase* addon,
+        byte         flags
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Destructor");
 
         var result = originalVirtualTable->Dtor(addon, flags);
 
-        if ((flags & 1) == 1) {
+        if ((flags & 1) == 1)
+        {
             // Restore original virtual table so the game won't read a dangling pointer if it calls anything on this addon later.
             addon->VirtualTable = originalVirtualTable;
 
@@ -256,29 +375,38 @@ public unsafe partial class NativeAddon {
             CreatedAddons.Remove(this);
 
             // Free our custom virtual table, the game doesn't know this exists and won't clear it on its own.
-            if (modifiedVirtualTable is not null) {
+            if (modifiedVirtualTable is not null)
+            {
                 NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
                 modifiedVirtualTable = null;
             }
 
-            if (disposeState is AddonDisposeState.Disposing) {
+            if (disposeState is AddonDisposeState.Disposing)
                 disposeState = AddonDisposeState.Disposed;
-            }
         }
 
         return result;
     }
 
-    private void RequestedUpdate(AtkUnitBase* thisPtr, NumberArrayData** numberArrayData, StringArrayData** stringArrayData) {
+    private void RequestedUpdate
+    (
+        AtkUnitBase*      thisPtr,
+        NumberArrayData** numberArrayData,
+        StringArrayData** stringArrayData
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] RequestedUpdate");
 
         // Prevent calls to OnRequestedUpdate before Setup is completed. The game will try to call this after Show but before Setup
-        if (isSetup) {
-            try {
+        if (isSetup)
+        {
+            try
+            {
                 OnRequestedUpdate(thisPtr, numberArrayData, stringArrayData);
 
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 IPluginLog.Get().Exception(e);
             }
         }
@@ -286,29 +414,39 @@ public unsafe partial class NativeAddon {
         originalVirtualTable->OnRequestedUpdate(thisPtr, numberArrayData, stringArrayData);
     }
 
-    private bool Refresh(AtkUnitBase* thisPtr, uint valueCount, AtkValue* values) {
+    private bool Refresh
+    (
+        AtkUnitBase* thisPtr,
+        uint         valueCount,
+        AtkValue*    values
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] Refresh");
 
-        try {
+        try
+        {
             OnRefresh(thisPtr, new Span<AtkValue>(values, (int)valueCount));
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             IPluginLog.Get().Exception(e);
         }
 
-        return originalVirtualTable->OnRefresh(thisPtr,valueCount, values);
+        return originalVirtualTable->OnRefresh(thisPtr, valueCount, values);
     }
 
-    private void ScreenSizeChange(AtkUnitBase* thisPtr, int width, int height) {
+    private void ScreenSizeChange
+    (
+        AtkUnitBase* thisPtr,
+        int          width,
+        int          height
+    )
+    {
         IPluginLog.Get().Verbose($"[{InternalName}] ScreenSizeChange");
 
         originalVirtualTable->OnScreenSizeChange(thisPtr, width, height);
 
-        if (IsOverlayAddon || IgnoreGlobalScale) {
+        if (IsOverlayAddon || IgnoreGlobalScale)
             thisPtr->SetScale(1.0f / AtkUnitBase.GetGlobalUIScale(), true);
-        }
     }
-
-    private bool isSetup;
-    private bool isFinalized;
 }

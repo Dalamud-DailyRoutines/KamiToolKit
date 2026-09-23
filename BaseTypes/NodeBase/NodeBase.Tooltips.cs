@@ -7,219 +7,240 @@ using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit.BaseTypes;
 
-public unsafe partial class NodeBase {
+public unsafe partial class NodeBase
+{
+    private bool tooltipEventsRegistered;
+
+    private AtkTooltipType tooltipType = AtkTooltipType.None;
 
     /// <summary>
-    /// Gets or sets the Text Tooltip for this node.
+    ///     Gets or sets the Text Tooltip for this node.
     /// </summary>
     /// <remarks>
-    /// If tooltip is set after the node is attached, a collision update will be required.
+    ///     If tooltip is set after the node is attached, a collision update will be required.
     /// </remarks>
-    public virtual ReadOnlySeString TextTooltip {
+    public virtual ReadOnlySeString TextTooltip
+    {
         get;
-        set {
+        set
+        {
             if (field == value) return;
 
-            if (!value.IsEmpty) {
+            if (!value.IsEmpty)
+            {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Text;
             }
-            else {
+            else
                 tooltipType &= ~AtkTooltipType.Text;
-            }
 
-            if (field != value && ParentAddon is not null) {
+            if (field != value && ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
-            }
 
             field = value;
         }
     }
 
     /// <summary>
-    /// Gets or sets the Action Tooltip for this node. Uses ActionId.
+    ///     Gets or sets the Action Tooltip for this node. Uses ActionId.
     /// </summary>
     /// <remarks>
-    /// If tooltip is set after the node is attached, a collision update will be required.
+    ///     If tooltip is set after the node is attached, a collision update will be required.
     /// </remarks>
-    public virtual uint ActionTooltip {
+    public virtual uint ActionTooltip
+    {
         get;
-        set {
+        set
+        {
             if (field == value) return;
 
-            if (value is not 0) {
+            if (value is not 0)
+            {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Action;
             }
-            else {
+            else
                 tooltipType &= ~AtkTooltipType.Action;
-            }
 
-            if (field != value && ParentAddon is not null) {
+            if (field != value && ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
-            }
 
             field = value;
         }
     }
 
     /// <summary>
-    /// Gets or sets the Action Tooltip for this node. Uses ItemId.
+    ///     Gets or sets the Action Tooltip for this node. Uses ItemId.
     /// </summary>
     /// <remarks>
-    /// If tooltip is set after the node is attached, a collision update will be required.
+    ///     If tooltip is set after the node is attached, a collision update will be required.
     /// </remarks>
-    public virtual uint ItemTooltip {
+    public virtual uint ItemTooltip
+    {
         get;
-        set {
+        set
+        {
             if (field == value) return;
 
-            if (value is not 0) {
+            if (value is not 0)
+            {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Item;
             }
-            else {
+            else
                 tooltipType &= ~AtkTooltipType.Item;
-            }
 
-            if (field != value && ParentAddon is not null) {
+            if (field != value && ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
-            }
 
             field = value;
         }
     }
 
     /// <summary>
-    /// Gets or sets the Action Tooltip for this node. Takes a InventoryType and a slot index to represent the item in that slot.
+    ///     Gets or sets the Action Tooltip for this node. Takes a InventoryType and a slot index to represent the item in that
+    ///     slot.
     /// </summary>
     /// <remarks>
-    /// If tooltip is set after the node is attached, a collision update will be required.
+    ///     If tooltip is set after the node is attached, a collision update will be required.
     /// </remarks>
-    public virtual InventoryItemTooltip? InventoryItemTooltip {
+    public virtual InventoryItemTooltip? InventoryItemTooltip
+    {
         get;
-        set {
+        set
+        {
             if (field == value) return;
 
-            if (value is not null) {
+            if (value is not null)
+            {
                 TryRegisterTooltipEvents();
                 tooltipType |= AtkTooltipType.Item;
             }
-            else {
+            else
                 tooltipType &= ~AtkTooltipType.Item;
-            }
 
-            if (field != value && ParentAddon is not null) {
+            if (field != value && ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
-            }
 
             field = value;
         }
     }
 
     /// <summary>
-    /// Property that indicates if a tooltip is already registered.
+    ///     Property that indicates if a tooltip is already registered.
     /// </summary>
     /// <remarks>
-    /// Used by inherited nodes if they want to override the tooltip behavior.
+    ///     Used by inherited nodes if they want to override the tooltip behavior.
     /// </remarks>
     protected bool TooltipRegistered { get; set; }
 
     /// <summary>
-    /// Triggers this nodes tooltip to show, prioritizing Text -> Action -> Item tooltips in that order, only one tooltip will show.
+    ///     Triggers this nodes tooltip to show, prioritizing Text -> Action -> Item tooltips in that order, only one tooltip
+    ///     will show.
     /// </summary>
-    public virtual void ShowTooltip() {
+    public virtual void ShowTooltip()
+    {
         if (ParentAddon is null) return; // Shouldn't be possible
         if (tooltipType is AtkTooltipType.None) return;
 
         using var stringBuilder = new RentedSeStringBuilder();
-        using var stringBuffer = new RentedAtkValues(1);
-        if (!TextTooltip.IsEmpty) {
+        using var stringBuffer  = new RentedAtkValues(1);
+        if (!TextTooltip.IsEmpty)
             stringBuffer[0].SetManagedString(stringBuilder.Builder.Append(TextTooltip).GetViewAsSpan());
-        }
 
         var tooltipArgs = new AtkTooltipManager.AtkTooltipArgs();
 
-        if (tooltipType.HasFlag(AtkTooltipType.Text)) {
+        if (tooltipType.HasFlag(AtkTooltipType.Text))
+        {
             tooltipArgs.TextArgs.AtkArrayType = 0;
-            tooltipArgs.TextArgs.Text = stringBuffer[0].String;
+            tooltipArgs.TextArgs.Text         = stringBuffer[0].String;
         }
 
-        if (tooltipType.HasFlag(AtkTooltipType.Action)) {
+        if (tooltipType.HasFlag(AtkTooltipType.Action))
+        {
             tooltipArgs.ActionArgs.Flags = 1;
-            tooltipArgs.ActionArgs.Kind = DetailKind.Action;
-            tooltipArgs.ActionArgs.Id = (int)ActionTooltip;
+            tooltipArgs.ActionArgs.Kind  = DetailKind.Action;
+            tooltipArgs.ActionArgs.Id    = (int)ActionTooltip;
         }
 
-        if (tooltipType.HasFlag(AtkTooltipType.Item) && InventoryItemTooltip is { } inventoryTooltip) {
-            tooltipArgs.ItemArgs.Kind = DetailKind.InventoryItem;
+        if (tooltipType.HasFlag(AtkTooltipType.Item) && InventoryItemTooltip is { } inventoryTooltip)
+        {
+            tooltipArgs.ItemArgs.Kind          = DetailKind.InventoryItem;
             tooltipArgs.ItemArgs.InventoryType = inventoryTooltip.Inventory;
-            tooltipArgs.ItemArgs.Slot = inventoryTooltip.Slot;
-            tooltipArgs.ItemArgs.BuyQuantity = -1;
-            tooltipArgs.ItemArgs.Flag1 = 0;
+            tooltipArgs.ItemArgs.Slot          = inventoryTooltip.Slot;
+            tooltipArgs.ItemArgs.BuyQuantity   = -1;
+            tooltipArgs.ItemArgs.Flag1         = 0;
         }
-        else if (tooltipType.HasFlag(AtkTooltipType.Item) && InventoryItemTooltip is null) {
-            tooltipArgs.ItemArgs.Kind = DetailKind.Item;
-            tooltipArgs.ItemArgs.ItemId = (int)ItemTooltip;
+        else if (tooltipType.HasFlag(AtkTooltipType.Item) && InventoryItemTooltip is null)
+        {
+            tooltipArgs.ItemArgs.Kind        = DetailKind.Item;
+            tooltipArgs.ItemArgs.ItemId      = (int)ItemTooltip;
             tooltipArgs.ItemArgs.BuyQuantity = -1;
-            tooltipArgs.ItemArgs.Flag1 = 0;
+            tooltipArgs.ItemArgs.Flag1       = 0;
         }
 
         AtkStage.Instance()->TooltipManager.ShowTooltip(tooltipType, ParentAddon->Id, this, &tooltipArgs);
     }
 
     /// <summary>
-    /// Shows the specified text as a tooltip for this node.
+    ///     Shows the specified text as a tooltip for this node.
     /// </summary>
-    public void ShowTextTooltip(ReadOnlySeString tooltip) {
+    public void ShowTextTooltip
+    (
+        ReadOnlySeString tooltip
+    )
+    {
         if (tooltip.IsEmpty) return;
 
         AtkStage.Instance()->TooltipManager.ShowTooltip(ParentAddon->Id, null, tooltip);
     }
 
     /// <summary>
-    /// Hides any tooltip active for the addon this node is attached to.
+    ///     Hides any tooltip active for the addon this node is attached to.
     /// </summary>
     /// <remarks>
-    /// You could potentially close a tooltip the game itself is showing you via this method, exercise caution.
+    ///     You could potentially close a tooltip the game itself is showing you via this method, exercise caution.
     /// </remarks>
-    public void HideTooltip() {
+    public void HideTooltip()
+    {
         if (ParentAddon is null) return;
 
         AtkStage.Instance()->TooltipManager.HideTooltip(ParentAddon->Id);
     }
 
-    private void TryRegisterTooltipEvents() {
+    private void TryRegisterTooltipEvents()
+    {
         if (tooltipEventsRegistered) return;
 
         AddEvent(AtkEventType.MouseOver, ShowTooltip);
-        AddEvent(AtkEventType.MouseOut, HideTooltip);
+        AddEvent(AtkEventType.MouseOut,  HideTooltip);
         OnVisibilityToggled += ToggleCollisionFlag;
         ToggleCollisionFlag(IsVisible);
 
         tooltipEventsRegistered = true;
     }
 
-    private void UnregisterTooltipEvents() {
-        if (tooltipEventsRegistered) {
+    private void UnregisterTooltipEvents()
+    {
+        if (tooltipEventsRegistered)
+        {
             RemoveEvent(AtkEventType.MouseOver, ShowTooltip);
-            RemoveEvent(AtkEventType.MouseOut, HideTooltip);
-            OnVisibilityToggled -= ToggleCollisionFlag;
-            tooltipEventsRegistered = false;
+            RemoveEvent(AtkEventType.MouseOut,  HideTooltip);
+            OnVisibilityToggled     -= ToggleCollisionFlag;
+            tooltipEventsRegistered =  false;
         }
     }
 
-    private void ToggleCollisionFlag(bool isVisible) {
+    private void ToggleCollisionFlag
+    (
+        bool isVisible
+    )
+    {
         if (this is ComponentNode.ComponentNode) return;
 
-        if (isVisible) {
+        if (isVisible)
             AddNodeFlags(NodeFlags.HasCollision);
-        }
-        else {
+        else
             RemoveNodeFlags(NodeFlags.HasCollision);
-        }
     }
-
-    private AtkTooltipType tooltipType = AtkTooltipType.None;
-    private bool tooltipEventsRegistered;
 }

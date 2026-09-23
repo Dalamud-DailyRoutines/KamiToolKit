@@ -4,14 +4,15 @@ using KamiToolKit.BaseTypes.ComponentNode;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// Specialized implementation for use with <see cref="ScrollBarNode"/>. Not intended for external use.
+///     Specialized implementation for use with <see cref="ScrollBarNode" />. Not intended for external use.
 /// </summary>
-public unsafe class ScrollBarBackgroundButtonNode : ComponentNode<AtkComponentButton, AtkUldComponentDataButton> {
-
+public unsafe class ScrollBarBackgroundButtonNode : ComponentNode<AtkComponentButton, AtkUldComponentDataButton>
+{
     /// <summary>
-    /// Constructs a new <see cref="ScrollBarBackgroundButtonNode"/>
+    ///     Constructs a new <see cref="ScrollBarBackgroundButtonNode" />
     /// </summary>
-    public ScrollBarBackgroundButtonNode() {
+    public ScrollBarBackgroundButtonNode()
+    {
         SetInternalComponentType(ComponentType.Button);
 
         Component->ButtonBGNode = CollisionNode;

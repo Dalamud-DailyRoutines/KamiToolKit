@@ -1,12 +1,20 @@
-﻿﻿using System;
+﻿using System;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
 
 namespace KamiToolKit.Internal.Classes;
 
-internal static unsafe class NodeLinker {
-    internal static void AttachNode(AtkResNode* node, AtkResNode* attachTargetNode, NodePosition position) {
-        switch (position) {
+internal static unsafe class NodeLinker
+{
+    internal static void AttachNode
+    (
+        AtkResNode*  node,
+        AtkResNode*  attachTargetNode,
+        NodePosition position
+    )
+    {
+        switch (position)
+        {
             case NodePosition.BeforeTarget:
                 EmplaceBefore(node, attachTargetNode);
                 break;
@@ -36,146 +44,182 @@ internal static unsafe class NodeLinker {
         }
     }
 
-    private static void EmplaceBefore(AtkResNode* node, AtkResNode* attachTargetNode) {
+    private static void EmplaceBefore
+    (
+        AtkResNode* node,
+        AtkResNode* attachTargetNode
+    )
+    {
         node->ParentNode = attachTargetNode->ParentNode;
 
         // Target node is the head of the nodelist, we will be the new head.
-        if (attachTargetNode->NextSiblingNode is null) {
+        if (attachTargetNode->NextSiblingNode is null)
             attachTargetNode->ParentNode->ChildNode = node;
-        }
 
         // We have a node that will be before us
-        if (attachTargetNode->NextSiblingNode is not null) {
+        if (attachTargetNode->NextSiblingNode is not null)
+        {
             attachTargetNode->NextSiblingNode->PrevSiblingNode = node;
-            node->NextSiblingNode = attachTargetNode->NextSiblingNode;
+            node->NextSiblingNode                              = attachTargetNode->NextSiblingNode;
         }
 
         attachTargetNode->NextSiblingNode = node;
-        node->PrevSiblingNode = attachTargetNode;
+        node->PrevSiblingNode             = attachTargetNode;
 
-        if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component) {
+        if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component)
             attachTargetNode->ParentNode->ChildCount++;
-        }
     }
 
-    private static void EmplaceAfter(AtkResNode* node, AtkResNode* attachTargetNode) {
+    private static void EmplaceAfter
+    (
+        AtkResNode* node,
+        AtkResNode* attachTargetNode
+    )
+    {
         node->ParentNode = attachTargetNode->ParentNode;
 
         // We have a node that will be after us
-        if (attachTargetNode->PrevSiblingNode is not null) {
+        if (attachTargetNode->PrevSiblingNode is not null)
+        {
             attachTargetNode->PrevSiblingNode->NextSiblingNode = node;
-            node->PrevSiblingNode = attachTargetNode->PrevSiblingNode;
+            node->PrevSiblingNode                              = attachTargetNode->PrevSiblingNode;
         }
 
         attachTargetNode->PrevSiblingNode = node;
-        node->NextSiblingNode = attachTargetNode;
+        node->NextSiblingNode             = attachTargetNode;
 
-        if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component) {
+        if (attachTargetNode->ParentNode->GetNodeType() is not NodeType.Component)
             attachTargetNode->ParentNode->ChildCount++;
-        }
     }
 
-    private static void EmplaceBeforeSiblings(AtkResNode* node, AtkResNode* attachTargetNode) {
-        var current = attachTargetNode;
+    private static void EmplaceBeforeSiblings
+    (
+        AtkResNode* node,
+        AtkResNode* attachTargetNode
+    )
+    {
+        var current  = attachTargetNode;
         var previous = current;
 
-        while (current is not null) {
+        while (current is not null)
+        {
             previous = current;
-            current = current->NextSiblingNode;
+            current  = current->NextSiblingNode;
         }
 
-        if (previous is not null) {
+        if (previous is not null)
             EmplaceBefore(node, previous);
-        }
     }
 
-    private static void EmplaceAfterSiblings(AtkResNode* node, AtkResNode* attachTargetNode) {
-        var current = attachTargetNode;
+    private static void EmplaceAfterSiblings
+    (
+        AtkResNode* node,
+        AtkResNode* attachTargetNode
+    )
+    {
+        var current  = attachTargetNode;
         var previous = current;
 
-        while (current is not null) {
+        while (current is not null)
+        {
             previous = current;
-            current = current->PrevSiblingNode;
+            current  = current->PrevSiblingNode;
         }
 
-        if (previous is not null) {
+        if (previous is not null)
             EmplaceAfter(node, previous);
-        }
     }
 
-    private static void EmplaceAsLastChild(AtkResNode* node, AtkResNode* attachTargetNode) {
+    private static void EmplaceAsLastChild
+    (
+        AtkResNode* node,
+        AtkResNode* attachTargetNode
+    )
+    {
         // If the child list is empty
-        if (attachTargetNode->ChildNode is null && attachTargetNode->GetNodeType() is not NodeType.Component) {
-            if (attachTargetNode->GetNodeType() is not NodeType.Component) {
+        if (attachTargetNode->ChildNode is null && attachTargetNode->GetNodeType() is not NodeType.Component)
+        {
+            if (attachTargetNode->GetNodeType() is not NodeType.Component)
+            {
                 attachTargetNode->ChildNode = node;
-                node->ParentNode = attachTargetNode;
+                node->ParentNode            = attachTargetNode;
                 attachTargetNode->ChildCount++;
             }
-            else {
+            else
                 node->ParentNode = attachTargetNode;
-            }
         }
         // Else Add to the List
-        else {
+        else
+        {
             var currentNode = attachTargetNode->ChildNode;
-            while (currentNode is not null && currentNode->PrevSiblingNode != null) {
+            while (currentNode is not null && currentNode->PrevSiblingNode != null)
                 currentNode = currentNode->PrevSiblingNode;
-            }
 
-            node->ParentNode = attachTargetNode;
+            node->ParentNode      = attachTargetNode;
             node->NextSiblingNode = currentNode;
 
-            if (currentNode is not null) {
+            if (currentNode is not null)
                 currentNode->PrevSiblingNode = node;
-            }
 
-            if (attachTargetNode->GetNodeType() is not NodeType.Component) {
+            if (attachTargetNode->GetNodeType() is not NodeType.Component)
                 attachTargetNode->ChildCount++;
-            }
         }
     }
 
-    private static void EmplaceAsFirstChild(AtkResNode* node, AtkResNode* attachTargetNode) {
+    private static void EmplaceAsFirstChild
+    (
+        AtkResNode* node,
+        AtkResNode* attachTargetNode
+    )
+    {
         // If the child list is empty
-        if (attachTargetNode->ChildNode is null && attachTargetNode->ChildCount is 0) {
-            if (attachTargetNode->GetNodeType() is not NodeType.Component) {
+        if (attachTargetNode->ChildNode is null && attachTargetNode->ChildCount is 0)
+        {
+            if (attachTargetNode->GetNodeType() is not NodeType.Component)
+            {
                 attachTargetNode->ChildNode = node;
-                node->ParentNode = attachTargetNode;
+                node->ParentNode            = attachTargetNode;
                 attachTargetNode->ChildCount++;
             }
-            else {
+            else
                 node->ParentNode = attachTargetNode;
-            }
         }
         // Else Add to the List as the First Child
-        else {
-            if (attachTargetNode->GetNodeType() is not NodeType.Component) {
+        else
+        {
+            if (attachTargetNode->GetNodeType() is not NodeType.Component)
+            {
                 attachTargetNode->ChildNode->NextSiblingNode = node;
-                node->PrevSiblingNode = attachTargetNode->ChildNode;
-                attachTargetNode->ChildNode = node;
-                node->ParentNode = attachTargetNode;
+                node->PrevSiblingNode                        = attachTargetNode->ChildNode;
+                attachTargetNode->ChildNode                  = node;
+                node->ParentNode                             = attachTargetNode;
                 attachTargetNode->ChildCount++;
             }
-            else {
+            else
+            {
                 node->PrevSiblingNode = attachTargetNode->ChildNode;
-                node->ParentNode = attachTargetNode;
+                node->ParentNode      = attachTargetNode;
             }
         }
     }
 
-    public static void DetachNode(AtkResNode* node) {
+    public static void DetachNode
+    (
+        AtkResNode* node
+    )
+    {
         if (node is null) return;
 
         var parentNode = node->ParentNode;
 
-        if (parentNode != null && parentNode->ChildNode == node) {
-            parentNode->ChildNode = node->PrevSiblingNode != null
-                ? node->PrevSiblingNode
-                : node->NextSiblingNode;
+        if (parentNode != null && parentNode->ChildNode == node)
+        {
+            parentNode->ChildNode = node->PrevSiblingNode != null ?
+                                        node->PrevSiblingNode :
+                                        node->NextSiblingNode;
 
-            if (parentNode->GetNodeType() is not NodeType.Component && parentNode->ChildCount > 0) {
+            if (parentNode->GetNodeType() is not NodeType.Component && parentNode->ChildCount > 0)
                 parentNode->ChildCount--;
-            }
         }
 
         if (node->PrevSiblingNode != null)

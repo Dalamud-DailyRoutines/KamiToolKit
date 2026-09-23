@@ -4,118 +4,125 @@ using Lumina.Text.ReadOnly;
 
 namespace KamiToolKit.BaseTypes;
 
-public unsafe partial class NativeAddon {
+public unsafe partial class NativeAddon
+{
+    internal Vector2 LastClosePosition = Vector2.Zero;
 
     /// <summary>
-    /// Gets or inits the addons internal name.
+    ///     Gets or inits the addons internal name.
     /// </summary>
     /// <remarks>
-    /// Names are limited to 31 characters.
+    ///     Names are limited to 31 characters.
     /// </remarks>
-    public required string InternalName {
+    public required string InternalName
+    {
         get;
         init => field = new string(value.Replace(" ", "").Take(31).ToArray());
     }
 
     /// <summary>
-    /// Gets or sets the addons main title string.
+    ///     Gets or sets the addons main title string.
     /// </summary>
     public required ReadOnlySeString Title { get; set; }
 
     /// <summary>
-    /// Gets or sets the addons subtitle string, defaults to <see cref="KamiToolKitLibrary.DefaultWindowSubtitle"/> set via <see cref="KamiToolKitLibrary.InitializeAsync"/>.
+    ///     Gets or sets the addons subtitle string, defaults to <see cref="KamiToolKitLibrary.DefaultWindowSubtitle" /> set
+    ///     via <see cref="KamiToolKitLibrary.InitializeAsync" />.
     /// </summary>
     /// <remarks>
-    /// It is recommended to only change this if your windows main title is already representative of your plugins name.
+    ///     It is recommended to only change this if your windows main title is already representative of your plugins name.
     /// </remarks>
     public ReadOnlySeString? Subtitle { get; set; }
 
     /// <summary>
-    /// Sound effect to play when opening or closing this addon.
+    ///     Sound effect to play when opening or closing this addon.
     /// </summary>
     public int OpenWindowSoundEffectId { get; set; } = 23;
 
     /// <summary>
-    /// Gets or sets this addons size, defaults to 400px by 400px.
+    ///     Gets or sets this addons size, defaults to 400px by 400px.
     /// </summary>
-    public Vector2 Size {
+    public Vector2 Size
+    {
         get;
-        set {
+        set
+        {
             field = value;
 
-            if (value == Vector2.Zero) {
+            if (value == Vector2.Zero)
                 field = new Vector2(400.0f, 400.0f);
-            }
         }
     } = new(400.0f, 400.0f);
 
     /// <summary>
-    /// Gets the position of the content body start.
+    ///     Gets the position of the content body start.
     /// </summary>
     /// <remarks>
-    /// This is the bottom left of the header node plus some <see cref="ContentPadding"/>.
+    ///     This is the bottom left of the header node plus some <see cref="ContentPadding" />.
     /// </remarks>
     public Vector2 ContentStartPosition
         => (WindowNode?.ContentStartPosition ?? Vector2.Zero) + new Vector2(ContentPadding.X, 0.0f);
 
     /// <summary>
-    /// Gets the size of the body of the window.
+    ///     Gets the size of the body of the window.
     /// </summary>
     /// <remarks>
-    /// This is the size of the window minus the size of the header, minus 2x <see cref="ContentPadding"/>
+    ///     This is the size of the window minus the size of the header, minus 2x <see cref="ContentPadding" />
     /// </remarks>
     public Vector2 ContentSize
         => (WindowNode?.ContentSize ?? Vector2.Zero) - new Vector2(ContentPadding.X * 2.0f, ContentPadding.Y);
 
     /// <summary>
-    /// Gets or sets the padding used for the content area.
+    ///     Gets or sets the padding used for the content area.
     /// </summary>
     public Vector2 ContentPadding { get; set; } = new(8.0f, 8.0f);
 
     /// <summary>
-    /// Gets or sets the depth layer this window will open on.
+    ///     Gets or sets the depth layer this window will open on.
     /// </summary>
     public int DepthLayer { get; init; } = 5;
 
     /// <summary>
-    /// Gets whether this window is open and visible.
+    ///     Gets whether this window is open and visible.
     /// </summary>
     public bool IsOpen
         => InternalAddon is not null && InternalAddon->IsVisible;
 
     /// <summary>
-    /// Gets this addons ID.
+    ///     Gets this addons ID.
     /// </summary>
     public int AddonId
-        => InternalAddon is null ? 0 : InternalAddon->Id;
+        => InternalAddon is null ?
+               0 :
+               InternalAddon->Id;
 
     /// <summary>
-    /// Gets or inits the addons ID that this window reports to the game in its callbacks.
+    ///     Gets or inits the addons ID that this window reports to the game in its callbacks.
     /// </summary>
     /// <remarks>
-    /// AtkUnitBase.FireCallback passes AtkUnitBase.ParentId instead of the own ID, so setting this delegates the callback to another addon.
+    ///     AtkUnitBase.FireCallback passes AtkUnitBase.ParentId instead of the own ID, so setting this delegates the callback
+    ///     to another addon.
     /// </remarks>
     public int ParentAddonId { get; init; }
 
     /// <summary>
-    /// Gets or inits the addons ID that this window blocks while it is shown.
+    ///     Gets or inits the addons ID that this window blocks while it is shown.
     /// </summary>
     /// <remarks>
-    /// Setting this increments AtkUnitBase.NumBlockingAddons of the target addon, the game decrements it again when this window hides.
+    ///     Setting this increments AtkUnitBase.NumBlockingAddons of the target addon, the game decrements it again when this
+    ///     window hides.
     /// </remarks>
     public int BlockedParentAddonId { get; init; }
 
     /// <summary>
-    /// Gets or sets whether this addon should remove its close position.
+    ///     Gets or sets whether this addon should remove its close position.
     /// </summary>
     public bool RememberClosePosition { get; set; } = true;
 
     /// <summary>
-    /// Gets or sets if this addon should be forced into the viewable area when opening.
+    ///     Gets or sets if this addon should be forced into the viewable area when opening.
     /// </summary>
     public bool OpenInBounds { get; init; } = true;
-
-    internal Vector2 LastClosePosition = Vector2.Zero;
 
     internal bool IsOverlayAddon { get; init; }
 }

@@ -3,31 +3,31 @@ using System.Numerics;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// Custom implementation of a progress bar node.
+///     Custom implementation of a progress bar node.
 /// </summary>
-public abstract class ProgressNode : ResNode {
-
+public abstract class ProgressNode : ResNode
+{
     /// <summary>
-    /// Gets or sets the current progress representation.
+    ///     Gets or sets the current progress representation.
     /// </summary>
     /// <remarks>
-    /// Expects values between 0.0f and 1.0f.
+    ///     Expects values between 0.0f and 1.0f.
     /// </remarks>
     public abstract float Progress { get; set; }
 
     /// <summary>
-    /// Gets or sets the bars color.
+    ///     Gets or sets the bars color.
     /// </summary>
     /// <remarks>
-    /// Expects values between 0.0f and 1.0f.
+    ///     Expects values between 0.0f and 1.0f.
     /// </remarks>
     public abstract Vector4 BarColor { get; set; }
 
     /// <summary>
-    /// Gets or sets the background textures color.
+    ///     Gets or sets the background textures color.
     /// </summary>
     /// <remarks>
-    /// Expects values between 0.0f and 1.0f.
+    ///     Expects values between 0.0f and 1.0f.
     /// </remarks>
     public abstract Vector4 BackgroundColor { get; set; }
 }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
@@ -12,67 +11,125 @@ using KamiToolKit.Nodes;
 
 namespace KamiToolKit.BaseTypes;
 
-public abstract unsafe partial class NodeBase {
+public abstract unsafe partial class NodeBase
+{
+    internal readonly List<NodeBase> ChildNodes = [];
+    private           NodeBase?      parentNode;
+
+    internal AtkUldManager* ParentUldManager     { get; set; }
+    internal bool           SuppressNativeUpdate { get; private set; }
+    public   AtkUnitBase*   ParentAddon          { get; private set; }
 
     /// <summary>
-    /// Attaches this node to targetAddon's root node using targetPosition as the relative positioning.
+    ///     Attaches this node to targetAddon's root node using targetPosition as the relative positioning.
     /// </summary>
     [OverloadResolutionPriority(1)]
-    public void AttachNode(NativeAddon? targetAddon, NodePosition targetPosition = NodePosition.AsLastChild)
+    public void AttachNode
+    (
+        NativeAddon? targetAddon,
+        NodePosition targetPosition = NodePosition.AsLastChild
+    )
         => PerformManagedAttach(targetAddon, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NativeAddon?, NodePosition)"/>
-    public void AttachNode(AtkUnitBase* targetAddon, NodePosition targetPosition = NodePosition.AsLastChild)
-        => PerformNativeAttach(targetAddon is not null ? targetAddon->RootNode : null, targetPosition);
+    /// <inheritdoc cref="AttachNode(NativeAddon?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkUnitBase* targetAddon,
+        NodePosition targetPosition = NodePosition.AsLastChild
+    )
+        => PerformNativeAttach
+        (
+            targetAddon is not null ?
+                targetAddon->RootNode :
+                null,
+            targetPosition
+        );
 
     /// <summary>
-    /// Attaches this node to the targetNode node using targetPosition to determine where to insert the node relatively.
+    ///     Attaches this node to the targetNode node using targetPosition to determine where to insert the node relatively.
     /// </summary>
     [OverloadResolutionPriority(1)]
-    public void AttachNode(NodeBase? targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    public void AttachNode
+    (
+        NodeBase?    targetNode,
+        NodePosition targetPosition = NodePosition.AsLastChild
+    )
         => PerformManagedAttach(targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkResNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkResNode*  targetNode,
+        NodePosition targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach(targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkImageNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkImageNode* targetNode,
+        NodePosition  targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkTextNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkTextNode* targetNode,
+        NodePosition targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkNineGridNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkNineGridNode* targetNode,
+        NodePosition     targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkCounterNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkCounterNode* targetNode,
+        NodePosition    targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkCollisionNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkCollisionNode* targetNode,
+        NodePosition      targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkClippingMaskNode* targetNode, NodePosition targetPosition = NodePosition.AsLastChild)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkClippingMaskNode* targetNode,
+        NodePosition         targetPosition = NodePosition.AsLastChild
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
-    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)"/>
-    public void AttachNode(AtkComponentNode* targetNode, NodePosition targetPosition = NodePosition.AfterAllSiblings)
+    /// <inheritdoc cref="AttachNode(NodeBase?, NodePosition)" />
+    public void AttachNode
+    (
+        AtkComponentNode* targetNode,
+        NodePosition      targetPosition = NodePosition.AfterAllSiblings
+    )
         => PerformNativeAttach((AtkResNode*)targetNode, targetPosition);
 
     /// <summary>
-    /// Detaches this node from the current tree, and removes native references to it.
-    /// This is only intended to be used for very specific use cases.
-    /// Generally speaking you probably want "Dispose" instead.
+    ///     Detaches this node from the current tree, and removes native references to it.
+    ///     This is only intended to be used for very specific use cases.
+    ///     Generally speaking you probably want "Dispose" instead.
     /// </summary>
     /// <remarks>
-    /// <em>Do not call this immediately before calling dispose!</em>
+    ///     <em>Do not call this immediately before calling dispose!</em>
     /// </remarks>
-    public void DetachNode() {
+    public void DetachNode()
+    {
         if (ResNode is null) return;
 
         UnlinkFromNative();
@@ -81,7 +138,12 @@ public abstract unsafe partial class NodeBase {
         RemoveParentAddonReferences();
     }
 
-    private void PerformManagedAttach(NativeAddon? targetAddon, NodePosition targetPosition = NodePosition.AsLastChild) {
+    private void PerformManagedAttach
+    (
+        NativeAddon? targetAddon,
+        NodePosition targetPosition = NodePosition.AsLastChild
+    )
+    {
         if (targetAddon is null) return;
 
         PerformNativeAttach(targetAddon.RootNode, targetPosition);
@@ -90,8 +152,14 @@ public abstract unsafe partial class NodeBase {
         parentNode.ChildNodes.Add(this);
     }
 
-    private void PerformManagedAttach(NodeBase? targetNode, NodePosition targetPosition) {
-        if (this == targetNode) {
+    private void PerformManagedAttach
+    (
+        NodeBase?    targetNode,
+        NodePosition targetPosition
+    )
+    {
+        if (this == targetNode)
+        {
             IPluginLog.Get().Warning("Attempted to attach self to self, attach was aborted.");
             return;
         }
@@ -99,17 +167,19 @@ public abstract unsafe partial class NodeBase {
         if (targetNode is null) return;
 
         // Guard against double-attach, double attaching will deadlock the game.
-        var childNodeList = targetPosition switch {
+        var childNodeList = targetPosition switch
+        {
             NodePosition.AsFirstChild or NodePosition.AsLastChild
                 => targetNode.ChildNodes,
 
             NodePosition.BeforeAllSiblings or NodePosition.AfterAllSiblings or NodePosition.BeforeTarget or NodePosition.AfterTarget
                 => targetNode.parentNode?.ChildNodes,
 
-            _ => null,
+            _ => null
         };
 
-        if (childNodeList?.Any(childNode => childNode == this) ?? false) {
+        if (childNodeList?.Any(childNode => childNode == this) ?? false)
+        {
             IPluginLog.Get().Warning("Attempted to double-attach node to parent, attach was aborted.");
             return;
         }
@@ -120,37 +190,48 @@ public abstract unsafe partial class NodeBase {
         parentNode.ChildNodes.Add(this);
     }
 
-    private void PerformNativeAttach(AtkResNode* targetNode, NodePosition targetPosition) {
-        if (ResNode == targetNode) {
+    private void PerformNativeAttach
+    (
+        AtkResNode*  targetNode,
+        NodePosition targetPosition
+    )
+    {
+        if (ResNode == targetNode)
+        {
             IPluginLog.Get().Warning("Attempted to attach self to self, attach was aborted.");
             return;
         }
 
         if (targetNode is null) return;
 
-        if (targetNode->GetNodeType() is NodeType.Component) {
+        if (targetNode->GetNodeType() is NodeType.Component)
+        {
 
             // If target is a ComponentNode,
             // then we don't ever wanna be a child of the ComponentNode itself,
             // we will want to be a sibling of the root node.
             // Therefore, redirect the target position to be siblings.
-            targetPosition = targetPosition switch {
-                NodePosition.AsLastChild => NodePosition.AfterAllSiblings,
+            targetPosition = targetPosition switch
+            {
+                NodePosition.AsLastChild  => NodePosition.AfterAllSiblings,
                 NodePosition.AsFirstChild => NodePosition.BeforeAllSiblings,
-                _ => targetPosition,
+                _                         => targetPosition
             };
 
             // If however, we are using BeforeTarget or AfterTarget,
             // then we do want to attach to the ComponentNode
             // else, attach to its root node.
             var componentNode = targetNode->GetAsAtkComponentNode();
-            if (componentNode is not null) {
-                targetNode = targetPosition switch {
-                    NodePosition.AfterTarget => targetNode,
-                    NodePosition.BeforeTarget => targetNode,
-                    NodePosition.AfterAllSiblings => componentNode->Component->UldManager.RootNode,
+
+            if (componentNode is not null)
+            {
+                targetNode = targetPosition switch
+                {
+                    NodePosition.AfterTarget       => targetNode,
+                    NodePosition.BeforeTarget      => targetNode,
+                    NodePosition.AfterAllSiblings  => componentNode->Component->UldManager.RootNode,
                     NodePosition.BeforeAllSiblings => componentNode->Component->UldManager.RootNode,
-                    _ => throw new ArgumentOutOfRangeException(nameof(targetPosition), targetPosition, null),
+                    _                              => throw new ArgumentOutOfRangeException(nameof(targetPosition), targetPosition, null)
                 };
             }
         }
@@ -160,8 +241,13 @@ public abstract unsafe partial class NodeBase {
         UpdateNative();
     }
 
-    internal void ReattachNode(AtkResNode* newTarget) {
-        if (ResNode == newTarget) {
+    internal void ReattachNode
+    (
+        AtkResNode* newTarget
+    )
+    {
+        if (ResNode == newTarget)
+        {
             IPluginLog.Get().Warning("Attempted to attach self to self, attach was aborted.");
             return;
         }
@@ -172,128 +258,141 @@ public abstract unsafe partial class NodeBase {
         AttachNode(newTarget);
     }
 
-    private void UnlinkFromNative() {
+    private void UnlinkFromNative()
+    {
         NodeLinker.DetachNode(ResNode);
-        ResNode->ParentNode = null;
+        ResNode->ParentNode      = null;
         ResNode->NextSiblingNode = null;
         ResNode->PrevSiblingNode = null;
     }
 
-    private void RemoveUldManagerObjectReferences() {
+    private void RemoveUldManagerObjectReferences()
+    {
         if (ParentUldManager is null) return;
 
         ParentUldManager->RemoveNodeFromObjectList(this);
         ParentUldManager = null;
     }
 
-    private void RemoveParentAddonReferences() {
-        if (ParentAddon is null) {
+    private void RemoveParentAddonReferences()
+    {
+        if (ParentAddon is null)
             ParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
-        }
 
-        if (ParentAddon is not null) {
-            var unitManager = RaptureAtkUnitManager.Instance();
-            ref var loadedList = ref unitManager->AllLoadedUnitsList;
-            var isAlive = false;
-            for (var i = 0; i < loadedList.Count; i++) {
-                if (loadedList.Entries[i].Value == ParentAddon) {
+        if (ParentAddon is not null)
+        {
+            var     unitManager = RaptureAtkUnitManager.Instance();
+            ref var loadedList  = ref unitManager->AllLoadedUnitsList;
+            var     isAlive     = false;
+
+            for (var i = 0; i < loadedList.Count; i++)
+                if (loadedList.Entries[i].Value == ParentAddon)
+                {
                     isAlive = true;
                     break;
                 }
-            }
+
             if (!isAlive)
                 ParentAddon = null;
         }
 
-        if (ParentAddon is null) {
-            foreach (var child in GetAllChildren(this)) {
+        if (ParentAddon is null)
+        {
+            foreach (var child in GetAllChildren(this))
                 child.ParentAddon = null;
-            }
             return;
         }
 
-        if (!SuppressNativeUpdate) {
+        if (!SuppressNativeUpdate)
+        {
             ParentAddon->UldManager.UpdateDrawNodeList();
             ParentAddon->UpdateCollisionNodeList(false);
         }
 
         ParentAddon = null;
 
-        foreach (var child in GetAllChildren(this)) {
+        foreach (var child in GetAllChildren(this))
             child.ParentAddon = null;
-        }
     }
 
-    private void RemoveParentNodeReferences() {
+    private void RemoveParentNodeReferences()
+    {
         if (parentNode is null) return;
 
         parentNode.ChildNodes.Remove(this);
         parentNode = null;
     }
 
-    private void UpdateNative() {
+    private void UpdateNative()
+    {
         if (ResNode is null) return;
 
         // Set this node and all children to dirty to have the
         // game recalc their visible location.
         MarkDirty();
 
-        if (ParentUldManager is null) {
+        if (ParentUldManager is null)
             ParentUldManager = GetUldManagerForNode(this);
-        }
 
-        if (ParentUldManager is not null) {
+        if (ParentUldManager is not null)
+        {
             ParentUldManager->AddNodeToObjectList(this);
 
-            foreach (var child in GetAllChildren(this)) {
+            foreach (var child in GetAllChildren(this))
                 child.ParentUldManager = ParentUldManager;
-            }
 
-            if (this is TextNode { TextId: not 0 }) {
+            if (this is TextNode { TextId: not 0 })
                 ParentUldManager->SetupText();
-            }
         }
 
-        if (ParentAddon is not null) {
-            if (ParentAddon->NameString is "NamePlate") {
+        if (ParentAddon is not null)
+        {
+            if (ParentAddon->NameString is "NamePlate")
                 IPluginLog.Get().Warning("Warning, attaching to AddonNamePlate is not supported. Use OverlayController instead.");
-            }
 
             ParentAddon->UldManager.UpdateDrawNodeList();
             ParentAddon->UpdateCollisionNodeList(false);
         }
     }
 
-    private void UpdateParentAddon(AtkResNode* node) {
-        if (parentNode is not null && parentNode.ParentAddon is not null) {
+    private void UpdateParentAddon
+    (
+        AtkResNode* node
+    )
+    {
+        if (parentNode is not null && parentNode.ParentAddon is not null)
             ParentAddon = parentNode.ParentAddon;
-        }
-        else if (ParentAddon is null) {
+        else if (ParentAddon is null)
+        {
             var targetParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(node);
-            if (targetParentAddon is not null) {
+            if (targetParentAddon is not null)
                 ParentAddon = targetParentAddon;
-            }
         }
 
-        if (ParentAddon is not null) {
-            foreach (var child in GetAllChildren(this)) {
+        if (ParentAddon is not null)
+        {
+            foreach (var child in GetAllChildren(this))
                 child.ParentAddon = ParentAddon;
-            }
         }
     }
 
-    private AtkUldManager* GetUldManagerForNode(AtkResNode* node) {
+    private AtkUldManager* GetUldManagerForNode
+    (
+        AtkResNode* node
+    )
+    {
         if (node is null) return null;
 
         var targetNode = node;
 
-        if (targetNode->GetNodeType() is NodeType.Component) {
+        if (targetNode->GetNodeType() is NodeType.Component)
             targetNode = targetNode->ParentNode;
-        }
 
         // Try to get UldManager via the first parent that is a component
-        while (targetNode is not null) {
-            if (targetNode->GetNodeType() is NodeType.Component) {
+        while (targetNode is not null)
+        {
+            if (targetNode->GetNodeType() is NodeType.Component)
+            {
                 var componentNode = (AtkComponentNode*)targetNode;
                 return &componentNode->Component->UldManager;
             }
@@ -302,39 +401,39 @@ public abstract unsafe partial class NodeBase {
         }
 
         // We failed to find a parent component, try to get a parent addon instead
-        if (ParentAddon is not null) {
+        if (ParentAddon is not null)
             return &ParentAddon->UldManager;
-        }
 
         return null;
     }
 
-    private static IEnumerable<NodeBase> GetAllChildren(NodeBase parent) {
-        foreach (var child in parent.ChildNodes) {
+    private static IEnumerable<NodeBase> GetAllChildren
+    (
+        NodeBase parent
+    )
+    {
+        foreach (var child in parent.ChildNodes)
+        {
             yield return child;
-            foreach (var childNode in GetAllChildren(child)) {
+            foreach (var childNode in GetAllChildren(child))
                 yield return childNode;
-            }
         }
     }
 
-    internal static IEnumerable<NodeBase> GetLocalChildren(NodeBase parent) {
+    internal static IEnumerable<NodeBase> GetLocalChildren
+    (
+        NodeBase parent
+    )
+    {
         if (parent is ComponentNode.ComponentNode) yield break;
 
-        foreach (var child in parent.ChildNodes) {
+        foreach (var child in parent.ChildNodes)
+        {
             yield return child;
 
             if (child is ComponentNode.ComponentNode) continue;
-            foreach (var childNode in GetLocalChildren(child)) {
+            foreach (var childNode in GetLocalChildren(child))
                 yield return childNode;
-            }
         }
     }
-
-    internal readonly List<NodeBase> ChildNodes = [];
-    private NodeBase? parentNode;
-
-    internal AtkUldManager* ParentUldManager { get; set; }
-    internal bool SuppressNativeUpdate { get; private set; }
-    public AtkUnitBase* ParentAddon { get; private set; }
 }

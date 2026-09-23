@@ -3,16 +3,17 @@
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Enum definition for layout orientation used for <see cref="ListBoxNode"/>
+///     Enum definition for layout orientation used for <see cref="ListBoxNode" />
 /// </summary>
-public enum LayoutOrientation {
+public enum LayoutOrientation
+{
     /// <summary>
-    /// Vertical
+    ///     Vertical
     /// </summary>
     Vertical,
 
     /// <summary>
-    /// Horizontal
+    ///     Horizontal
     /// </summary>
-    Horizontal,
+    Horizontal
 }

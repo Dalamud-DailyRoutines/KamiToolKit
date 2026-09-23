@@ -4,52 +4,60 @@ using KamiToolKit.Enums;
 namespace KamiToolKit.Timelines;
 
 /// <summary>
-/// Managed adaptor for native structs. Not intended for external use.
+///     Managed adaptor for native structs. Not intended for external use.
 /// </summary>
-public class TimelineLabelSetKeyFrame : TimelineKeyFrame {
-
+public class TimelineLabelSetKeyFrame : TimelineKeyFrame
+{
     private AtkTimelineLabel data;
 
     /// <summary>
-    /// Gets or sets the timeline jump behavior.
+    ///     Gets or sets the timeline jump behavior.
     /// </summary>
-    public AtkTimelineJumpBehavior JumpBehavior {
+    public AtkTimelineJumpBehavior JumpBehavior
+    {
         get => data.JumpBehavior;
-        set {
+        set
+        {
             data.JumpBehavior = value;
             UpdateValue();
         }
     }
 
     /// <summary>
-    /// Gets or sets the timelines label id.
+    ///     Gets or sets the timelines label id.
     /// </summary>
-    public int LabelId {
+    public int LabelId
+    {
         get => data.LabelId;
-        set {
+        set
+        {
             data.LabelId = (ushort)value;
             UpdateValue();
         }
     }
 
     /// <summary>
-    /// Gets or sets the id that will be jumped to on completion.
+    ///     Gets or sets the id that will be jumped to on completion.
     /// </summary>
-    public int JumpLabelId {
+    public int JumpLabelId
+    {
         get => data.JumpLabelId;
-        set {
+        set
+        {
             data.JumpLabelId = (byte)value;
             UpdateValue();
         }
     }
 
-    private void UpdateValue() {
-        Value = new AtkTimelineKeyValue {
-            Label = data,
+    private void UpdateValue()
+    {
+        Value = new AtkTimelineKeyValue
+        {
+            Label = data
         };
 
-        GroupType = AtkTimelineKeyGroupType.Label;
-        SpeedEnd = 0.0f;
+        GroupType     = AtkTimelineKeyGroupType.Label;
+        SpeedEnd      = 0.0f;
         Interpolation = AtkTimelineInterpolation.None;
         GroupSelector = KeyFrameGroupType.TextLabel;
     }

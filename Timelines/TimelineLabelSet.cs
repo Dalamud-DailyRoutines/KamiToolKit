@@ -6,63 +6,71 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 namespace KamiToolKit.Timelines;
 
 /// <summary>
-/// Managed adaptor to the native structs. Not intended for external use.
+///     Managed adaptor to the native structs. Not intended for external use.
 /// </summary>
-public unsafe class TimelineLabelSet : IDisposable {
+public unsafe class TimelineLabelSet : IDisposable
+{
+    internal AtkTimelineLabelSet* InternalLabelSet;
 
     private List<TimelineKeyFrame> internalKeyFrames = [];
 
-    internal AtkTimelineLabelSet* InternalLabelSet;
-
     /// <summary>
-    /// Constructs a new <see cref="TimelineLabelSet"/>
+    ///     Constructs a new <see cref="TimelineLabelSet" />
     /// </summary>
-    public TimelineLabelSet() {
+    public TimelineLabelSet()
+    {
         InternalLabelSet = IMemorySpace.GetUISpace()->MallocZeroed<AtkTimelineLabelSet>();
 
-        InternalLabelSet->StartFrameIdx = 0;
-        InternalLabelSet->EndFrameIdx = 0;
+        InternalLabelSet->StartFrameIdx      = 0;
+        InternalLabelSet->EndFrameIdx        = 0;
         InternalLabelSet->LabelKeyGroup.Type = AtkTimelineKeyGroupType.Label;
     }
 
     /// <summary>
-    /// Gets or sets start frame id.
+    ///     Gets or sets start frame id.
     /// </summary>
-    public int StartFrameId {
+    public int StartFrameId
+    {
         get => InternalLabelSet->StartFrameIdx;
         set => InternalLabelSet->StartFrameIdx = (ushort)value;
     }
 
     /// <summary>
-    /// Gets or sets end frame id.
+    ///     Gets or sets end frame id.
     /// </summary>
-    public int EndFrameId {
+    public int EndFrameId
+    {
         get => InternalLabelSet->EndFrameIdx;
         set => InternalLabelSet->EndFrameIdx = (ushort)value;
     }
 
     /// <summary>
-    /// Gets or sets the keyframe label sets.
+    ///     Gets or sets the keyframe label sets.
     /// </summary>
-    public List<TimelineKeyFrame> Labels {
+    public List<TimelineKeyFrame> Labels
+    {
         get => internalKeyFrames;
-        set {
+        set
+        {
             internalKeyFrames = value;
             Resync();
         }
     }
 
     /// <inheritdoc />
-    public void Dispose() {
+    public void Dispose()
+    {
         IMemorySpace.Free(InternalLabelSet);
         InternalLabelSet = null;
     }
 
-    private void Resync() {
+    private void Resync()
+    {
         ref var keyGroup = ref InternalLabelSet->LabelKeyGroup;
 
         // Free existing array, we will completely rebuild it
-        if (keyGroup.KeyFrames is null) {
+        if (keyGroup.KeyFrames is null)
+        {
             IMemorySpace.Free(keyGroup.KeyFrames);
             keyGroup.KeyFrames = null;
         }
@@ -71,7 +79,9 @@ public unsafe class TimelineLabelSet : IDisposable {
         keyGroup.KeyFrames = IMemorySpace.GetUISpace()->AllocateZeroedArray<AtkTimelineKeyFrame>(internalKeyFrames.Count);
 
         var index = 0;
-        foreach (var keyFrame in internalKeyFrames) {
+
+        foreach (var keyFrame in internalKeyFrames)
+        {
             keyGroup.KeyFrames[index] = keyFrame;
             index++;
         }

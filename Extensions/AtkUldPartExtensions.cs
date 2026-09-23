@@ -12,39 +12,53 @@ using KamiToolKit.Internal.Classes;
 namespace KamiToolKit.Extensions;
 
 /// <summary>
-/// Extension methods for AtkUldParts and their contained Assets/Textures.
+///     Extension methods for AtkUldParts and their contained Assets/Textures.
 /// </summary>
-public static unsafe class AtkUldPartExtensions {
-    extension(ref AtkUldPart part) {
+public static unsafe class AtkUldPartExtensions
+{
+    private static readonly Dictionary<string, bool> FileExistsCache = [];
 
+    extension
+    (
+        ref AtkUldPart part
+    )
+    {
         /// <summary>
-        /// Gets if the texture is not null and ready.
+        ///     Gets if the texture is not null and ready.
         /// </summary>
         public bool IsTextureReady => part.UldAsset is not null && part.UldAsset->AtkTexture.IsTextureReady();
 
         /// <summary>
-        /// Gets the size of the loaded texture, or <see cref="Vector2.Zero"/> if null or not ready.
+        ///     Gets the size of the loaded texture, or <see cref="Vector2.Zero" /> if null or not ready.
         /// </summary>
         public Vector2 LoadedTextureSize => part.GetActualTextureSize();
 
         /// <summary>
-        /// Gets the texture path of the loaded texture, or <see cref="string.Empty"/> if null or not ready.
+        ///     Gets the texture path of the loaded texture, or <see cref="string.Empty" /> if null or not ready.
         /// </summary>
         public string LoadedPath => part.GetLoadedPath();
 
         /// <summary>
-        /// Load the texture from the given path.
+        ///     Load the texture from the given path.
         /// </summary>
         /// <remarks>
-        /// Omit '_hr1' from provided paths as they will be stripped.
-        /// The games own texture loading system will load the appropriate texture resolution according to the current in-game settings.
-        /// Additionally, ensure that you are not loading textures before login, as that will lock the loaded textures themes to the games default theme texture,
-        /// even in places where native uses the texture.
+        ///     Omit '_hr1' from provided paths as they will be stripped.
+        ///     The games own texture loading system will load the appropriate texture resolution according to the current in-game
+        ///     settings.
+        ///     Additionally, ensure that you are not loading textures before login, as that will lock the loaded textures themes
+        ///     to the games default theme texture,
+        ///     even in places where native uses the texture.
         /// </remarks>
         /// <param name="path"></param>
         /// <param name="resolveTheme"></param>
-        public void LoadTexture(string path, bool resolveTheme = true) {
-            try {
+        public void LoadTexture
+        (
+            string path,
+            bool   resolveTheme = true
+        )
+        {
+            try
+            {
                 if (part.UldAsset is null) return;
 
                 part.TryUnloadTexture();
@@ -56,60 +70,72 @@ public static unsafe class AtkUldPartExtensions {
                 var texturePath = path.Replace("_hr1", string.Empty);
 
                 var themedPath = texturePath.Replace("uld", GetThemePathModifier());
-                if (FileExists(themedPath) && resolveTheme) {
+                if (FileExists(themedPath) && resolveTheme)
                     texturePath = themedPath;
-                }
 
-                if (FileExists(texturePath)) {
+                if (FileExists(texturePath))
                     part.UldAsset->AtkTexture.LoadTextureWithDefaultVersion(texturePath);
-                }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 IPluginLog.Get().Error(e, "Error in AtkUldPartExtensions LoadTexture");
             }
         }
 
         /// <summary>
-        /// Loads a texture based on an iconId.
+        ///     Loads a texture based on an iconId.
         /// </summary>
         /// <remarks>
-        /// This will attempt to find which icon sub folder the iconId actually lives in.
+        ///     This will attempt to find which icon sub folder the iconId actually lives in.
         /// </remarks>
-        public void LoadIcon(uint iconId)
+        public void LoadIcon
+        (
+            uint iconId
+        )
             => part.UldAsset->AtkTexture.LoadIconTexture(iconId, GetIconSubFolder(iconId));
 
         /// <summary>
-        /// Load a texture from a Texture* directly.
+        ///     Load a texture from a Texture* directly.
         /// </summary>
         /// <remarks>
-        /// <em>Warning, calling this multiple times on the same part may corrupt the game state.</em>
-        /// Additionally unloading this part with a Texture* set may attempt to release the texture that wasn't owned in the first place.
-        /// Undefined behavior may result.
+        ///     <em>Warning, calling this multiple times on the same part may corrupt the game state.</em>
+        ///     Additionally unloading this part with a Texture* set may attempt to release the texture that wasn't owned in the
+        ///     first place.
+        ///     Undefined behavior may result.
         /// </remarks>
         /// <param name="texture">Texture to load.</param>
-        public void LoadTexture(Texture* texture) {
+        public void LoadTexture
+        (
+            Texture* texture
+        )
+        {
             if (part.UldAsset is null) return;
 
             part.TryUnloadTexture();
             part.UldAsset->AtkTexture.KernelTexture = texture;
-            part.UldAsset->AtkTexture.TextureType = TextureType.KernelTexture;
+            part.UldAsset->AtkTexture.TextureType   = TextureType.KernelTexture;
         }
 
         /// <summary>
-        /// Loads texture from a IDalamudTextureWrap.
+        ///     Loads texture from a IDalamudTextureWrap.
         /// </summary>
         /// <remarks>
-        /// The texture wrap must remain valid for the lifetime of this node.
+        ///     The texture wrap must remain valid for the lifetime of this node.
         /// </remarks>
         /// <param name="textureWrap">Texture wrap to load.</param>
-        public void LoadTexture(IDalamudTextureWrap textureWrap) {
+        public void LoadTexture
+        (
+            IDalamudTextureWrap textureWrap
+        )
+        {
             var texturePointer = (Texture*)ITextureProvider.Get().ConvertToKernelTexture(textureWrap, true);
             if (texturePointer is null) return;
 
             part.LoadTexture(texturePointer);
         }
 
-        private string GetLoadedPath() {
+        private string GetLoadedPath()
+        {
             if (part.UldAsset is null) return string.Empty;
             if (part.UldAsset->AtkTexture.Resource is null) return string.Empty;
             if (part.UldAsset->AtkTexture.Resource->TexFileResourceHandle is null) return string.Empty;
@@ -117,7 +143,8 @@ public static unsafe class AtkUldPartExtensions {
             return part.UldAsset->AtkTexture.Resource->TexFileResourceHandle->FileName.ToString();
         }
 
-        private void TryUnloadTexture() {
+        private void TryUnloadTexture()
+        {
             if (part.UldAsset is null) return;
             if (!part.UldAsset->AtkTexture.IsTextureReady()) return;
             if (part.UldAsset->AtkTexture.TextureType is 0) return;
@@ -125,24 +152,29 @@ public static unsafe class AtkUldPartExtensions {
 
             part.UldAsset->AtkTexture.ReleaseTexture();
             part.UldAsset->AtkTexture.KernelTexture = null;
-            part.UldAsset->AtkTexture.TextureType = 0;
+            part.UldAsset->AtkTexture.TextureType   = 0;
         }
 
-        private Vector2 GetActualTextureSize() {
+        private Vector2 GetActualTextureSize()
+        {
             if (part.UldAsset is null) return Vector2.Zero;
             if (!part.UldAsset->AtkTexture.IsTextureReady()) return Vector2.Zero;
             if (part.UldAsset->AtkTexture.TextureType is 0) return Vector2.Zero;
             if (part.UldAsset->AtkTexture.KernelTexture is null) return Vector2.Zero;
 
-            var width = part.UldAsset->AtkTexture.GetTextureWidth();
+            var width  = part.UldAsset->AtkTexture.GetTextureWidth();
             var height = part.UldAsset->AtkTexture.GetTextureHeight();
             return new Vector2(width, height);
         }
     }
 
-    private static IconSubFolder GetIconSubFolder(uint iconId) {
-        var textureManager = AtkStage.Instance()->AtkTextureResourceManager;
-        Span<byte> buffer = stackalloc byte[0x100];
+    private static IconSubFolder GetIconSubFolder
+    (
+        uint iconId
+    )
+    {
+        var        textureManager = AtkStage.Instance()->AtkTextureResourceManager;
+        Span<byte> buffer         = stackalloc byte[0x100];
         buffer.Clear();
         var bytePointer = (byte*)Unsafe.AsPointer(ref buffer[0]);
 
@@ -154,17 +186,22 @@ public static unsafe class AtkUldPartExtensions {
         var pathResult = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(bytePointer).String;
 
         // If the resolved path doesn't exist, re-process with default folder
-        return FileExists(pathResult) ? targetFolder : IconSubFolder.None;
+        return FileExists(pathResult) ?
+                   targetFolder :
+                   IconSubFolder.None;
     }
 
-    private static string GetThemePathModifier() => AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType switch {
+    private static string GetThemePathModifier() => AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType switch
+    {
         not 0 => $"uld/img{AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType:00}",
-        _ => "uld",
+        _     => "uld"
     };
 
-    private static readonly Dictionary<string, bool> FileExistsCache = [];
-
-    private static bool FileExists(string path) {
+    private static bool FileExists
+    (
+        string path
+    )
+    {
         if (FileExistsCache.TryGetValue(path, out var result)) return result;
 
         var fileExists = IDataManager.Get().FileExists(path);

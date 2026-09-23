@@ -4,7 +4,7 @@ using KamiToolKit.BaseTypes;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// A generic basic node.
+///     A generic basic node.
 /// </summary>
 /// <remarks>
 /// </remarks>

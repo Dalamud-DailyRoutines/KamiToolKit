@@ -4,8 +4,10 @@ using KamiToolKit.BaseTypes;
 
 namespace KamiToolKit.Debug;
 
-internal static class NodeDebugTab {
-    public static unsafe void Draw() {
+internal static class NodeDebugTab
+{
+    public static unsafe void Draw()
+    {
         using var tabItem = ImRaii.TabItem("Nodes");
         if (!tabItem) return;
 
@@ -20,7 +22,8 @@ internal static class NodeDebugTab {
 
         ImGui.TableHeadersRow();
 
-        foreach (var node in NodeBase.CreatedNodes) {
+        foreach (var node in NodeBase.CreatedNodes)
+        {
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.Text(node.GetType().Name);

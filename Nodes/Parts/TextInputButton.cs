@@ -8,45 +8,38 @@ using KamiToolKit.Timelines;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-/// Specialization of a button for use in <see cref="TextInputSelectionListNode"/>.
-/// Not intended for external use.
+///     Specialization of a button for use in <see cref="TextInputSelectionListNode" />.
+///     Not intended for external use.
 /// </summary>
-public unsafe class TextInputButtonNode : ButtonBase {
-
+public unsafe class TextInputButtonNode : ButtonBase
+{
     /// <summary>
-    /// Not intended for public use, but it's here if you absolutely need it.
+    ///     Constructs a new <see cref="TextInputButtonNode" />
     /// </summary>
-    public NineGridNode BackgroundNode { get; }
-
-    /// <summary>
-    /// Not intended for public use, but it's here if you absolutely need it.
-    /// </summary>
-    public TextNode LabelNode { get; }
-
-    /// <summary>
-    /// Constructs a new <see cref="TextInputButtonNode"/>
-    /// </summary>
-    public TextInputButtonNode() {
-        BackgroundNode = new SimpleNineGridNode {
-            Size = new Vector2(160.0f, 24.0f),
-            LeftOffset = 16.0f,
-            RightOffset = 1.0f,
-            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.Fill | NodeFlags.EmitsEvents,
-            TexturePath = "ui/uld/ListItemA.tex",
-            TextureCoordinates = new Vector2(0.0f, 22.0f),
-            TextureSize = new Vector2(63.0f, 22.0f),
+    public TextInputButtonNode()
+    {
+        BackgroundNode = new SimpleNineGridNode
+        {
+            Size               = new Vector2(160.0f, 24.0f),
+            LeftOffset         = 16.0f,
+            RightOffset        = 1.0f,
+            NodeFlags          = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.Fill | NodeFlags.EmitsEvents,
+            TexturePath        = "ui/uld/ListItemA.tex",
+            TextureCoordinates = new Vector2(0.0f,  22.0f),
+            TextureSize        = new Vector2(63.0f, 22.0f)
         };
         BackgroundNode.AttachNode(this);
 
-        LabelNode = new TextNode {
-            Position = new Vector2(12.0f, 2.0f),
-            Size = new Vector2(140.0f, 18.0f),
-            NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents,
-            AlignmentType = AlignmentType.Left,
-            TextFlags = TextFlags.AutoAdjustNodeSize,
-            TextColor = KnownColor.White.Vector(),
+        LabelNode = new TextNode
+        {
+            Position         = new Vector2(12.0f,  2.0f),
+            Size             = new Vector2(140.0f, 18.0f),
+            NodeFlags        = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents,
+            AlignmentType    = AlignmentType.Left,
+            TextFlags        = TextFlags.AutoAdjustNodeSize,
+            TextColor        = KnownColor.White.Vector(),
             TextOutlineColor = KnownColor.White.Vector(),
-            BackgroundColor = KnownColor.Black.Vector(),
+            BackgroundColor  = KnownColor.Black.Vector()
         };
         LabelNode.AttachNode(this);
 
@@ -58,35 +51,55 @@ public unsafe class TextInputButtonNode : ButtonBase {
         InitializeComponentEvents();
     }
 
-    private void LoadTimeline() {
-        AddTimeline(new TimelineBuilder()
-            .BeginFrameSet(1, 59)
-            .AddLabelPair(1, 9, 1)
-            .AddLabelPair(10, 19, 2)
-            .AddLabelPair(20, 29, 3)
-            .AddLabelPair(30, 39, 7)
-            .AddLabelPair(40, 49, 6)
-            .AddLabelPair(50, 59, 4)
-            .EndFrameSet()
-            .Build());
+    /// <summary>
+    ///     Not intended for public use, but it's here if you absolutely need it.
+    /// </summary>
+    public NineGridNode BackgroundNode { get; }
 
-        BackgroundNode.AddTimeline(new TimelineBuilder()
-            .BeginFrameSet(10, 19)
-            .AddFrame(10, alpha: 0)
-            .AddFrame(13, alpha: 255)
-            .EndFrameSet()
-            .AddFrameSetWithFrame(20, 29, 20, alpha: 255)
-            .AddFrameSetWithFrame(40, 49, 40, alpha: 255)
-            .BeginFrameSet(50, 59)
-            .AddFrame(50, alpha: 255)
-            .AddFrame(52, alpha: 0)
-            .EndFrameSet()
-            .Build());
+    /// <summary>
+    ///     Not intended for public use, but it's here if you absolutely need it.
+    /// </summary>
+    public TextNode LabelNode { get; }
 
-        LabelNode.AddTimeline(new TimelineBuilder()
-            .AddFrameSetWithFrame(1, 29, 1, alpha: 255, multiplyColor: new Vector3(100.0f))
-            .AddFrameSetWithFrame(30, 39, 30, alpha: 153, multiplyColor: new Vector3(80.0f))
-            .AddFrameSetWithFrame(40, 59, 40, alpha: 255, multiplyColor: new Vector3(100.0f))
-            .Build());
+    private void LoadTimeline()
+    {
+        AddTimeline
+        (
+            new TimelineBuilder()
+                .BeginFrameSet(1, 59)
+                .AddLabelPair(1,  9,  1)
+                .AddLabelPair(10, 19, 2)
+                .AddLabelPair(20, 29, 3)
+                .AddLabelPair(30, 39, 7)
+                .AddLabelPair(40, 49, 6)
+                .AddLabelPair(50, 59, 4)
+                .EndFrameSet()
+                .Build()
+        );
+
+        BackgroundNode.AddTimeline
+        (
+            new TimelineBuilder()
+                .BeginFrameSet(10, 19)
+                .AddFrame(10, alpha: 0)
+                .AddFrame(13, alpha: 255)
+                .EndFrameSet()
+                .AddFrameSetWithFrame(20, 29, 20, alpha: 255)
+                .AddFrameSetWithFrame(40, 49, 40, alpha: 255)
+                .BeginFrameSet(50, 59)
+                .AddFrame(50, alpha: 255)
+                .AddFrame(52, alpha: 0)
+                .EndFrameSet()
+                .Build()
+        );
+
+        LabelNode.AddTimeline
+        (
+            new TimelineBuilder()
+                .AddFrameSetWithFrame(1,  29, 1,  alpha: 255, multiplyColor: new Vector3(100.0f))
+                .AddFrameSetWithFrame(30, 39, 30, alpha: 153, multiplyColor: new Vector3(80.0f))
+                .AddFrameSetWithFrame(40, 59, 40, alpha: 255, multiplyColor: new Vector3(100.0f))
+                .Build()
+        );
     }
 }

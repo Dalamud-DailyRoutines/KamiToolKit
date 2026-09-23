@@ -6,31 +6,34 @@ using KamiToolKit.Internal.Classes;
 
 namespace KamiToolKit.BaseTypes;
 
-public unsafe partial class NativeAddon {
-
+public unsafe partial class NativeAddon
+{
     private const int VirtualTableEntryCount = 200;
 
-    private static void ClearTimelineManager(AtkUnitBase* addon) {
-        addon->UldManager.TimelineManager = null;
-    }
-
-    private AtkUnitBase.Delegates.Dtor destructorFunction = null!;
-    private AtkUnitBase.Delegates.Draw drawFunction = null!;
-    private AtkUnitBase.Delegates.Finalizer finalizerFunction = null!;
-    private AtkUnitBase.Delegates.Hide hideFunction = null!;
+    private AtkUnitBase.Delegates.Dtor       destructorFunction = null!;
+    private AtkUnitBase.Delegates.Draw       drawFunction       = null!;
+    private AtkUnitBase.Delegates.Finalizer  finalizerFunction  = null!;
+    private AtkUnitBase.Delegates.Hide       hideFunction       = null!;
     private AtkUnitBase.Delegates.Initialize initializeFunction = null!;
-    private AtkUnitBase.Delegates.OnSetup onSetupFunction = null!;
-    private AtkUnitBase.Delegates.Show showFunction = null!;
-    private AtkUnitBase.Delegates.Hide2 softHideFunction = null!;
-    private AtkUnitBase.Delegates.Update updateFunction = null!;
-    private AtkUnitBase.Delegates.OnRequestedUpdate onRequestedUpdateFunction = null!;
-    private AtkUnitBase.Delegates.OnRefresh onRefreshFunction = null!;
+
+    private AtkUnitBase.AtkUnitBaseVirtualTable*     modifiedVirtualTable;
+    private AtkUnitBase.Delegates.OnRefresh          onRefreshFunction           = null!;
+    private AtkUnitBase.Delegates.OnRequestedUpdate  onRequestedUpdateFunction   = null!;
     private AtkUnitBase.Delegates.OnScreenSizeChange onScreenSizeChangedFunction = null!;
+    private AtkUnitBase.Delegates.OnSetup            onSetupFunction             = null!;
+    private AtkUnitBase.AtkUnitBaseVirtualTable*     originalVirtualTable;
+    private AtkUnitBase.Delegates.Show               showFunction     = null!;
+    private AtkUnitBase.Delegates.Hide2              softHideFunction = null!;
+    private AtkUnitBase.Delegates.Update             updateFunction   = null!;
 
-    private AtkUnitBase.AtkUnitBaseVirtualTable* modifiedVirtualTable;
-    private AtkUnitBase.AtkUnitBaseVirtualTable* originalVirtualTable;
+    private static void ClearTimelineManager
+    (
+        AtkUnitBase* addon
+    ) =>
+        addon->UldManager.TimelineManager = null;
 
-    private void RegisterVirtualTable() {
+    private void RegisterVirtualTable()
+    {
 
         originalVirtualTable = InternalAddon->VirtualTable;
 
@@ -40,65 +43,74 @@ public unsafe partial class NativeAddon {
         NativeMemory.Copy(InternalAddon->VirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
         InternalAddon->VirtualTable = modifiedVirtualTable;
 
-        initializeFunction = Initialize;
-        onSetupFunction = Setup;
-        showFunction = Show;
-        updateFunction = Update;
-        drawFunction = Draw;
-        hideFunction = Hide;
-        softHideFunction = Hide2;
-        finalizerFunction = Finalizer;
-        destructorFunction = Destructor;
-        onRequestedUpdateFunction = RequestedUpdate;
-        onRefreshFunction = Refresh;
+        initializeFunction          = Initialize;
+        onSetupFunction             = Setup;
+        showFunction                = Show;
+        updateFunction              = Update;
+        drawFunction                = Draw;
+        hideFunction                = Hide;
+        softHideFunction            = Hide2;
+        finalizerFunction           = Finalizer;
+        destructorFunction          = Destructor;
+        onRequestedUpdateFunction   = RequestedUpdate;
+        onRefreshFunction           = Refresh;
         onScreenSizeChangedFunction = ScreenSizeChange;
 
         modifiedVirtualTable->Initialize = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(initializeFunction);
-        modifiedVirtualTable->OnSetup = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, void>)Marshal.GetFunctionPointerForDelegate(onSetupFunction);
-        modifiedVirtualTable->Show = (delegate* unmanaged<AtkUnitBase*, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(showFunction);
-        modifiedVirtualTable->Update = (delegate* unmanaged<AtkUnitBase*, float, void>)Marshal.GetFunctionPointerForDelegate(updateFunction);
-        modifiedVirtualTable->Draw = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(drawFunction);
-        modifiedVirtualTable->Hide = (delegate* unmanaged<AtkUnitBase*, bool, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(hideFunction);
-        modifiedVirtualTable->Hide2 = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(softHideFunction);
-        modifiedVirtualTable->Finalizer = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(finalizerFunction);
-        modifiedVirtualTable->Dtor = (delegate* unmanaged<AtkUnitBase*, byte, AtkEventListener*>)Marshal.GetFunctionPointerForDelegate(destructorFunction);
-        modifiedVirtualTable->OnRequestedUpdate = (delegate* unmanaged<AtkUnitBase*, NumberArrayData**, StringArrayData**, void>)Marshal.GetFunctionPointerForDelegate(onRequestedUpdateFunction);
+        modifiedVirtualTable->OnSetup    = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, void>)Marshal.GetFunctionPointerForDelegate(onSetupFunction);
+        modifiedVirtualTable->Show       = (delegate* unmanaged<AtkUnitBase*, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(showFunction);
+        modifiedVirtualTable->Update     = (delegate* unmanaged<AtkUnitBase*, float, void>)Marshal.GetFunctionPointerForDelegate(updateFunction);
+        modifiedVirtualTable->Draw       = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(drawFunction);
+        modifiedVirtualTable->Hide       = (delegate* unmanaged<AtkUnitBase*, bool, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(hideFunction);
+        modifiedVirtualTable->Hide2      = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(softHideFunction);
+        modifiedVirtualTable->Finalizer  = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(finalizerFunction);
+        modifiedVirtualTable->Dtor       = (delegate* unmanaged<AtkUnitBase*, byte, AtkEventListener*>)Marshal.GetFunctionPointerForDelegate(destructorFunction);
+        modifiedVirtualTable->OnRequestedUpdate =
+            (delegate* unmanaged<AtkUnitBase*, NumberArrayData**, StringArrayData**, void>)Marshal.GetFunctionPointerForDelegate(onRequestedUpdateFunction);
         modifiedVirtualTable->OnRefresh = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, bool>)Marshal.GetFunctionPointerForDelegate(onRefreshFunction);
-        modifiedVirtualTable->OnScreenSizeChange = (delegate* unmanaged<AtkUnitBase*, int, int, void>)Marshal.GetFunctionPointerForDelegate(onScreenSizeChangedFunction);
+        modifiedVirtualTable->OnScreenSizeChange = (delegate* unmanaged<AtkUnitBase*, int, int, void>)Marshal.GetFunctionPointerForDelegate
+            (onScreenSizeChangedFunction);
     }
 
-    internal void RestoreVirtualTable() {
+    internal void RestoreVirtualTable()
+    {
         if (InternalAddon is null) return;
         if (modifiedVirtualTable is null) return;
 
-        if (RootNode is not null && RootNode.ResNode is not null) {
+        if (RootNode is not null && RootNode.ResNode is not null)
+        {
             var timeline = RootNode.Timeline;
-            RootNode.Timeline = null;
+            RootNode.Timeline          = null;
             RootNode.ResNode->Timeline = null;
-            try {
+
+            try
+            {
                 timeline?.Dispose();
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 IPluginLog.Get().Exception(e);
             }
         }
 
         ClearTimelineManager(InternalAddon);
 
-        if (RootNode is not null) {
-            try {
+        if (RootNode is not null)
+        {
+            try
+            {
                 RootNode.RestoreNodeVirtualTable();
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 IPluginLog.Get().Exception(e);
             }
         }
 
         NativeMemory.Copy(originalVirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
 
-        if (InternalAddon->VirtualTable == modifiedVirtualTable) {
+        if (InternalAddon->VirtualTable == modifiedVirtualTable)
             InternalAddon->VirtualTable = originalVirtualTable;
-        }
 
         // 不释放 modifiedVirtualTable, 因为 Dalamud 的 OriginalVirtualTable 可能指向它
         // 释放会导致 Dalamud 持有悬空指针, 后续调用时崩溃

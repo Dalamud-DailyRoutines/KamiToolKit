@@ -4,17 +4,18 @@ using KamiToolKit.BaseTypes;
 namespace KamiToolKit.Enums;
 
 /// <summary>
-/// Enum representing which edit mode is enabled for <see cref="NodeBase{T}"/>
+///     Enum representing which edit mode is enabled for <see cref="NodeBase{T}" />
 /// </summary>
 [Flags]
-public enum NodeEditMode {
+public enum NodeEditMode
+{
     /// <summary>
-    /// Resize
+    ///     Resize
     /// </summary>
     Resize = 1 << 1,
 
     /// <summary>
-    /// Move
+    ///     Move
     /// </summary>
-    Move = 1 << 2,
+    Move = 1 << 2
 }

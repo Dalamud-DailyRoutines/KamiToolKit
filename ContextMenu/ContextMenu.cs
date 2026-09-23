@@ -9,25 +9,62 @@ using Lumina.Text.ReadOnly;
 namespace KamiToolKit.ContextMenu;
 
 /// <summary>
-/// Class representing a native Context Menu
+///     Class representing a native Context Menu
 /// </summary>
-public unsafe class ContextMenu : IDisposable {
+public unsafe class ContextMenu : IDisposable
+{
+    // Prevent the return entry from colliding with submenu items
+    private const int SubMenuIndexOffset = 1000;
+
+    private readonly CustomEventInterface contextMenuEventInterface;
+
+    private Dictionary<long, ContextMenuItem>    mainMenuEntries  = [];
+    private Dictionary<long, ContextMenuSubItem> mainMenuSubMenus = [];
+    private Dictionary<long, ContextMenuItem>    subMenuEntries   = [];
 
     /// <summary>
-    /// Adds a menu entry with the specific name and callback function.
+    ///     Constructs a new <see cref="ContextMenu" />
     /// </summary>
-    public void AddItem(ReadOnlySeString name, Action callback) {
-        AddItem(new ContextMenuItem {
-            Name = name,
-            OnClick = callback,
-        });
+    public ContextMenu() =>
+        contextMenuEventInterface = new CustomEventInterface(ContextMenuEventHandler);
+
+    private List<ContextMenuItem>               Items        { get; set; } = [];
+    private IOrderedEnumerable<ContextMenuItem> OrderedItems => Items.OrderBy(item => item.DisplayPriority);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        ClearAll();
+
+        contextMenuEventInterface.Dispose();
     }
 
     /// <summary>
-    /// Removes an entry by name.
+    ///     Adds a menu entry with the specific name and callback function.
+    /// </summary>
+    public void AddItem
+    (
+        ReadOnlySeString name,
+        Action           callback
+    ) =>
+        AddItem
+        (
+            new ContextMenuItem
+            {
+                Name    = name,
+                OnClick = callback
+            }
+        );
+
+    /// <summary>
+    ///     Removes an entry by name.
     /// </summary>
     /// <param name="name">Entry to remove.</param>
-    public void RemoveItem(ReadOnlySeString name) {
+    public void RemoveItem
+    (
+        ReadOnlySeString name
+    )
+    {
         var targetItem = Items.FirstOrDefault(item => item.Name == name);
         if (targetItem is null) return;
 
@@ -35,48 +72,60 @@ public unsafe class ContextMenu : IDisposable {
     }
 
     /// <summary>
-    /// Adds already constructed ContextMenuItems.
+    ///     Adds already constructed ContextMenuItems.
     /// </summary>
-    public void AddItem(ContextMenuItem item, params ContextMenuItem[] items) {
-        foreach (var entry in items.Prepend(item)) {
+    public void AddItem
+    (
+        ContextMenuItem          item,
+        params ContextMenuItem[] items
+    )
+    {
+        foreach (var entry in items.Prepend(item))
             Items.Add(entry);
-        }
     }
 
     /// <summary>
-    /// Removes already constructed ContextMenuItems.
+    ///     Removes already constructed ContextMenuItems.
     /// </summary>
-    public void RemoveItem(ContextMenuItem item, params ContextMenuItem[] items) {
-        foreach (var entry in items.Prepend(item)) {
+    public void RemoveItem
+    (
+        ContextMenuItem          item,
+        params ContextMenuItem[] items
+    )
+    {
+        foreach (var entry in items.Prepend(item))
             Items.Remove(entry);
-        }
     }
 
     /// <summary>
-    /// Clears the menus contents.
+    ///     Clears the menus contents.
     /// </summary>
     public void Clear() => Items.Clear();
 
     /// <summary>
-    /// Opens a menu with the currently configured context menu entries.
+    ///     Opens a menu with the currently configured context menu entries.
     /// </summary>
-    public void Open() {
+    public void Open()
+    {
         var agentContextMenu = AgentContext.Instance();
 
         agentContextMenu->ClearMenu();
 
-        mainMenuEntries = [];
+        mainMenuEntries  = [];
         mainMenuSubMenus = [];
-        subMenuEntries = [];
+        subMenuEntries   = [];
 
-        foreach (var (index, item) in OrderedItems.Index()) {
-            if (item is ContextMenuSubItem subItem) {
+        foreach (var (index, item) in OrderedItems.Index())
+        {
+            if (item is ContextMenuSubItem subItem)
+            {
                 mainMenuSubMenus.Add(index, subItem);
-                agentContextMenu->AddMenuItem(item.Name, contextMenuEventInterface, index, !item.IsEnabled, submenu: true);
+                agentContextMenu->AddMenuItem(item.Name, contextMenuEventInterface, index, !item.IsEnabled, true);
             }
-            else {
+            else
+            {
                 mainMenuEntries.Add(index, item);
-                agentContextMenu->AddMenuItem(item.Name, contextMenuEventInterface, index, !item.IsEnabled, submenu: false);
+                agentContextMenu->AddMenuItem(item.Name, contextMenuEventInterface, index, !item.IsEnabled, false);
             }
         }
 
@@ -84,62 +133,65 @@ public unsafe class ContextMenu : IDisposable {
     }
 
     /// <summary>
-    /// Closes and resets the context menu.
+    ///     Closes and resets the context menu.
     /// </summary>
-    public void Close() {
+    public void Close()
+    {
         var agentContextMenu = AgentContext.Instance();
 
         agentContextMenu->ClearMenu();
         ClearAll();
     }
 
-    /// <summary>
-    /// Constructs a new <see cref="ContextMenu"/>
-    /// </summary>
-    public ContextMenu() {
-        contextMenuEventInterface = new CustomEventInterface(ContextMenuEventHandler);
-    }
-
-    /// <inheritdoc />
-    public void Dispose() {
-        ClearAll();
-
-        contextMenuEventInterface.Dispose();
-    }
-
-    private void ClearAll() {
+    private void ClearAll()
+    {
         mainMenuEntries.Clear();
         mainMenuSubMenus.Clear();
         subMenuEntries.Clear();
     }
 
-    private void OpenSubMenu(ContextMenuSubItem subItem) {
+    private void OpenSubMenu
+    (
+        ContextMenuSubItem subItem
+    )
+    {
         var agentContextMenu = AgentContext.Instance();
 
         // Set the state again to prevent the menu closing when going back and forth between the submenus
         agentContextMenu->SubContextMenu.SelectedContextItemIndex = 0;
-        agentContextMenu->SubContextMenu.CurrentEventIndex = 8;
+        agentContextMenu->SubContextMenu.CurrentEventIndex        = 8;
 
         agentContextMenu->OpenSubMenu();
 
         var indexer = 0;
         subMenuEntries = [];
 
-        foreach (var item in subItem.SubItems.OrderBy(i => i.DisplayPriority)) {
+        foreach (var item in subItem.SubItems.OrderBy(i => i.DisplayPriority))
+        {
             if (item is ContextMenuSubItem) continue;
 
             var paramIndex = SubMenuIndexOffset + indexer;
             subMenuEntries.Add(paramIndex, item);
-            agentContextMenu->AddMenuItem(item.Name, contextMenuEventInterface, paramIndex, !item.IsEnabled, submenu: false);
+            agentContextMenu->AddMenuItem(item.Name, contextMenuEventInterface, paramIndex, !item.IsEnabled, false);
             indexer++;
         }
     }
 
-    private AtkValue* ContextMenuEventHandler(AtkModuleInterface.AtkEventInterface* thisPtr, AtkValue* returnValue, AtkValue* values, uint valueCount, ulong eventKind) {
+    private AtkValue* ContextMenuEventHandler
+    (
+        AtkModuleInterface.AtkEventInterface* thisPtr,
+        AtkValue*                             returnValue,
+        AtkValue*                             values,
+        uint                                  valueCount,
+        ulong                                 eventKind
+    )
+    {
         var handlerParam = (long)eventKind;
 
-        if (handlerParam >= SubMenuIndexOffset) {
-            if (subMenuEntries.TryGetValue(handlerParam, out var subItem)) {
+        if (handlerParam >= SubMenuIndexOffset)
+        {
+            if (subMenuEntries.TryGetValue(handlerParam, out var subItem))
+            {
                 subItem.OnClick();
                 ClearAll();
             }
@@ -148,14 +200,16 @@ public unsafe class ContextMenu : IDisposable {
             return returnValue;
         }
 
-        if (mainMenuSubMenus.TryGetValue(handlerParam, out var subMenuItem)) {
+        if (mainMenuSubMenus.TryGetValue(handlerParam, out var subMenuItem))
+        {
             OpenSubMenu(subMenuItem);
 
             returnValue->SetBool(true);
             return returnValue;
         }
 
-        if (mainMenuEntries.TryGetValue(handlerParam, out var item)) {
+        if (mainMenuEntries.TryGetValue(handlerParam, out var item))
+        {
             item.OnClick();
             ClearAll();
 
@@ -168,16 +222,4 @@ public unsafe class ContextMenu : IDisposable {
         returnValue->SetBool(true);
         return returnValue;
     }
-
-    private readonly CustomEventInterface contextMenuEventInterface;
-
-    private Dictionary<long, ContextMenuItem> mainMenuEntries = [];
-    private Dictionary<long, ContextMenuSubItem> mainMenuSubMenus = [];
-    private Dictionary<long, ContextMenuItem> subMenuEntries = [];
-
-    // Prevent the return entry from colliding with submenu items
-    private const int SubMenuIndexOffset = 1000;
-
-    private List<ContextMenuItem> Items { get; set; } = [];
-    private IOrderedEnumerable<ContextMenuItem> OrderedItems => Items.OrderBy(item => item.DisplayPriority);
 }
