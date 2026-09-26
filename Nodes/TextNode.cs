@@ -168,8 +168,14 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
         {
             using var builder = new RentedSeStringBuilder();
             Node->SetText(builder.Builder.Append(value).GetViewAsSpan());
+            OnStringUpdated?.Invoke();
         }
     }
+
+    /// <summary>
+    ///     Action that is invoked when <see cref="String" /> is written to.
+    /// </summary>
+    public Action? OnStringUpdated { get; set; }
 
     /// <inheritdoc />
     public void AddTextFlags
