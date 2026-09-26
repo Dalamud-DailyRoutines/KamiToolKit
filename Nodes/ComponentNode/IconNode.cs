@@ -10,7 +10,9 @@ namespace KamiToolKit.Nodes;
 /// <summary>
 ///     Implementation of the games IconNode and associated component.
 ///     This is often used as a part in a <see cref="DragDropNode" />, but is not required to be used as a part can be used
-///     by itself.
+///     by itself. <br/>
+///     If you need adjust the display size of this node, please set <see cref="IconNode.Scale"/> to a value calculated
+///     by dividing it with (60, 60).
 /// </summary>
 public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDataIcon>
 {

@@ -86,19 +86,7 @@ public abstract unsafe partial class NodeBase
             ResNode->SetWidth((ushort)value);
 
             if (value >= 0)
-            {
-                if (isInsideSizeChanged) return;
-                isInsideSizeChanged = true;
-
-                try
-                {
-                    OnSizeChanged();
-                }
-                finally
-                {
-                    isInsideSizeChanged = false;
-                }
-            }
+                NotifySizeChanged();
         }
     }
 
@@ -116,19 +104,7 @@ public abstract unsafe partial class NodeBase
             ResNode->SetHeight((ushort)value);
 
             if (value >= 0)
-            {
-                if (isInsideSizeChanged) return;
-                isInsideSizeChanged = true;
-
-                try
-                {
-                    OnSizeChanged();
-                }
-                finally
-                {
-                    isInsideSizeChanged = false;
-                }
-            }
+                NotifySizeChanged();
         }
     }
 
@@ -147,19 +123,7 @@ public abstract unsafe partial class NodeBase
             ResNode->SetHeight((ushort)value.Y);
 
             if (value is { X: >= 0, Y: >= 0 })
-            {
-                if (isInsideSizeChanged) return;
-                isInsideSizeChanged = true;
-
-                try
-                {
-                    OnSizeChanged();
-                }
-                finally
-                {
-                    isInsideSizeChanged = false;
-                }
-            }
+                NotifySizeChanged();
         }
     }
 
@@ -516,7 +480,29 @@ public abstract unsafe partial class NodeBase
         => ResNode->CheckCollision(eventData, inclusive);
 
     /// <summary>
+    ///     Action that is invoked whenever this node's size is changed.
+    /// </summary>
+    public Action? OnSizeUpdated { get; set; }
+
+    /// <summary>
     ///     Overridable function that is called whenever this node's size is changed.
     /// </summary>
     protected virtual void OnSizeChanged() { }
+
+    private void NotifySizeChanged()
+    {
+        if (isInsideSizeChanged) return;
+
+        isInsideSizeChanged = true;
+
+        try
+        {
+            OnSizeChanged();
+            OnSizeUpdated?.Invoke();
+        }
+        finally
+        {
+            isInsideSizeChanged = false;
+        }
+    }
 }
