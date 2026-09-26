@@ -94,8 +94,8 @@ public class HorizontalListNode : LayoutListNode
     /// <inheritdoc />
     protected override void OnRecalculateLayout()
     {
-        var nodes = NodeList.ToList();
-        var contentWidth = nodes.Sum(node => node.Width * node.ScaleX) + (Math.Max(nodes.Count - 1, 0) * ItemSpacing);
+        var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+        var contentWidth = visibleNodes.Sum(node => node.Width * node.ScaleX) + (Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing);
 
         if (FitToContentWidth)
         {
@@ -116,7 +116,7 @@ public class HorizontalListNode : LayoutListNode
             _                           => 0.0f
         };
 
-        foreach (var node in nodes)
+        foreach (var node in visibleNodes)
         {
             var nodeWidth = node.Width * node.ScaleX;
 
@@ -137,7 +137,7 @@ public class HorizontalListNode : LayoutListNode
 
         if (FitToContentHeight)
         {
-            var contentHeight = nodes.Select(node => node.Height).DefaultIfEmpty().Max();
+            var contentHeight = visibleNodes.Select(node => node.Height).DefaultIfEmpty().Max();
 
             if (Height != contentHeight)
                 Height = contentHeight;
@@ -153,11 +153,11 @@ public class HorizontalListNode : LayoutListNode
     /// <inheritdoc />
     protected override void OnRecalculateNavigation()
     {
-        var componentNodes = NodeList.OfType<ComponentNode>().ToList();
+        var componentNodes = NodeList.OfType<ComponentNode>().Where(node => node.IsVisible).ToList();
         if (componentNodes.Count is 0) return;
 
         if (Alignment is HorizontalListAnchor.Right)
-            componentNodes = [.. componentNodes.AsEnumerable().Reverse()];
+            componentNodes = componentNodes.AsEnumerable().Reverse().ToList();
 
         foreach (var (index, node) in componentNodes.Index())
         {

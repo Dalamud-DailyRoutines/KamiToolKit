@@ -70,6 +70,8 @@ public class VerticalListNode : LayoutListNode
 
         foreach (var node in NodeList)
         {
+            if (!node.IsVisible) continue;
+
             if (Anchor is VerticalListAnchor.Bottom)
                 startY -= node.Height + ItemSpacing;
 
@@ -99,8 +101,8 @@ public class VerticalListNode : LayoutListNode
 
         if (FitContents)
         {
-            var nodes = NodeList.ToList();
-            Height = nodes.Sum(node => node.Height) + (Math.Max(nodes.Count - 1, 0) * ItemSpacing) + FirstItemSpacing;
+            var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+            Height = visibleNodes.Sum(node => node.Height) + (Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing) + FirstItemSpacing;
         }
     }
 
