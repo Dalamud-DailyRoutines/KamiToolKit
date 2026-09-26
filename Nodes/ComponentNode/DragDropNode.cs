@@ -39,6 +39,7 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         {
             NodeId    = 2,
             Size      = new Vector2(44.0f, 48.0f),
+            Scale     = Vector2.One,
             NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents
         };
         IconNode.AttachNode(this);

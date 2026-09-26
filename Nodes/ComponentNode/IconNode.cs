@@ -11,8 +11,7 @@ namespace KamiToolKit.Nodes;
 ///     Implementation of the games IconNode and associated component.
 ///     This is often used as a part in a <see cref="DragDropNode" />, but is not required to be used as a part can be used
 ///     by itself. <br/>
-///     If you need adjust the display size of this node, please set <see cref="IconNode.Scale"/> to a value calculated
-///     by dividing it with (60, 60).
+///     Setting <see cref="Size" /> scales the whole icon, the layout it is scaled from is (60, 60).
 /// </summary>
 public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDataIcon>
 {
@@ -69,6 +68,17 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
         Data->Nodes[7] = IconIndicator2.IconNode.NodeId;
 
         InitializeComponentEvents();
+    }
+
+    /// <inheritdoc />
+    public override Vector2 Size
+    {
+        get => base.Size;
+        set
+        {
+            base.Size = value;
+            Scale     = value / 60.0f;
+        }
     }
 
     /// <summary>
