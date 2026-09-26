@@ -124,9 +124,9 @@ public unsafe partial class NativeAddon
     /// <summary>
     ///     Gets this addons ID.
     /// </summary>
-    public int AddonId
+    public ushort AddonId
         => InternalAddon is null ?
-               0 :
+               (ushort)0 :
                InternalAddon->Id;
 
     /// <summary>
