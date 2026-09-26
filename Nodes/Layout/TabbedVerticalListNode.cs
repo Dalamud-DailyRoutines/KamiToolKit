@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Classes;
@@ -283,7 +284,7 @@ public class TabbedVerticalListNode : ResNode, ILayoutListNode
 
         foreach (var (node, tab) in nodeList)
         {
-            if (!node.IsVisible) continue;
+            if (!node.NodeFlags.HasFlag(NodeFlags.Visible)) continue;
 
             node.Y = startY;
             node.X = tab * TabSize;

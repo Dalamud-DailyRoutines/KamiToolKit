@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+using System.Numerics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Enums;
@@ -175,7 +176,7 @@ public class ListBoxNode : LayoutListNode, IControllerNavigable
             _                            => Vector2.Zero
         };
 
-        foreach (var node in NodeList.Where(node => node.IsVisible))
+        foreach (var node in NodeList.Where(node => node.NodeFlags.HasFlag(NodeFlags.Visible)))
         {
             switch (LayoutOrientation)
             {
@@ -229,7 +230,7 @@ public class ListBoxNode : LayoutListNode, IControllerNavigable
             _ => Vector2.Zero
         };
 
-        foreach (var node in NodeList.Where(node => node.IsVisible))
+        foreach (var node in NodeList.Where(node => node.NodeFlags.HasFlag(NodeFlags.Visible)))
         {
             if (LayoutOrientation is LayoutOrientation.Vertical)
             {

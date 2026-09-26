@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Enums;
 
@@ -70,7 +71,7 @@ public class VerticalListNode : LayoutListNode
 
         foreach (var node in NodeList)
         {
-            if (!node.IsVisible) continue;
+            if (!node.NodeFlags.HasFlag(NodeFlags.Visible)) continue;
 
             if (Anchor is VerticalListAnchor.Bottom)
                 startY -= node.Height + ItemSpacing;
@@ -101,7 +102,7 @@ public class VerticalListNode : LayoutListNode
 
         if (FitContents)
         {
-            var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+            var visibleNodes = NodeList.Where(node => node.NodeFlags.HasFlag(NodeFlags.Visible)).ToList();
             Height = visibleNodes.Sum(node => node.Height) + (Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing) + FirstItemSpacing;
         }
     }

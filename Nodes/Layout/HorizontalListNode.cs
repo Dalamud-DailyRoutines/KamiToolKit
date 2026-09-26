@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Enums;
 
@@ -70,7 +71,7 @@ public class HorizontalListNode : LayoutListNode
     {
         get
         {
-            var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+            var visibleNodes = NodeList.Where(node => node.NodeFlags.HasFlag(NodeFlags.Visible)).ToList();
             var contentWidth = visibleNodes.Sum(node => node.Width * node.ScaleX);
             var spacingWidth = Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing;
             var anchorSpacing = Alignment is HorizontalListAnchor.Center ?
@@ -94,7 +95,7 @@ public class HorizontalListNode : LayoutListNode
     /// <inheritdoc />
     protected override void OnRecalculateLayout()
     {
-        var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+        var visibleNodes = NodeList.Where(node => node.NodeFlags.HasFlag(NodeFlags.Visible)).ToList();
         var contentWidth = visibleNodes.Sum(node => node.Width * node.ScaleX) + (Math.Max(visibleNodes.Count - 1, 0) * ItemSpacing);
 
         if (FitToContentWidth)
@@ -153,7 +154,7 @@ public class HorizontalListNode : LayoutListNode
     /// <inheritdoc />
     protected override void OnRecalculateNavigation()
     {
-        var componentNodes = NodeList.OfType<ComponentNode>().Where(node => node.IsVisible).ToList();
+        var componentNodes = NodeList.OfType<ComponentNode>().Where(node => node.NodeFlags.HasFlag(NodeFlags.Visible)).ToList();
         if (componentNodes.Count is 0) return;
 
         if (Alignment is HorizontalListAnchor.Right)
