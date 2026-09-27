@@ -193,10 +193,10 @@ public unsafe class WindowNode : WindowNodeBase
         TitleNode = new TextNode
         {
             NodeId        = 3,
-            LineSpacing   = 23,
+            LineSpacing   = 14,
             AlignmentType = AlignmentType.Left,
-            FontSize      = 23,
-            FontType      = FontType.TrumpGothic,
+            FontSize      = 14,
+            FontType      = FontType.Axis,
             TextFlags     = TextFlags.AutoAdjustNodeSize,
             NodeFlags = NodeFlags.AnchorTop  |
                         NodeFlags.AnchorLeft |
