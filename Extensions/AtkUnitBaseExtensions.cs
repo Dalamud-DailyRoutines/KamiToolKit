@@ -53,15 +53,15 @@ public static unsafe class AtkUnitBaseExtensions
             var windowNode = addon.WindowNode;
             if (windowNode is null) return;
 
-            addon.WindowNode->SetWidth((ushort)newSize.X);
-            addon.WindowNode->SetHeight((ushort)newSize.Y);
+            windowNode->SetWidth((ushort)newSize.X);
+            windowNode->SetHeight((ushort)newSize.Y);
 
             if (addon.WindowHeaderCollisionNode is not null)
                 addon.WindowHeaderCollisionNode->SetWidth((ushort)(newSize.X - 14.0f));
 
             addon.SetSize((ushort)newSize.X, (ushort)newSize.Y);
 
-            addon.WindowNode->Component->UldManager.UpdateDrawNodeList();
+            windowNode->Component->UldManager.UpdateDrawNodeList();
             addon.UpdateCollisionNodeList(false);
         }
 

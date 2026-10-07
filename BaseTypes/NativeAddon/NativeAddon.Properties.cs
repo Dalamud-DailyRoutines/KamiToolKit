@@ -81,7 +81,12 @@ public unsafe partial class NativeAddon
 
             if (InternalAddon is not null)
             {
-                InternalAddon->SetSize((ushort)value.X, (ushort)value.Y);
+                WindowNode?.Size = field;
+
+                if (WindowNode is null)
+                    InternalAddon->SetSize((ushort)field.X, (ushort)field.Y);
+                else
+                    InternalAddon->Resize(field);
             }
         }
     } = new(400.0f, 400.0f);

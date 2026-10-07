@@ -149,9 +149,6 @@ public partial class NativeAddon
         if (InternalAddon is null) return;
 
         Size = windowSize;
-        InternalAddon->SetSize((ushort)Size.X, (ushort)Size.Y);
-
-        WindowNode?.Size = Size;
     }
 
     /// <summary>

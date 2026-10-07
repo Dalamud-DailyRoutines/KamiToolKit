@@ -233,9 +233,23 @@ public abstract unsafe partial class NodeBase
             }
         }
 
+        EnsureDefaultAnchors();
         NodeLinker.AttachNode(this, targetNode, targetPosition);
         UpdateParentAddon(targetNode);
         UpdateNative();
+    }
+
+    private void EnsureDefaultAnchors()
+    {
+        var nodeFlags = NodeFlags;
+
+        if ((nodeFlags & (NodeFlags.AnchorLeft | NodeFlags.AnchorRight)) is 0)
+            nodeFlags |= NodeFlags.AnchorLeft;
+
+        if ((nodeFlags & (NodeFlags.AnchorTop | NodeFlags.AnchorBottom)) is 0)
+            nodeFlags |= NodeFlags.AnchorTop;
+
+        NodeFlags = nodeFlags;
     }
 
     internal void ReattachNode
