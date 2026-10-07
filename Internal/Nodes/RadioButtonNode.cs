@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Classes;
@@ -13,7 +13,7 @@ namespace KamiToolKit.Internal.Nodes;
 /// <summary>
 ///     Implementation of the games RadioButtonNode and its associated component.
 /// </summary>
-internal unsafe class RadioButtonNode : ComponentNode<AtkComponentRadioButton, AtkUldComponentDataRadioButton>
+public unsafe class RadioButtonNode : ComponentNode<AtkComponentRadioButton, AtkUldComponentDataRadioButton>
 {
     public RadioButtonNode()
     {

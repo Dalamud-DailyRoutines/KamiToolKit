@@ -45,6 +45,11 @@ public class RadioButtonGroupNode : ResNode
     public float VerticalPadding { get; set; } = 2.0f;
 
     /// <summary>
+    ///     Gets the radio buttons contained in this group.
+    /// </summary>
+    public IReadOnlyList<RadioButtonNode> RadioButtons => radioButtons;
+
+    /// <summary>
     ///     Adds a radio button by name, and registers the provided callback when the button is triggered.
     /// </summary>
     public void AddButton
