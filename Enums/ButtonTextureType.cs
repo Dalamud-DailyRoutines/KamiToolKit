@@ -13,7 +13,7 @@ public enum ButtonTextureType
     ButtonA,
 
     /// <summary>
-    ///     ui/uld/ButtonB.tex, used by windows such as ui/uld/RecipeNoteBook.uld.
+    ///     ui/uld/ButtonB.tex, used for emphasizing.
     /// </summary>
     ButtonB
 }
