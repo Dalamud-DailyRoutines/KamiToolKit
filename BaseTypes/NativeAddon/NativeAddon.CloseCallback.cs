@@ -31,6 +31,13 @@ public unsafe partial class NativeAddon
             {
                 if (addon == thisPtr && close && addon is { RespectCloseAll: true, IsOverlayAddon: false })
                 {
+                    if (addon is NativeChildAddon { IsAttached: true } childAddon)
+                    {
+                        var parent = childAddon.Controller.ParentAddon;
+                        if (parent is not null)
+                            return parent->FireCallback(valueCount, values, true);
+                    }
+
                     addon.Close();
                     return true;
                 }

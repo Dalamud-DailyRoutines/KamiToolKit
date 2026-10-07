@@ -22,7 +22,7 @@ public unsafe partial class NativeAddon
     protected internal AtkUnitBase* InternalAddon { get; private set; }
 
     /// <summary>
-    ///     Window node for this NativeAddon. May be null if <see cref="CreateWindowNode" /> returns a null windowNode
+    ///     Gets the window node for this addon, or null when <see cref="HasWindowNode" /> is false or the addon is an overlay.
     /// </summary>
     protected WindowNodeBase? WindowNode { get; private set; }
 
@@ -50,7 +50,7 @@ public unsafe partial class NativeAddon
         NativeAddon addon
     ) => addon.InternalAddon;
 
-    private void AllocateAddon
+    protected internal void AllocateAddon
     (
         uint      atkValueCount = 0,
         AtkValue* atkValues     = null
@@ -90,7 +90,7 @@ public unsafe partial class NativeAddon
             IsAddonRootNode = true
         };
 
-        if (!IsOverlayAddon)
+        if (!IsOverlayAddon && HasWindowNode)
             WindowNode = CreateWindowNode?.Invoke() ?? new WindowNode { NodeId = 2 };
 
         InternalAddon->NameString = InternalName;
@@ -120,6 +120,12 @@ public unsafe partial class NativeAddon
         WindowNode?.SetTitle(Title.ToString(), Subtitle?.ToString() ?? KamiToolKitLibrary.DefaultWindowSubtitle);
 
         InternalAddon->ShowSoundEffectId = (short)OpenWindowSoundEffectId;
+
+        if (!UsesWindowConfiguration)
+        {
+            SetWindowSize(Size);
+            return;
+        }
 
         var addonConfig = LoadAddonConfig();
 

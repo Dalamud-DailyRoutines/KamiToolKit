@@ -161,6 +161,9 @@ public static class KamiToolKitLibrary
 
         NativeAddon.DisposeCloseCallback();
 
+        foreach (var controller in Experimental.AddonControllers.ToArray())
+            controller.Dispose();
+
         NodeBase.WarnLeakedNodes();
         NativeAddon.WarnLeakedAddons();
 
@@ -183,6 +186,14 @@ public static class KamiToolKitLibrary
         }
 
         await IFramework.Get().Run(NativeAddon.DisposeCloseCallback);
+
+        await IFramework.Get().Run
+        (() =>
+            {
+                foreach (var controller in Experimental.AddonControllers.ToArray())
+                    controller.Dispose();
+            }
+        );
 
         NodeBase.WarnLeakedNodes();
         NativeAddon.WarnLeakedAddons();

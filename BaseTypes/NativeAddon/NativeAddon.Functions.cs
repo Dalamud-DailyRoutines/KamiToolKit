@@ -14,7 +14,7 @@ public partial class NativeAddon
     /// <remarks>
     ///     Must be invoked from the games main thread.
     /// </remarks>
-    public unsafe void Open()
+    public virtual unsafe void Open()
     {
         IPluginLog.Get().Verbose($"[{InternalName}] Open Called");
 
@@ -35,7 +35,7 @@ public partial class NativeAddon
     /// <remarks>
     ///     This function will wait for the window to fully open before completing.
     /// </remarks>
-    public async Task OpenAsync()
+    public virtual async Task OpenAsync()
     {
         await IFramework.Get().Run(Open);
 
@@ -50,7 +50,7 @@ public partial class NativeAddon
     /// <remarks>
     ///     Must be called from the games main thread.
     /// </remarks>
-    public unsafe void Close()
+    public virtual unsafe void Close()
     {
         if (InternalAddon is null) return;
 
@@ -93,7 +93,7 @@ public partial class NativeAddon
     /// <summary>
     ///     Toggles the addon from Open to Closed and vice versa.
     /// </summary>
-    public void Toggle()
+    public virtual void Toggle()
     {
         if (IsOpen)
             Close();
@@ -129,7 +129,7 @@ public partial class NativeAddon
     /// <remarks>
     ///     Can only be used on an already open addon.
     /// </remarks>
-    public unsafe void SetWindowPosition
+    public virtual unsafe void SetWindowPosition
     (
         Vector2 windowPosition
     )

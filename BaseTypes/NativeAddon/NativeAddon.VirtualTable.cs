@@ -11,23 +11,23 @@ namespace KamiToolKit.BaseTypes;
 
 public unsafe partial class NativeAddon
 {
-    private const int VirtualTableEntryCount = 200;
-
     private AtkUnitBase.Delegates.Dtor       destructorFunction = null!;
     private AtkUnitBase.Delegates.Draw       drawFunction       = null!;
     private AtkUnitBase.Delegates.Finalizer  finalizerFunction  = null!;
     private AtkUnitBase.Delegates.Hide       hideFunction       = null!;
     private AtkUnitBase.Delegates.Initialize initializeFunction = null!;
 
-    private AtkUnitBase.AtkUnitBaseVirtualTable*     modifiedVirtualTable;
-    private AtkUnitBase.Delegates.OnRefresh          onRefreshFunction           = null!;
-    private AtkUnitBase.Delegates.OnRequestedUpdate  onRequestedUpdateFunction   = null!;
-    private AtkUnitBase.Delegates.OnScreenSizeChange onScreenSizeChangedFunction = null!;
-    private AtkUnitBase.Delegates.OnSetup            onSetupFunction             = null!;
-    private AtkUnitBase.AtkUnitBaseVirtualTable*     originalVirtualTable;
-    private AtkUnitBase.Delegates.Show               showFunction     = null!;
-    private AtkUnitBase.Delegates.Hide2              softHideFunction = null!;
-    private AtkUnitBase.Delegates.Update             updateFunction   = null!;
+    private AtkUnitBase.AtkUnitBaseVirtualTable*        modifiedVirtualTable;
+    private AtkUnitBase.Delegates.OnRefresh             onRefreshFunction           = null!;
+    private AtkUnitBase.Delegates.OnRequestedUpdate     onRequestedUpdateFunction   = null!;
+    private AtkUnitBase.Delegates.OnScreenSizeChange    onScreenSizeChangedFunction = null!;
+    private AtkUnitBase.Delegates.OnSetup               onSetupFunction             = null!;
+    private AtkUnitBase.AtkUnitBaseVirtualTable*        originalVirtualTable;
+    private AtkUnitBase.Delegates.Show                  showFunction                  = null!;
+    private AtkUnitBase.Delegates.Hide2                 softHideFunction              = null!;
+    private AtkUnitBase.Delegates.Update                updateFunction                = null!;
+    private AtkUnitBase.Delegates.ShouldIgnoreInputs    shouldIgnoreInputsFunction    = null!;
+    private AtkUnitBase.Delegates.HandleBackButtonInput handleBackButtonInputFunction = null!;
 
     private static void ClearTimelineManager
     (
@@ -42,8 +42,8 @@ public unsafe partial class NativeAddon
 
         // Overwrite virtual table with a custom copy,
         // Note: currently there are 73 vfuncs, but there's no harm in copying more for when they add new vfuncs to the game
-        modifiedVirtualTable = (AtkUnitBase.AtkUnitBaseVirtualTable*)NativeMemoryHelper.Malloc(0x8 * VirtualTableEntryCount);
-        NativeMemory.Copy(InternalAddon->VirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+        modifiedVirtualTable = (AtkUnitBase.AtkUnitBaseVirtualTable*)NativeMemoryHelper.Malloc(0x8 * VIRTUAL_TABLE_ENTRY_COUNT);
+        NativeMemory.Copy(InternalAddon->VirtualTable, modifiedVirtualTable, 0x8 * VIRTUAL_TABLE_ENTRY_COUNT);
         InternalAddon->VirtualTable = modifiedVirtualTable;
 
         initializeFunction          = Initialize;
@@ -73,6 +73,15 @@ public unsafe partial class NativeAddon
         modifiedVirtualTable->OnRefresh = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, bool>)Marshal.GetFunctionPointerForDelegate(onRefreshFunction);
         modifiedVirtualTable->OnScreenSizeChange = (delegate* unmanaged<AtkUnitBase*, int, int, void>)Marshal.GetFunctionPointerForDelegate
             (onScreenSizeChangedFunction);
+
+        if (this is NativeChildAddon childAddon)
+        {
+            shouldIgnoreInputsFunction               = childAddon.ShouldIgnoreInputs;
+            handleBackButtonInputFunction            = childAddon.HandleBackButtonInput;
+            modifiedVirtualTable->ShouldIgnoreInputs = (delegate* unmanaged<AtkUnitBase*, bool>)Marshal.GetFunctionPointerForDelegate(shouldIgnoreInputsFunction);
+            modifiedVirtualTable->HandleBackButtonInput = (delegate* unmanaged<AtkUnitBase*, int, bool, bool>)Marshal.GetFunctionPointerForDelegate
+                (handleBackButtonInputFunction);
+        }
     }
 
     internal void RestoreVirtualTable()
@@ -80,7 +89,7 @@ public unsafe partial class NativeAddon
         if (InternalAddon is null) return;
         if (modifiedVirtualTable is null) return;
 
-        if (RootNode is not null && RootNode.ResNode is not null)
+        if (RootNode.ResNode is not null)
         {
             var timeline = RootNode.Timeline;
             RootNode.Timeline          = null;
@@ -98,19 +107,16 @@ public unsafe partial class NativeAddon
 
         ClearTimelineManager(InternalAddon);
 
-        if (RootNode is not null)
+        try
         {
-            try
-            {
-                RootNode.RestoreNodeVirtualTable();
-            }
-            catch (Exception e)
-            {
-                IPluginLog.Get().Exception(e);
-            }
+            RootNode.RestoreNodeVirtualTable();
+        }
+        catch (Exception e)
+        {
+            IPluginLog.Get().Exception(e);
         }
 
-        NativeMemory.Copy(originalVirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+        NativeMemory.Copy(originalVirtualTable, modifiedVirtualTable, 0x8 * VIRTUAL_TABLE_ENTRY_COUNT);
 
         if (InternalAddon->VirtualTable == modifiedVirtualTable)
             InternalAddon->VirtualTable = originalVirtualTable;
@@ -145,7 +151,7 @@ public unsafe partial class NativeAddon
     ///     OnShow Callback for an addon, this is called when the window is opened.
     /// </summary>
     /// <remarks>
-    ///     KamiToolKit intentionally does not allow hiding addons, so this is only called when it's opened.
+    ///     Child addons may be shown again without allocating a new instance.
     /// </remarks>
     protected virtual void OnShow
     (
@@ -158,8 +164,8 @@ public unsafe partial class NativeAddon
     ///     OnHide Callback for an addon, this is called when the window is opened.
     /// </summary>
     /// <remarks>
-    ///     KamiToolKit intentionally does not allow hiding addons, so this will then trigger close and then subsequently
-    ///     <see cref="OnFinalize" />.
+    ///     When <see cref="CloseOnHide" /> is true, hiding starts closing and eventually calls <see cref="OnFinalize" />.
+    ///     Child addons remain allocated while hidden.
     /// </remarks>
     protected virtual void OnHide
     (
@@ -403,7 +409,8 @@ public unsafe partial class NativeAddon
         try
         {
             OnHide(addon);
-            SaveAddonConfig();
+            if (UsesWindowConfiguration)
+                SaveAddonConfig();
         }
         catch (Exception e)
         {
@@ -411,7 +418,8 @@ public unsafe partial class NativeAddon
         }
 
         originalVirtualTable->Hide(addon, unkBool, callHideCallback, setShowHideFlags);
-        originalVirtualTable->Close(addon, false);
+        if (CloseOnHide)
+            originalVirtualTable->Close(addon, false);
     }
 
     private void Hide2
@@ -432,6 +440,9 @@ public unsafe partial class NativeAddon
         if (isFinalized) return;
         isFinalized = true;
 
+        if (this is NativeChildAddon childAddon)
+            childAddon.Controller.ChildFinalizing(childAddon);
+
         IPluginLog.Get().Verbose($"[{InternalName}] Finalize");
 
         try
@@ -446,7 +457,7 @@ public unsafe partial class NativeAddon
         if (RememberClosePosition && InternalAddon is not null)
             LastClosePosition = new Vector2(InternalAddon->X, InternalAddon->Y);
 
-        if (RootNode is not null && RootNode.ResNode is not null)
+        if (RootNode.ResNode is not null)
         {
             var timeline = RootNode.Timeline;
             RootNode.Timeline          = null;
@@ -491,7 +502,7 @@ public unsafe partial class NativeAddon
             // Free our custom virtual table, the game doesn't know this exists and won't clear it on its own.
             if (modifiedVirtualTable is not null)
             {
-                NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
+                NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VIRTUAL_TABLE_ENTRY_COUNT);
                 modifiedVirtualTable = null;
             }
 
@@ -563,4 +574,10 @@ public unsafe partial class NativeAddon
         if (IsOverlayAddon || IgnoreGlobalScale)
             thisPtr->SetScale(1.0f / AtkUnitBase.GetGlobalUIScale(), true);
     }
+
+    #region 常量
+
+    private const int VIRTUAL_TABLE_ENTRY_COUNT = 200;
+
+    #endregion
 }

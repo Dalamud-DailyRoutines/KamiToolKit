@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Numerics;
 using Lumina.Text.ReadOnly;
 
@@ -91,19 +90,33 @@ public unsafe partial class NativeAddon
     ///     Gets the position of the content body start.
     /// </summary>
     /// <remarks>
-    ///     This is the bottom left of the header node plus some <see cref="ContentPadding" />.
+    ///     With a window node, this is the bottom left of the header plus horizontal padding.
+    ///     Without a window node, this is <see cref="ContentPadding" />.
     /// </remarks>
-    public Vector2 ContentStartPosition
-        => (WindowNode?.ContentStartPosition ?? Vector2.Zero) + new Vector2(ContentPadding.X, 0.0f);
+    public virtual Vector2 ContentStartPosition
+        => WindowNode is null ?
+               ContentPadding :
+               WindowNode.ContentStartPosition +
+               ContentPadding with
+               {
+                   Y = 0.0f
+               };
 
     /// <summary>
     ///     Gets the size of the body of the window.
     /// </summary>
     /// <remarks>
-    ///     This is the size of the window minus the size of the header, minus 2x <see cref="ContentPadding" />
+    ///     With a window node, the header and content padding are excluded.
+    ///     Without a window node, padding is excluded on both sides.
     /// </remarks>
-    public Vector2 ContentSize
-        => (WindowNode?.ContentSize ?? Vector2.Zero) - new Vector2(ContentPadding.X * 2.0f, ContentPadding.Y);
+    public virtual Vector2 ContentSize
+        => WindowNode is null ?
+               Size - (ContentPadding * 2.0f) :
+               WindowNode.ContentSize -
+               ContentPadding with
+               {
+                   X = ContentPadding.X * 2.0f
+               };
 
     /// <summary>
     ///     Gets or sets the padding used for the content area.
@@ -158,4 +171,27 @@ public unsafe partial class NativeAddon
     public bool OpenInBounds { get; init; } = true;
 
     internal bool IsOverlayAddon { get; init; }
+
+    /// <summary>
+    ///     Gets or inits whether allocation creates a window node.
+    /// </summary>
+    /// <remarks>
+    ///     When false, content starts at ContentPadding and its size is the addon size minus padding on both sides.
+    /// </remarks>
+    public bool HasWindowNode { get; init; } = true;
+
+    /// <summary>
+    ///     Gets whether a native allocation exists, including while hidden or closing.
+    /// </summary>
+    public bool IsAllocated => InternalAddon is not null;
+
+    /// <summary>
+    ///     Gets whether setup and hide load and save independent window position and scale configuration.
+    /// </summary>
+    protected virtual bool UsesWindowConfiguration => true;
+
+    /// <summary>
+    ///     Gets whether hiding the addon also starts closing its native allocation.
+    /// </summary>
+    protected virtual bool CloseOnHide => true;
 }
