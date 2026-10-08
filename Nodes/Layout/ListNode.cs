@@ -310,9 +310,12 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
 
     private void PopulateNodes()
     {
+        var visibilityChanged = false;
+
         foreach (var (nodeIndex, node) in nodeList.Index())
         {
             var dataIndex = scrollPosition + nodeIndex;
+            visibilityChanged |= node.IsVisible != (dataIndex < OptionsList.Count);
 
             if (dataIndex < OptionsList.Count)
             {
@@ -328,6 +331,9 @@ public unsafe class ListNode<T, TU> : ResNode, IControllerNavigable where TU : L
                 node.ShowClickableCursor = false;
             }
         }
+
+        if (visibilityChanged && ParentAddon is not null)
+            ParentAddon->UpdateCollisionNodeList(false);
     }
 
     private void SelectItem
