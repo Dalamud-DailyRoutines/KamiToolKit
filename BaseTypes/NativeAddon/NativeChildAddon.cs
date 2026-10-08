@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Controllers;
 using KamiToolKit.Internal.Classes;
@@ -13,6 +14,7 @@ namespace KamiToolKit.BaseTypes;
 /// </summary>
 /// <remarks>
 ///     The controller owns registered children. Operations that change native state must run on the game thread.
+///     HostId establishes the native attachment. Callback routing is configured separately through ParentAddonId.
 /// </remarks>
 public class NativeChildAddon : NativeAddon
 {
@@ -22,6 +24,7 @@ public class NativeChildAddon : NativeAddon
     private NodeBase?            attachmentHiddenNode;
     private Vector2              localPosition;
     private bool                 headerCollisionNodeCaptured;
+    private bool                 isDisposed;
 
     /// <summary>
     ///     Gets the header collision node captured after native child setup.
@@ -209,8 +212,6 @@ public class NativeChildAddon : NativeAddon
     {
         Controller              = controller;
         Title                   = string.Empty;
-        HasWindowNode           = false;
-        ContentPadding          = Vector2.Zero;
         RememberClosePosition   = false;
         OpenInBounds            = false;
         EnableContextMenu       = false;
@@ -236,6 +237,7 @@ public class NativeChildAddon : NativeAddon
     /// </remarks>
     public override void Open()
     {
+        ObjectDisposedException.ThrowIf(isDisposed, this);
         Controller.EnsureAccess();
         if (!IsRequestedOpen)
             openCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -322,6 +324,13 @@ public class NativeChildAddon : NativeAddon
     /// </summary>
     public override void Dispose()
     {
+        if (isDisposed)
+            return;
+
+        if (!ThreadSafety.IsMainThread)
+            throw new InvalidOperationException("Native addon operations must run on the game thread.");
+
+        isDisposed = true;
         Controller.Forget(this);
         base.Dispose();
     }
@@ -331,7 +340,16 @@ public class NativeChildAddon : NativeAddon
     /// </summary>
     public override async ValueTask DisposeAsync()
     {
-        await IFramework.Get().Run(() => Controller.Forget(this));
+        await IFramework.Get().Run
+        (() =>
+            {
+                if (isDisposed)
+                    return;
+
+                isDisposed = true;
+                Controller.Forget(this);
+            }
+        );
         await base.DisposeAsync();
     }
 

@@ -24,7 +24,7 @@ internal unsafe class NativeAddonControlFunctions
     /// <summary>
     ///     Updates child setup, positions, and pending attachment.
     /// </summary>
-    internal readonly delegate* unmanaged<AtkAddonControl*, void>                                                                       Update;
+    internal readonly delegate* unmanaged<AtkAddonControl*, float, void>                                                             Update;
     /// <summary>
     ///     Draws ready attached children.
     /// </summary>
@@ -66,10 +66,6 @@ internal unsafe class NativeAddonControlFunctions
     /// </summary>
     internal readonly delegate* unmanaged<AtkAddonControl*, int, byte, byte, void>                                                      ActivateGroup;
     /// <summary>
-    ///     Restores focus to the selected active group.
-    /// </summary>
-    internal readonly delegate* unmanaged<AtkAddonControl*, void>                                                                       FocusSelected;
-    /// <summary>
     ///     Unregisters global drag listeners without clearing controller drag pointers.
     /// </summary>
     internal readonly delegate* unmanaged<AtkAddonControl*, void>                                                                       CancelDrag;
@@ -96,7 +92,7 @@ internal unsafe class NativeAddonControlFunctions
         Destroy = (delegate* unmanaged<AtkAddonControl*, byte, AtkAddonControl*>)scanner.ScanText
             ("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 8B EA 48 89 01 48 8B F9");
         Initialize = (delegate* unmanaged<AtkAddonControl*, AtkUnitBase*, byte>)scanner.ScanText("48 89 51 ?? 48 85 D2 74 ?? 83 8A");
-        Update     = (delegate* unmanaged<AtkAddonControl*, void>)scanner.ScanText("40 53 55 57 41 57 48 81 EC ?? ?? ?? ?? 48 8B 79");
+        Update     = (delegate* unmanaged<AtkAddonControl*, float, void>)scanner.ScanText("40 53 55 57 41 57 48 81 EC ?? ?? ?? ?? 48 8B 79");
         Draw = (delegate* unmanaged<AtkAddonControl*, void>)scanner.ScanText
             ("48 89 5C 24 ?? 48 89 6C 24 ?? 57 48 83 EC ?? 48 8B 79 ?? 48 8B E9 48 8B 1F 48 3B DF 0F 84");
         RegisterChild = (delegate* unmanaged<AtkAddonControl*, ushort, byte, byte, int, int, int, byte, byte, byte, NativeChildAddonInfo*>)scanner.ScanText
@@ -115,7 +111,6 @@ internal unsafe class NativeAddonControlFunctions
         SelectTab      = (delegate* unmanaged<AtkAddonControl*, int, uint>)scanner.ScanText("40 55 57 41 54 48 83 EC ?? 48 8B 79");
         ActivateGroup = (delegate* unmanaged<AtkAddonControl*, int, byte, byte, void>)scanner.ScanText
             ("48 89 5C 24 ?? 48 89 7C 24 ?? 41 54 41 56 41 57 48 83 EC ?? 48 8B 79");
-        FocusSelected = (delegate* unmanaged<AtkAddonControl*, void>)scanner.ScanText("48 89 5C 24 ?? 57 48 83 EC ?? 48 8B 79 ?? 33 D2");
         CancelDrag    = (delegate* unmanaged<AtkAddonControl*, void>)scanner.ScanText("48 89 5C 24 ?? 57 48 83 EC ?? 33 C0 4C 8D 49");
         SetScale      = (delegate* unmanaged<AtkUnitBase*, float, byte>)scanner.ScanText("48 83 EC ?? 8B 91 ?? ?? ?? ?? 8B C2");
         DispatchEvent = (delegate* unmanaged<AtkAddonControl*, AtkEventDispatcher.Event*, byte>)scanner.ScanText
