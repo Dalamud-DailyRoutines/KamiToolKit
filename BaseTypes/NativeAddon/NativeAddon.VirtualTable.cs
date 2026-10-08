@@ -367,7 +367,8 @@ public unsafe partial class NativeAddon
 
         try
         {
-            OnUpdate(addon);
+            if (disposeState is AddonDisposeState.Alive)
+                OnUpdate(addon);
         }
         catch (Exception e)
         {
