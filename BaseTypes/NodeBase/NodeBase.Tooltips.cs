@@ -1,4 +1,4 @@
-﻿using Dalamud.Utility;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Enums;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
@@ -34,7 +34,7 @@ public unsafe partial class NodeBase
             else
                 tooltipType &= ~AtkTooltipType.Text;
 
-            if (field != value && ParentAddon is not null)
+            if (ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
@@ -62,7 +62,7 @@ public unsafe partial class NodeBase
             else
                 tooltipType &= ~AtkTooltipType.Action;
 
-            if (field != value && ParentAddon is not null)
+            if (ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
@@ -90,7 +90,7 @@ public unsafe partial class NodeBase
             else
                 tooltipType &= ~AtkTooltipType.Item;
 
-            if (field != value && ParentAddon is not null)
+            if (ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
@@ -119,7 +119,7 @@ public unsafe partial class NodeBase
             else
                 tooltipType &= ~AtkTooltipType.Item;
 
-            if (field != value && ParentAddon is not null)
+            if (ParentAddon is not null)
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
@@ -146,7 +146,7 @@ public unsafe partial class NodeBase
         using var stringBuilder = new RentedSeStringBuilder();
         using var stringBuffer  = new RentedAtkValues(1);
         if (!TextTooltip.IsEmpty)
-            stringBuffer[0].SetManagedString(stringBuilder.Builder.Append(TextTooltip).GetViewAsSpan());
+            stringBuffer[0].SetManagedString(stringBuilder.Append(TextTooltip).GetViewAsSpan());
 
         var tooltipArgs = new AtkTooltipManager.AtkTooltipArgs();
 

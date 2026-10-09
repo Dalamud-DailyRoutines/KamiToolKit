@@ -43,14 +43,15 @@ public unsafe class DragDropPayload : ICloneable
     ///     Default construct to construct an empty instance.
     /// </summary>
     public DragDropPayload()
-    {
-        Clear();
-    }
+        => Clear();
 
     /// <summary>
     ///     Copy constructor to instantiate a payload from an existing one.
     /// </summary>
-    public DragDropPayload(DragDropPayload source)
+    public DragDropPayload
+    (
+        DragDropPayload source
+    )
     {
         Type           = source.Type;
         ReferenceIndex = source.ReferenceIndex;
@@ -119,7 +120,7 @@ public unsafe class DragDropPayload : ICloneable
             {
                 using var rentedBuilder = new RentedSeStringBuilder();
 
-                var stringBuilder = rentedBuilder.Builder.Append(Text);
+                var stringBuilder = rentedBuilder.Append(Text);
                 payloadContainer->Text.SetString(stringBuilder.GetViewAsSpan());
             }
         }

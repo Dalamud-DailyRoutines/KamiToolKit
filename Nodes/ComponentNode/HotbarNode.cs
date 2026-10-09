@@ -5,14 +5,12 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Gui;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.Input;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
-using KamiToolKit.Extensions;
 using KamiToolKit.Internal.Classes;
 using Lumina.Text.ReadOnly;
 
@@ -21,10 +19,10 @@ namespace KamiToolKit.Nodes;
 /// <summary>
 ///     Specialization of <see cref="DragDropNode" /> that has handy accessors for things used to represent a hotbar slot.
 /// </summary>
-public class HotbarNode : DragDropNode
+public partial class HotbarNode : DragDropNode
 {
     private static HotbarNode? dragSourceNode;
-    private static bool       settingSourceNodeData;
+    private static bool        settingSourceNodeData;
 
     private RaptureHotbarModule.HotbarSlot           hotbarData;
     private RaptureHotbarModule.HotbarUIIntermediate hotbarState;
@@ -45,6 +43,18 @@ public class HotbarNode : DragDropNode
         };
         KeybindTextNode.AttachNode(this);
 
+        ItemCountTextNode = new TextNode
+        {
+            NodeId           = 5,
+            Position         = new Vector2(4.0f,  34.0f),
+            Size             = new Vector2(40.0f, 12.0f),
+            TextColor        = KnownColor.White.Vector(),
+            TextOutlineColor = ColorHelper.GetColor(55),
+            AlignmentType    = AlignmentType.Right,
+            TextFlags        = TextFlags.Edge | (TextFlags)0x8000
+        };
+        ItemCountTextNode.AttachNode(this);
+
         OnRollOver        = OnHotbarNodeRollOver;
         OnRollOut         = OnHotbarNodeRollOut;
         OnPayloadAccepted = OnHotbarNodePayloadAccepted;
@@ -53,13 +63,24 @@ public class HotbarNode : DragDropNode
         OnBegin           = OnDragDropBegin;
         OnEnd             = OnDragDropEnd;
 
+        unsafe
+        {
+            hotbarData.Initialize();
+        }
+
         IGameGui.Get().AgentUpdate += OnAgentUpdate;
+        RegisterDebugWindow();
     }
 
     /// <summary>
     ///     Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
     public TextNode KeybindTextNode { get; }
+
+    /// <summary>
+    ///     Not intended for public use, but it's here if you absolutely need it.
+    /// </summary>
+    public TextNode ItemCountTextNode { get; }
 
     /// <summary>
     ///     Gets or sets the keybind that will activate this slot.
@@ -99,7 +120,17 @@ public class HotbarNode : DragDropNode
         base.Dispose(disposing, isNativeDestructor);
 
         IGameGui.Get().AgentUpdate -= OnAgentUpdate;
+        UnregisterDebugWindow();
     }
+
+    /// <summary>
+    ///     Sets this hotbar slot from the provided payload information.
+    /// </summary>
+    public void SetSlot
+    (
+        DragDropPayload payload
+    )
+        => SetHotbarSlotFromPayload(payload);
 
     /// <summary>
     ///     Sets this hotbar slot to the specific type and id.
@@ -109,11 +140,23 @@ public class HotbarNode : DragDropNode
         DragDropType type,
         uint         id
     )
-    {
-        Payload.Type = type;
-        Payload.Int2 = (int)id;
+        => SetHotbarSlotFromPayload
+        (
+            new DragDropPayload
+            {
+                Type = type,
+                Int2 = (int)id
+            }
+        );
 
-        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
+    /// <summary>
+    ///     Clears the data for this hotbar slot.
+    /// </summary>
+    public unsafe void ClearSlot()
+    {
+        Payload.Clear();
+        hotbarState.Ctor();
+        hotbarData.Clear();
     }
 
     /// <summary>
@@ -143,18 +186,23 @@ public class HotbarNode : DragDropNode
     (
         uint actionId
     )
-    {
-        Payload.Type = DragDropType.Action;
-        Payload.Int2 = (int)actionId;
+        => SetHotbarSlotFromPayload
+        (
+            new DragDropPayload
+            {
+                Type = DragDropType.Action,
+                Int2 = (int)actionId
+            }
+        );
 
-        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
-    }
-
-    private void OnAgentUpdate(AgentUpdateFlag agentFlags)
+    private void OnAgentUpdate
+    (
+        AgentUpdateFlag agentFlags
+    )
     {
         if (!agentFlags.HasFlag(AgentUpdateFlag.ActionBarUpdate)) return;
 
-        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
+        SetHotbarSlotFromPayload(Payload);
     }
 
     private void OnHotbarNodeRollOver
@@ -166,25 +214,14 @@ public class HotbarNode : DragDropNode
 
         if (!hotbarData.IsValid) return;
 
-        switch (hotbarData.CommandType)
+        TextTooltip = hotbarData.GetDisplayNameForSlot(hotbarData.ApparentSlotType, hotbarData.ApparentActionId).ToString();
+
+        ActionTooltip = hotbarData.CommandType switch
         {
-            case RaptureHotbarModule.HotbarSlotType.Action:
-                ActionTooltip = hotbarData.CommandId;
-                TextTooltip   = string.Empty;
-                break;
-
-            case RaptureHotbarModule.HotbarSlotType.Macro:
-                TextTooltip = hotbarData.PopUpHelp.AsReadOnlySeString();
-
-                if (hotbarData.ApparentSlotType is RaptureHotbarModule.HotbarSlotType.Action)
-                    ActionTooltip = hotbarData.ApparentActionId;
-                break;
-
-            default:
-                ActionTooltip = 0;
-                TextTooltip   = string.Empty;
-                break;
-        }
+            RaptureHotbarModule.HotbarSlotType.Action                                                                              => hotbarData.CommandId,
+            RaptureHotbarModule.HotbarSlotType.Macro when hotbarData.ApparentSlotType is RaptureHotbarModule.HotbarSlotType.Action => hotbarData.ApparentActionId,
+            _                                                                                                                      => 0
+        };
 
         ShowTooltip();
     }
@@ -248,7 +285,7 @@ public class HotbarNode : DragDropNode
             Payload = payload.Clone();
         }
 
-        hotbarData.Set(UIGlobals.GetHotbarSlotTypeFromDragDropType(Payload.Type), (uint)Payload.Int2);
+        SetHotbarSlotFromPayload(Payload);
         Update();
     }
 
@@ -266,19 +303,13 @@ public class HotbarNode : DragDropNode
         }
     }
 
-    private unsafe void OnHotbarNodeDiscard
+    private void OnHotbarNodeDiscard
     (
         DragDropNode thisNode
     )
-    {
-        Payload.Clear();
+        => ClearSlot();
 
-        hotbarState.Ctor();
-
-        hotbarData.Set(RaptureHotbarModule.HotbarSlotType.Empty, 0);
-    }
-
-    private void OnDragDropBegin
+    private static void OnDragDropBegin
     (
         DragDropNode node
     )
@@ -288,7 +319,7 @@ public class HotbarNode : DragDropNode
         dragSourceNode = hotbarNode;
     }
 
-    private void OnDragDropEnd
+    private static void OnDragDropEnd
     (
         DragDropNode node
     ) =>
@@ -315,43 +346,46 @@ public class HotbarNode : DragDropNode
             _                                                         => null
         };
 
-        // If modifier is required
-        if (modifierKey is { } modifier)
+        switch (modifierKey)
         {
+            // If modifier is required
+            case { } modifier:
 
-            // But isn't valid, return.
-            if (!keyStateService.IsVirtualKeyValid(modifier))
-                return;
-
-            // Or isn't pressed, return.
-            if (!keyStateService[modifier])
-                return;
-        }
-
-        // Keybind doesn't use a modifier, check if any modifier is present and ignore if it is pressed.
-        else if (modifierKey is null)
-        {
-
-            // If control is valid and is pressed, return
-            if (keyStateService.IsVirtualKeyValid(VirtualKey.CONTROL))
-            {
-                if (keyStateService[VirtualKey.CONTROL])
+                // But isn't valid, return.
+                if (!keyStateService.IsVirtualKeyValid(modifier))
                     return;
-            }
 
-            // If alt is valid and is pressed, return
-            if (keyStateService.IsVirtualKeyValid(VirtualKey.MENU))
-            {
-                if (keyStateService[VirtualKey.MENU])
+                // Or isn't pressed, return.
+                if (!keyStateService[modifier])
                     return;
-            }
 
-            // If shift is valid and is pressed, return
-            if (keyStateService.IsVirtualKeyValid(VirtualKey.SHIFT))
-            {
-                if (keyStateService[VirtualKey.SHIFT])
-                    return;
-            }
+                break;
+
+            // Keybind doesn't use a modifier, check if any modifier is present and ignore if it is pressed.
+            case null:
+
+                // If control is valid and is pressed, return
+                if (keyStateService.IsVirtualKeyValid(VirtualKey.CONTROL))
+                {
+                    if (keyStateService[VirtualKey.CONTROL])
+                        return;
+                }
+
+                // If alt is valid and is pressed, return
+                if (keyStateService.IsVirtualKeyValid(VirtualKey.MENU))
+                {
+                    if (keyStateService[VirtualKey.MENU])
+                        return;
+                }
+
+                // If shift is valid and is pressed, return
+                if (keyStateService.IsVirtualKeyValid(VirtualKey.SHIFT))
+                {
+                    if (keyStateService[VirtualKey.SHIFT])
+                        return;
+                }
+
+                break;
         }
 
         // Modifier (if any), and main key is pressed here.
@@ -389,6 +423,7 @@ public class HotbarNode : DragDropNode
         if (hotbarModule is null) return;
 
         var isMacro = hotbarData.CommandType is RaptureHotbarModule.HotbarSlotType.Macro;
+        var isItem  = hotbarData.CommandType is RaptureHotbarModule.HotbarSlotType.Item;
 
         // Clear hotbar state to get fresh data.
         hotbarState.Ctor();
@@ -416,19 +451,20 @@ public class HotbarNode : DragDropNode
             IconNode.IsFaded       = !isAvailable && !isMacro;
             IconNode.ShowMacroIcon = isMacro;
 
-            IconNode.ResourceCostVisible = hotbarState.CostType is 2 or 5; // Mana or GP
+            IconNode.ResourceCostVisible = hotbarState.CostType is 2 or 5 or 4; // Mana or GP or CP
             IconNode.ResourceCostValue   = hotbarState.CostValue;
 
             IconNode.CostTextColor = hotbarState.CostType switch
             {
                 2 => CostTextColor.Mana,
+                4 => CostTextColor.DoH,
                 5 => CostTextColor.DoL,
                 _ => CostTextColor.Mana
             };
             IconNode.IsInvalid = !hotbarState.ActionTargetSatisfied;
 
             IconNode.ChargeCountVisible = hotbarState.CooldownMode is 3;
-            IconNode.ChargeCount        = hotbarState.CurrentCharges;
+            IconNode.ChargeCount        = hotbarState.CurrentChargeCount;
             IconNode.ChargePercent      = hotbarState.ChargePercent / 100.0f;
 
             IconNode.CooldownSecondsVisible = hotbarState.CooldownSeconds is not 0;
@@ -439,10 +475,73 @@ public class HotbarNode : DragDropNode
 
             IconNode.IsAnts = hotbarState.DrawAnts;
 
+            ItemCountTextNode.IsVisible = !IconNode.CooldownSecondsVisible && isItem;
+            ItemCountTextNode.String    = hotbarData.CostTextString;
+
             KeybindTextNode.String = KeyBind is null ?
                                          string.Empty :
                                          GetKeybindText(KeyBind);
             KeybindTextNode.IsVisible = (KeyBind is not null && hotbarData.IsValid) || IsBackgroundShown;
+        }
+    }
+
+    private unsafe void SetHotbarSlotFromPayload
+    (
+        DragDropPayload payload
+    )
+    {
+        var hotbarSlotType = UIGlobals.GetHotbarSlotTypeFromDragDropType(payload.Type);
+
+        IPluginLog.Get().Verbose
+            ($"HotbarSlot received payload:\nType: {payload.Type}\nInt1: {payload.Int1}\nInt2: {payload.Int2}\nReferenceIndex: {payload.ReferenceIndex}");
+
+        switch (hotbarSlotType)
+        {
+            case RaptureHotbarModule.HotbarSlotType.InventoryItem:
+
+                if (payload.Int1 is not (48 or 49 or 50 or 51))
+                {
+                    IPluginLog.Get().Verbose("Received item from invalid location, skipping setting hotbar.");
+                    return;
+                }
+
+                var sorterEntry = ItemOrderModule.Instance()->InventorySorter->Items[payload.ReferenceIndex].Value;
+                var id          = ((uint)sorterEntry->Page << 16) | ((uint)sorterEntry->Slot & 0xFFFF);
+
+                Payload = payload.Clone();
+                hotbarData.Clear();
+                hotbarData.Set(hotbarSlotType, id);
+                return;
+
+            case RaptureHotbarModule.HotbarSlotType.KeyItem:
+                if (payload.Int1 is not 7)
+                {
+                    IPluginLog.Get().Verbose("Received key item from invalid location, skipping setting hotbar.");
+                    return;
+                }
+
+                Payload = payload.Clone();
+                hotbarData.Clear();
+                hotbarData.Set(hotbarSlotType, (uint)payload.ReferenceIndex);
+                return;
+
+            case RaptureHotbarModule.HotbarSlotType.Crystal:
+                if (payload.Int1 is not 9)
+                {
+                    IPluginLog.Get().Verbose("Received crystal item from invalid location, skipping setting hotbar.");
+                    return;
+                }
+
+                Payload = payload.Clone();
+                hotbarData.Clear();
+                hotbarData.Set(hotbarSlotType, (uint)payload.ReferenceIndex);
+                return;
+
+            default:
+                Payload = payload.Clone();
+                hotbarData.Clear();
+                hotbarData.Set(hotbarSlotType, (uint)Payload.Int2);
+                return;
         }
     }
 }

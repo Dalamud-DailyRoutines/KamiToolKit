@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
@@ -240,7 +240,7 @@ public static unsafe class AtkResNodeExtensions
         )
         {
             foreach (var flag in flags)
-                node.DrawFlags &= (uint)flag;
+                node.DrawFlags &= ~(uint)flag;
         }
 
         /// <summary>

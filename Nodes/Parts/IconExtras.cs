@@ -241,10 +241,10 @@ public unsafe class IconExtras : ResNode
     /// <summary>
     ///     Gets or sets the value used to indicate current charges.
     /// </summary>
-    public uint ChargeCount
+    public int ChargeCount
     {
-        get => ChargeCountImageNode.PartId;
-        set => ChargeCountImageNode.PartId = value;
+        get => (int)ChargeCountImageNode.PartId;
+        set => ChargeCountImageNode.PartId = (uint)value;
     }
 
     /// <summary>
@@ -369,7 +369,12 @@ public unsafe class IconExtras : ResNode
         get => AntsNode.Timeline?.ActiveLabelId is 26;
         set
         {
-            AntsNode.Timeline?.PlayAnimation(value ? 26 : 0);
+            AntsNode.Timeline?.PlayAnimation
+            (
+                value ?
+                    26 :
+                    0
+            );
             AntsNode.IsVisible = value;
         }
     }

@@ -167,7 +167,7 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
         set
         {
             using var builder = new RentedSeStringBuilder();
-            Node->SetText(builder.Builder.Append(value).GetViewAsSpan());
+            Node->SetText(builder.Append(value).GetViewAsSpan());
             OnStringUpdated?.Invoke();
         }
     }
@@ -220,7 +220,7 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
         ushort sizeX = 0;
         ushort sizeY = 0;
 
-        fixed (byte* ptr = builder.Builder.Append(text).GetViewAsSpan())
+        fixed (byte* ptr = builder.Append(text).GetViewAsSpan())
             Node->GetTextDrawSize(&sizeX, &sizeY, ptr, considerScale: considerScale);
 
         return new Vector2(sizeX, sizeY);
@@ -243,6 +243,6 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
     private void UpdateText()
     {
         using var builder = new RentedSeStringBuilder();
-        Node->SetText(builder.Builder.Append(String).GetViewAsSpan());
+        Node->SetText(builder.Append(String).GetViewAsSpan());
     }
 }

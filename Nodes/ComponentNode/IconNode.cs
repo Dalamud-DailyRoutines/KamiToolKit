@@ -143,9 +143,8 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
                 return 3;
             if (Component->Flags.HasFlag(IconComponentFlags.ComboLevel2))
                 return 2;
-            if (Component->Flags.HasFlag(IconComponentFlags.ComboLevel1))
-                return 1;
-            return 0;
+
+            return Component->Flags.HasFlag(IconComponentFlags.ComboLevel1) ? (byte)1 : (byte)0;
         }
         set => Component->SetComboLevel(value is >= 1 and <= 3, (byte)(value - 1));
     }
@@ -204,7 +203,7 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
     /// <summary>
     ///     Gets or sets the value used to indicate current charges.
     /// </summary>
-    public uint ChargeCount
+    public int ChargeCount
     {
         get => IconExtras.ChargeCount;
         set => IconExtras.ChargeCount = value;
