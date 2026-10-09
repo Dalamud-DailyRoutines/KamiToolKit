@@ -24,12 +24,23 @@ namespace KamiToolKit.Nodes;
 /// </summary>
 public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldComponentDataTextInput>
 {
-    private AtkComponentInputBase.CallbackDelegate? pinnedCallbackFunction;
+    private readonly AtkComponentInputBase.CallbackDelegate pinnedCallbackFunction;
+    private          int                                    focusVersion;
 
     /// <summary>
     ///     Constructs a new <see cref="TextInputNode" />
     /// </summary>
-    public TextInputNode()
+    public TextInputNode() : this(false)
+    {
+    }
+
+    /// <summary>
+    ///     Constructs a text input with native single-line or multiline settings.
+    /// </summary>
+    protected TextInputNode
+    (
+        bool multiLine
+    )
     {
         SetInternalComponentType(ComponentType.TextInput);
 
@@ -72,7 +83,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             Position      = new Vector2(10.0f,  6.0f),
             Size          = new Vector2(132.0f, 18.0f),
             AlignmentType = AlignmentType.TopLeft,
-            TextFlags     = TextFlags.AutoAdjustNodeSize,
+            TextFlags     = TextFlags.OverflowHidden,
             TextColor     = ColorHelper.GetColor(1)
         };
         CurrentTextNode.AttachNode(this);
@@ -99,7 +110,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             Position      = new Vector2(10.0f,  6.0f),
             Size          = new Vector2(132.0f, 18.0f),
             AlignmentType = AlignmentType.TopLeft,
-            TextFlags     = TextFlags.AutoAdjustNodeSize,
+            TextFlags     = TextFlags.OverflowHidden,
             TextColor     = ColorHelper.GetColor(3)
         };
         PlaceholderTextNode.AttachNode(this);
@@ -125,27 +136,36 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         Data->IMEColor       = new ByteColor { R = 67 };
         Data->FocusColor     = KnownColor.Black.Vector().ToByteColor();
 
-        Flags = TextInputFlags.EnableIme        |
-                TextInputFlags.AllowUpperCase   |
-                TextInputFlags.AllowLowerCase   |
-                TextInputFlags.EnableDictionary |
-                TextInputFlags.AllowNumberInput |
-                TextInputFlags.AllowSymbolInput;
+        Data->Flags1  = TextInputFlags1.EnableIME        | TextInputFlags1.AllowUpperCase | TextInputFlags1.AllowLowerCase;
+        Data->Flags2  = TextInputFlags2.AllowNumberInput | TextInputFlags2.AllowSymbolInput;
+        Data->MaxLine = 1;
 
-        EnableCompletion             = false;
-        Component->EnableTabCallback = true;
+        if (multiLine)
+        {
+            Data->Flags2                    |= TextInputFlags2.MultiLine | TextInputFlags2.WordWrap;
+            Data->MaxLine                   =  byte.MaxValue;
+            Data->MaxByte                   =  ushort.MaxValue;
+            CurrentTextNode.LineSpacing     =  14;
+            PlaceholderTextNode.LineSpacing =  14;
+            TextLimitsNode.AlignmentType    =  AlignmentType.BottomRight;
+        }
+
+        AllowEnterToComplete = !multiLine;
 
         LoadTimelines();
+
+        InitializeComponentEvents();
+
+        PlaceholderTextNode.TextFlags = CurrentTextNode.TextFlags;
+        EnableCompletion              = false;
+        Component->EnableTabCallback  = true;
+        Size                          = new Vector2(152.0f, 28.0f);
 
         pinnedCallbackFunction = OnCallback;
         Component->Callback =
             (delegate* unmanaged<AtkUnitBase*, InputCallbackType, CStringPointer, CStringPointer, int, InputCallbackResult>)Marshal.GetFunctionPointerForDelegate
                 (pinnedCallbackFunction);
 
-        InitializeComponentEvents();
-
-        CollisionNode.AddEvent(AtkEventType.FocusStart, OnInputFocusStarted);
-        CollisionNode.AddEvent(AtkEventType.FocusStop,  OnInputFocusEnded);
     }
 
     /// <summary>
@@ -187,7 +207,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     ///     Gets whether this node is being focused.
     /// </summary>
     public bool IsFocused
-        => AtkStage.Instance()->AtkInputManager->FocusedNode == CollisionNode.Node;
+        => Component->IsActive && AtkStage.Instance()->AtkInputManager->FocusedNode == Component->CollisionNode;
 
     /// <summary>
     ///     Gets or sets the maximum number of characters allowed.
@@ -195,7 +215,39 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     public int MaxCharacters
     {
         get => (int)Component->ComponentTextData.MaxChar;
-        set => Component->ComponentTextData.MaxChar = (uint)value;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            Data->MaxChar = (uint)value;
+            Component->SetMaxChar(value);
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets the maximum number of UTF-8 bytes allowed.
+    /// </summary>
+    public uint MaxBytes
+    {
+        get => Component->ComponentTextData.MaxByte;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, (uint)int.MaxValue);
+            Data->MaxByte = value;
+            Component->SetMaxByte((int)value);
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets the maximum number of lines allowed.
+    /// </summary>
+    public uint MaxLines
+    {
+        get => Component->ComponentTextData.MaxLine;
+        set
+        {
+            Data->MaxLine = Math.Min(value, byte.MaxValue);
+            Component->SetMaxLine(Data->MaxLine);
+        }
     }
 
     /// <summary>
@@ -212,11 +264,38 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     /// </summary>
     public TextInputFlags Flags
     {
-        get => (TextInputFlags)((byte)Data->Flags1 | ((byte)Data->Flags2 << 8));
+        get => (TextInputFlags)((byte)Component->ComponentTextData.Flags1 | ((byte)Component->ComponentTextData.Flags2 << 8));
         set
         {
-            Data->Flags1 = (TextInputFlags1)((ushort)value & 0xFF);
-            Data->Flags2 = (TextInputFlags2)((ushort)value >> 8);
+            if ((value & TextInputFlags.AutoMaxWidth) != 0)
+                value |= TextInputFlags.WordWrap;
+
+            if ((value & TextInputFlags.MultiLine) != 0)
+                value &= ~TextInputFlags.EnableHistory;
+
+            Component->ComponentTextData.Flags1 = (TextInputFlags1)((ushort)value & 0xFF);
+            Component->ComponentTextData.Flags2 = (TextInputFlags2)((ushort)value >> 8);
+            Component->ToggleUpperCase((value    & TextInputFlags.AllowUpperCase)   != 0);
+            Component->ToggleLowerCase((value    & TextInputFlags.AllowLowerCase)   != 0);
+            Component->ToggleNumberInput((value  & TextInputFlags.AllowNumberInput) != 0);
+            Component->ToggleSymbolInput((value  & TextInputFlags.AllowSymbolInput) != 0);
+            Component->ToggleIME((value          & TextInputFlags.EnableIme)        != 0);
+            Component->ToggleDictionary((value   & TextInputFlags.EnableDictionary) != 0);
+            Component->ToggleCapitalize((value   & TextInputFlags.Capitalize)       != 0);
+            Component->ToggleEscapeClears((value & TextInputFlags.EscapeClears)     != 0);
+
+            Data->Flags1 = Component->ComponentTextData.Flags1;
+            Data->Flags2 = Component->ComponentTextData.Flags2;
+
+            var textFlags = CurrentTextNode.TextFlags & ~(TextFlags.WordWrap | TextFlags.MultiLine);
+            if ((value & TextInputFlags.WordWrap) != 0)
+                textFlags |= TextFlags.WordWrap;
+            if ((value & (TextInputFlags.WordWrap | TextInputFlags.MultiLine)) != 0)
+                textFlags |= TextFlags.MultiLine;
+
+            CurrentTextNode.TextFlags     = textFlags;
+            PlaceholderTextNode.TextFlags = textFlags;
+            OnTextChanged();
         }
     }
 
@@ -226,7 +305,11 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     public bool EnableCompletion
     {
         get => Component->EnableCompletion;
-        set => Component->EnableCompletion = value;
+        set
+        {
+            Component->ToggleDictionary(value);
+            Data->Flags1 = Component->ComponentTextData.Flags1;
+        }
     }
 
     /// <summary>
@@ -252,7 +335,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         set
         {
             Component->SetText(value);
-            UpdatePlaceholderVisibility();
+            OnTextChanged();
         }
     }
 
@@ -265,6 +348,8 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         set
         {
             field = value;
+            if (value is not null)
+                PlaceholderTextNode.String = value;
             UpdatePlaceholderVisibility();
         }
     }
@@ -275,7 +360,11 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     public uint PlaceholderStringId
     {
         get => PlaceholderTextNode.TextId;
-        set => PlaceholderTextNode.TextId = value;
+        set
+        {
+            PlaceholderTextNode.TextId = value;
+            UpdatePlaceholderVisibility();
+        }
     }
 
     /// <summary>
@@ -349,8 +438,47 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     public void ClearFocus()
     {
         if (IsFocused)
-            AtkStage.Instance()->AtkInputManager->SetFocus(null, ParentAddon, 0);
+            AtkStage.Instance()->AtkInputManager->SetFocus(null, Component->OwnerAddon, 0);
     }
+
+    /// <inheritdoc />
+    protected override void OnReceiveEvent
+    (
+        AtkComponentBase* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
+    )
+    {
+        base.OnReceiveEvent(thisPtr, eventType, eventParam, atkEvent, atkEventData);
+        if (IsDisposed) return;
+
+        try
+        {
+            switch (eventType)
+            {
+                case AtkEventType.FocusStart:
+                    if (IsFocused)
+                        OnInputFocusStarted();
+                    break;
+                case AtkEventType.FocusStop:
+                    focusVersion++;
+                    UpdatePlaceholderVisibility();
+                    OnUnfocused?.Invoke();
+                    break;
+            }
+        }
+        catch (Exception e)
+        {
+            IPluginLog.Get().Exception(e);
+        }
+    }
+
+    /// <summary>
+    ///     Updates the input's presentation after its text changes.
+    /// </summary>
+    protected virtual void OnTextChanged() => UpdatePlaceholderVisibility();
 
     /// <inheritdoc />
     protected override void OnSizeChanged()
@@ -359,9 +487,10 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
         BackgroundNode.Size      = Size;
         FocusBorderNode.Size     = Size;
-        PlaceholderTextNode.Size = new Vector2(Width - 20.0f, Height - 10.0f);
-        TextLimitsNode.Size      = new Vector2(Width + 18.0f, Height - 9.0f);
-        CurrentTextNode.Size     = new Vector2(Width - 20.0f, Height - 10.0f);
+        PlaceholderTextNode.Size = Vector2.Max(new Vector2(Width - 20.0f, Height - 10.0f), Vector2.Zero);
+        TextLimitsNode.Size      = Vector2.Max(new Vector2(Width + 18.0f, Height - 9.0f),  Vector2.Zero);
+        CurrentTextNode.Size     = PlaceholderTextNode.Size;
+        SelectionListNode.Y      = Height - 6.0f;
     }
 
     /// <inheritdoc />
@@ -371,13 +500,14 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
         bool isNativeDestructor
     )
     {
-        if (disposing)
-        {
-            Component->Callback    = null;
-            pinnedCallbackFunction = null;
+        if (!disposing) return;
 
-            base.Dispose(disposing, isNativeDestructor);
-        }
+        focusVersion++;
+        if (!isNativeDestructor)
+            Component->Callback = null;
+
+        base.Dispose(disposing, isNativeDestructor);
+        GC.KeepAlive(pinnedCallbackFunction);
     }
 
     private InputCallbackResult OnCallback
@@ -394,13 +524,17 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             switch (type)
             {
                 case InputCallbackType.Enter:
-                    if (!AllowEnterToComplete) break;
-                    OnInputComplete?.Invoke(Component->EvaluatedString.AsSpan());
+                    if (!AllowEnterToComplete)
+                        return InputCallbackResult.Unknown2;
+                    var completedString = String;
                     ClearFocus();
+                    OnInputComplete?.Invoke(completedString);
                     break;
 
                 case InputCallbackType.TextChanged:
-                    OnInputReceived?.Invoke(Component->EvaluatedString.AsSpan());
+                    var receivedString = String;
+                    OnTextChanged();
+                    OnInputReceived?.Invoke(receivedString);
                     break;
 
                 case InputCallbackType.Escape:
@@ -427,8 +561,8 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
     private void OnInputFocusStarted()
     {
+        var version = ++focusVersion;
         PlaceholderTextNode.IsVisible = false;
-        OnFocused?.Invoke();
 
         if (AutoSelectAll && Component->EvaluatedString.Length > 0)
         {
@@ -436,6 +570,8 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             (
                 () =>
                 {
+                    if (IsDisposed || focusVersion != version || !IsFocused) return;
+
                     var keyModifiers = new AtkTextInput.KeyModifiers
                     {
                         IsControlDown = true
@@ -446,27 +582,12 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
                 delayTicks: 1
             );
         }
+
+        OnFocused?.Invoke();
     }
 
-    private void OnInputFocusEnded()
-    {
-        OnUnfocused?.Invoke();
-
-        if (!PlaceholderString.IsNullOrEmpty() && String.IsEmpty)
-        {
-            PlaceholderTextNode.IsVisible = true;
-            PlaceholderTextNode.String    = PlaceholderString;
-        }
-
-        if (PlaceholderStringId is not 0 & String.IsEmpty)
-            PlaceholderTextNode.IsVisible = true;
-    }
-
-    private void UpdatePlaceholderVisibility()
-    {
-        PlaceholderTextNode.String    = PlaceholderString ?? string.Empty;
-        PlaceholderTextNode.IsVisible = String.IsEmpty && !PlaceholderString.IsNullOrEmpty();
-    }
+    private void UpdatePlaceholderVisibility() =>
+        PlaceholderTextNode.IsVisible = !IsFocused && String.IsEmpty && (!PlaceholderString.IsNullOrEmpty() || PlaceholderStringId != 0);
 
     private void LoadTimelines()
     {
