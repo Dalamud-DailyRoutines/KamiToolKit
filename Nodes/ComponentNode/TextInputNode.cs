@@ -166,6 +166,8 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             (delegate* unmanaged<AtkUnitBase*, InputCallbackType, CStringPointer, CStringPointer, int, InputCallbackResult>)Marshal.GetFunctionPointerForDelegate
                 (pinnedCallbackFunction);
 
+        ShowLimitText = false;
+
     }
 
     /// <summary>
@@ -251,12 +253,22 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     }
 
     /// <summary>
-    ///     Gets or sets whether the <see cref="MaxCharacters" /> limit should be shown.
+    ///     Gets or sets whether the text input's character, line, or byte limit should be shown.
     /// </summary>
     public bool ShowLimitText
     {
         get => TextLimitsNode.IsVisible;
-        set => TextLimitsNode.IsVisible = value;
+        set
+        {
+            Data->Nodes[15] = value ?
+                                  TextLimitsNode.NodeId :
+                                  0;
+            Component->ComponentTextData.Nodes[15] = Data->Nodes[15];
+            Component->AvailableLinesTextNode = value ?
+                                                    TextLimitsNode.Node :
+                                                    null;
+            TextLimitsNode.IsVisible = value;
+        }
     }
 
     /// <summary>
