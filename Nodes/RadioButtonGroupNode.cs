@@ -1,5 +1,7 @@
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Internal.Nodes;
+using KamiToolKit.Enums;
+using KamiToolKit.Interfaces;
 using KamiToolKit.Timelines;
 using Lumina.Text.ReadOnly;
 
@@ -8,54 +10,272 @@ namespace KamiToolKit.Nodes;
 /// <summary>
 ///     Node representing a set of radio buttons.
 /// </summary>
-public class RadioButtonGroupNode : ResNode
+public class RadioButtonGroupNode : ResNode, IControllerNavigable
 {
     private readonly List<RadioButtonNode> radioButtons = [];
+    private          RadioButtonNode?      selectedButton;
+    private          bool                  isRecalculatingLayout;
 
     /// <summary>
     ///     Constructs a new <see cref="RadioButtonGroupNode" />
     /// </summary>
     public RadioButtonGroupNode()
-        => BuildTimelines();
+    {
+        RadioButtons = radioButtons.AsReadOnly();
+        BuildTimelines();
+    }
 
     /// <summary>
-    ///     Gets or sets the selection option via label.
+    ///     Gets or sets the direction in which buttons are arranged. Defaults to vertical.
+    /// </summary>
+    public LayoutOrientation LayoutOrientation
+    {
+        get;
+        set
+        {
+            if (value is not (LayoutOrientation.Vertical or LayoutOrientation.Horizontal))
+                throw new ArgumentOutOfRangeException(nameof(value));
+
+            field = value;
+            RecalculateLayout();
+        }
+    } = LayoutOrientation.Vertical;
+
+    /// <summary>
+    ///     Gets or sets the corner from which buttons are arranged.
+    /// </summary>
+    public LayoutAnchor LayoutAnchor
+    {
+        get;
+        set
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value));
+
+            field = value;
+            RecalculateLayout();
+        }
+    } = LayoutAnchor.TopLeft;
+
+    /// <summary>
+    ///     Gets or sets the padding applied to both sides of each axis.
+    /// </summary>
+    public Vector2 Padding
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateLayout();
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets whether the group width follows the visible contents.
+    /// </summary>
+    public bool FitToContentWidth
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateLayout();
+        }
+    } = true;
+
+    /// <summary>
+    ///     Gets or sets whether the group height follows the visible contents.
+    /// </summary>
+    public bool FitToContentHeight
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateLayout();
+        }
+    } = true;
+
+    /// <summary>
+    ///     Gets the size required by the visible buttons, including padding and spacing.
+    /// </summary>
+    public Vector2 ContentSize { get; private set; }
+
+    /// <summary>
+    ///     Gets or sets whether the first added button is selected automatically.
+    /// </summary>
+    public bool SelectFirstButtonByDefault { get; set; } = true;
+
+    /// <summary>
+    ///     Invoked after the selected button changes, including programmatic changes.
+    ///     Receives null when the selection is cleared.
+    /// </summary>
+    public Action<RadioButtonNode?>? OnSelectionChanged { get; set; }
+
+    /// <summary>
+    ///     Gets or sets the selected button. Set to null to clear the selection.
+    ///     Setting this property does not invoke the button callback.
+    /// </summary>
+    public RadioButtonNode? SelectedButton
+    {
+        get => selectedButton;
+        set => SelectButton(value);
+    }
+
+    /// <summary>
+    ///     Gets or sets the selected button index. Use -1 to clear the selection.
+    /// </summary>
+    public int SelectedIndex
+    {
+        get => selectedButton is null ?
+                   -1 :
+                   radioButtons.IndexOf(selectedButton);
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, radioButtons.Count);
+
+            SelectButton
+            (
+                value is -1 ?
+                    null :
+                    radioButtons[value]
+            );
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets the selection via label. The first matching button is selected.
+    ///     Set to null to clear the selection; an unknown label throws an argument exception.
     /// </summary>
     public ReadOnlySeString? SelectedOption
     {
-        get => radioButtons.FirstOrDefault(button => button.IsSelected)?.String;
+        get => selectedButton?.String;
         set
         {
-            if (value == null)
-                return;
-
-            foreach (var radioButton in radioButtons)
+            if (value is null)
             {
-                radioButton.IsChecked  = radioButton.String == value;
-                radioButton.IsSelected = radioButton.String == value;
+                SelectButton(null);
+                return;
             }
 
-            RecalculateLayout();
+            var button = radioButtons.Find(button => button.String == value);
+            if (button is null)
+                throw new ArgumentException("The label does not belong to this group.", nameof(value));
+
+            SelectButton(button);
         }
     }
 
     /// <summary>
     ///     Gets or sets the vertical padding used between radio buttons.
     /// </summary>
-    public float VerticalPadding { get; set; } = 2.0f;
+    public float VerticalPadding
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateLayout();
+        }
+    } = 2.0f;
+
+    /// <summary>
+    ///     Gets or sets the spacing between buttons in a horizontal layout.
+    /// </summary>
+    public float HorizontalPadding
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateLayout();
+        }
+    } = 2.0f;
 
     /// <summary>
     ///     Gets the radio buttons contained in this group.
     /// </summary>
-    public IReadOnlyList<RadioButtonNode> RadioButtons => radioButtons;
+    public IReadOnlyList<RadioButtonNode> RadioButtons { get; }
 
     /// <summary>
-    ///     Adds a radio button by name, and registers the provided callback when the button is triggered.
+    ///     Gets or sets the first controller navigation index. Zero disables automatic navigation.
     /// </summary>
-    public void AddButton
+    public int NavIndex
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateNavigation();
+        }
+    }
+
+    /// <inheritdoc />
+    public int NavLeft
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateNavigation();
+        }
+    }
+
+    /// <inheritdoc />
+    public int NavRight
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateNavigation();
+        }
+    }
+
+    /// <inheritdoc />
+    public int NavUp
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateNavigation();
+        }
+    }
+
+    /// <inheritdoc />
+    public int NavDown
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateNavigation();
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets whether controller navigation wraps within the group.
+    /// </summary>
+    public bool WrapNavigation
+    {
+        get;
+        set
+        {
+            field = value;
+            RecalculateNavigation();
+        }
+    } = true;
+
+    /// <summary>
+    ///     Creates a button sized to its label and returns it for further customization.
+    ///     The optional callback runs when the button is clicked.
+    /// </summary>
+    public RadioButtonNode AddButton
     (
         ReadOnlySeString label,
-        Action           callback
+        Action?          callback = null
     )
     {
         var newRadioButton = new RadioButtonNode
@@ -65,34 +285,105 @@ public class RadioButtonGroupNode : ResNode
             Callback = callback
         };
 
-        newRadioButton.AddEvent(AtkEventType.ButtonClick, () => ClickHandler(newRadioButton));
+        var labelSize = newRadioButton.LabelNode.GetTextDrawSize(considerScale: false);
+        newRadioButton.LabelNode.Size = new Vector2(MathF.Ceiling(labelSize.X), newRadioButton.Height);
+        newRadioButton.Width          = newRadioButton.LabelNode.X + newRadioButton.LabelNode.Width;
 
-        radioButtons.Add(newRadioButton);
-        newRadioButton.AttachNode(this);
+        AddButton(newRadioButton);
+        return newRadioButton;
+    }
 
-        if (radioButtons.Count is 1)
-        {
-            newRadioButton.IsChecked  = true;
-            newRadioButton.IsSelected = true;
-        }
+    /// <summary>
+    ///     Adds a custom button. The group owns the button and disposes it when removed.
+    ///     Change selection through the group rather than the button flags.
+    /// </summary>
+    public void AddButton
+    (
+        RadioButtonNode button
+    )
+    {
+        ArgumentNullException.ThrowIfNull((object)button, nameof(button));
+        if (radioButtons.Contains(button))
+            throw new ArgumentException("The button already belongs to this group.", nameof(button));
+
+        button.IsChecked  = false;
+        button.IsSelected = false;
+        button.AddEvent(AtkEventType.ButtonClick, () => SelectButton(button));
+        button.OnSizeUpdated += RecalculateLayout;
+
+        radioButtons.Add(button);
+        button.AttachNode(this);
 
         RecalculateLayout();
+
+        if (radioButtons.Count is 1 && SelectFirstButtonByDefault)
+            SelectButton(button);
+    }
+
+    /// <summary>
+    ///     Selects a button or clears the selection. Optionally invokes the selected button callback.
+    ///     Selection change notifications run before the button callback.
+    /// </summary>
+    public void SelectButton
+    (
+        RadioButtonNode? button,
+        bool             invokeCallback = false
+    )
+    {
+        if (button is not null && !radioButtons.Contains(button))
+            throw new ArgumentException("The button does not belong to this group.", nameof(button));
+
+        foreach (var radioButton in radioButtons)
+        {
+            var isSelected = radioButton == button;
+            radioButton.IsChecked  = isSelected;
+            radioButton.IsSelected = isSelected;
+        }
+
+        var previousButton = selectedButton;
+        selectedButton = button;
+
+        if (previousButton != button)
+            OnSelectionChanged?.Invoke(button);
+
+        if (invokeCallback)
+            button?.Callback?.Invoke();
     }
 
     /// <summary>
     ///     Removes the button via the specified label.
     /// </summary>
-    public void RemoveButton
+    public bool RemoveButton
     (
         ReadOnlySeString label
     )
     {
-        var button = radioButtons.FirstOrDefault(button => button.String == label);
-        if (button is null) return;
+        var button = radioButtons.Find(button => button.String == label);
+        return button is not null && RemoveButton(button);
+    }
 
+    /// <summary>
+    ///     Removes and disposes a button. Removing the selected button clears the selection.
+    /// </summary>
+    public bool RemoveButton
+    (
+        RadioButtonNode button
+    )
+    {
+        if (!radioButtons.Remove(button)) return false;
+
+        var wasSelected = selectedButton == button;
+        if (wasSelected)
+            selectedButton = null;
+
+        button.OnSizeUpdated -= RecalculateLayout;
         button.Dispose();
-        radioButtons.Remove(button);
         RecalculateLayout();
+
+        if (wasSelected)
+            OnSelectionChanged?.Invoke(null);
+
+        return true;
     }
 
     /// <summary>
@@ -100,40 +391,223 @@ public class RadioButtonGroupNode : ResNode
     /// </summary>
     public void Clear()
     {
+        var hadSelection = selectedButton is not null;
+        selectedButton = null;
+
         foreach (var node in radioButtons)
+        {
+            node.OnSizeUpdated -= RecalculateLayout;
             node.Dispose();
+        }
 
         radioButtons.Clear();
+        RecalculateLayout();
+
+        if (hadSelection)
+            OnSelectionChanged?.Invoke(null);
     }
 
-    private void RecalculateLayout()
+    /// <summary>
+    ///     Recalculates visible button positions, content size and controller navigation.
+    ///     Invoke after changing button scale or visibility.
+    /// </summary>
+    public void RecalculateLayout()
     {
-        var yPosition = 0.0f;
+        if (IsDisposed || isRecalculatingLayout) return;
 
-        foreach (var index in Enumerable.Range(0, radioButtons.Count))
+        isRecalculatingLayout = true;
+
+        try
         {
-            var button = radioButtons[index];
+            var horizontal = LayoutOrientation is LayoutOrientation.Horizontal;
+            var spacing = horizontal ?
+                              HorizontalPadding :
+                              VerticalPadding;
+            var contentSize  = Vector2.Zero;
+            var visibleCount = 0;
 
-            button.Y  =  yPosition;
-            yPosition += button.Height + VerticalPadding;
+            foreach (var button in radioButtons)
+            {
+                if (!button.IsVisible) continue;
+
+                var buttonSize = button.Size * button.Scale;
+
+                if (horizontal)
+                {
+                    contentSize.X += buttonSize.X;
+                    contentSize.Y =  MathF.Max(contentSize.Y, buttonSize.Y);
+                }
+                else
+                {
+                    contentSize.X =  MathF.Max(contentSize.X, buttonSize.X);
+                    contentSize.Y += buttonSize.Y;
+                }
+
+                visibleCount++;
+            }
+
+            if (visibleCount > 1)
+            {
+                if (horizontal)
+                    contentSize.X += (visibleCount - 1) * spacing;
+                else
+                    contentSize.Y += (visibleCount - 1) * spacing;
+            }
+
+            ContentSize = contentSize + (Padding * 2.0f);
+            var fittedSize = new Vector2
+            (
+                FitToContentWidth ?
+                    MathF.Ceiling(ContentSize.X) :
+                    Width,
+                FitToContentHeight ?
+                    MathF.Ceiling(ContentSize.Y) :
+                    Height
+            );
+
+            if (Size != fittedSize)
+                Size = fittedSize;
+
+            var fromRight  = LayoutAnchor is LayoutAnchor.TopRight or LayoutAnchor.BottomRight;
+            var fromBottom = LayoutAnchor is LayoutAnchor.BottomLeft or LayoutAnchor.BottomRight;
+            var position = new Vector2
+            (
+                fromRight ?
+                    Width - Padding.X :
+                    Padding.X,
+                fromBottom ?
+                    Height - Padding.Y :
+                    Padding.Y
+            );
+
+            foreach (var button in radioButtons)
+            {
+                if (!button.IsVisible) continue;
+
+                var buttonSize = button.Size * button.Scale;
+                button.Position = position -
+                                  new Vector2
+                                  (
+                                      fromRight ?
+                                          buttonSize.X :
+                                          0.0f,
+                                      fromBottom ?
+                                          buttonSize.Y :
+                                          0.0f
+                                  );
+
+                if (horizontal)
+                    position.X += (fromRight ?
+                                       -1.0f :
+                                       1.0f) *
+                                  (buttonSize.X + spacing);
+                else
+                    position.Y += (fromBottom ?
+                                       -1.0f :
+                                       1.0f) *
+                                  (buttonSize.Y + spacing);
+            }
+
+            RecalculateNavigation();
         }
-
-        Height = yPosition;
+        finally
+        {
+            isRecalculatingLayout = false;
+        }
     }
 
-    private void ClickHandler
+    /// <inheritdoc />
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+        RecalculateLayout();
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose
     (
-        RadioButtonNode selectedButton
+        bool disposing,
+        bool isNativeDestructor
     )
     {
-        foreach (var radioButton in radioButtons)
+        if (disposing)
         {
-            radioButton.IsChecked  = false;
-            radioButton.IsSelected = false;
+            foreach (var button in radioButtons)
+            {
+                button.OnSizeUpdated -= RecalculateLayout;
+            }
+
+            radioButtons.Clear();
+            selectedButton     = null;
+            OnSelectionChanged = null;
         }
 
-        selectedButton.IsChecked  = true;
-        selectedButton.IsSelected = true;
+        base.Dispose(disposing, isNativeDestructor);
+    }
+
+    private void RecalculateNavigation()
+    {
+        if (IsDisposed || NavIndex is 0) return;
+
+        var visibleCount = 0;
+
+        foreach (var button in radioButtons)
+        {
+            if (button.IsVisible)
+                visibleCount++;
+            else
+                button.NavIndex = 0;
+        }
+
+        var horizontal = LayoutOrientation is LayoutOrientation.Horizontal;
+        var reversed = horizontal ?
+                           LayoutAnchor is LayoutAnchor.TopRight or LayoutAnchor.BottomRight :
+                           LayoutAnchor is LayoutAnchor.BottomLeft or LayoutAnchor.BottomRight;
+        var visibleIndex = 0;
+
+        foreach (var button in radioButtons)
+        {
+            if (!button.IsVisible) continue;
+
+            var positionIndex = reversed ?
+                                    visibleCount - 1 - visibleIndex :
+                                    visibleIndex;
+            var previousIndex = NavIndex + positionIndex - 1;
+            var nextIndex     = NavIndex                 + positionIndex + 1;
+
+            if (positionIndex is 0)
+            {
+                previousIndex = horizontal ?
+                                    NavLeft :
+                                    NavUp;
+                if (WrapNavigation)
+                    previousIndex = NavIndex + visibleCount - 1;
+            }
+
+            if (positionIndex == visibleCount - 1)
+            {
+                nextIndex = horizontal ?
+                                NavRight :
+                                NavDown;
+                if (WrapNavigation)
+                    nextIndex = NavIndex;
+            }
+
+            button.NavIndex = NavIndex + positionIndex;
+            button.NavLeft = horizontal ?
+                                 previousIndex :
+                                 NavLeft;
+            button.NavRight = horizontal ?
+                                  nextIndex :
+                                  NavRight;
+            button.NavUp = horizontal ?
+                               NavUp :
+                               previousIndex;
+            button.NavDown = horizontal ?
+                                 NavDown :
+                                 nextIndex;
+            visibleIndex++;
+        }
     }
 
     private void BuildTimelines() =>
