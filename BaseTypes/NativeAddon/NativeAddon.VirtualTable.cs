@@ -11,11 +11,12 @@ namespace KamiToolKit.BaseTypes;
 
 public unsafe partial class NativeAddon
 {
-    private AtkUnitBase.Delegates.Dtor       destructorFunction = null!;
-    private AtkUnitBase.Delegates.Draw       drawFunction       = null!;
-    private AtkUnitBase.Delegates.Finalizer  finalizerFunction  = null!;
-    private AtkUnitBase.Delegates.Hide       hideFunction       = null!;
-    private AtkUnitBase.Delegates.Initialize initializeFunction = null!;
+    private AtkUnitBase.Delegates.Dtor               destructorFunction         = null!;
+    private AtkUnitBase.Delegates.Draw               drawFunction               = null!;
+    private AtkUnitBase.Delegates.Finalizer          finalizerFunction          = null!;
+    private AtkUnitBase.Delegates.Hide               hideFunction               = null!;
+    private AtkUnitBase.Delegates.Initialize         initializeFunction         = null!;
+    private AtkUnitBase.Delegates.ReceiveGlobalEvent receiveGlobalEventFunction = null!;
 
     private AtkUnitBase.AtkUnitBaseVirtualTable*        modifiedVirtualTable;
     private AtkUnitBase.Delegates.OnRefresh             onRefreshFunction           = null!;
@@ -58,6 +59,7 @@ public unsafe partial class NativeAddon
         onRequestedUpdateFunction   = RequestedUpdate;
         onRefreshFunction           = Refresh;
         onScreenSizeChangedFunction = ScreenSizeChange;
+        receiveGlobalEventFunction  = OnReceiveGlobalEvent;
 
         modifiedVirtualTable->Initialize = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(initializeFunction);
         modifiedVirtualTable->OnSetup    = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, void>)Marshal.GetFunctionPointerForDelegate(onSetupFunction);
@@ -73,6 +75,8 @@ public unsafe partial class NativeAddon
         modifiedVirtualTable->OnRefresh = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, bool>)Marshal.GetFunctionPointerForDelegate(onRefreshFunction);
         modifiedVirtualTable->OnScreenSizeChange = (delegate* unmanaged<AtkUnitBase*, int, int, void>)Marshal.GetFunctionPointerForDelegate
             (onScreenSizeChangedFunction);
+        modifiedVirtualTable->ReceiveGlobalEvent =
+            (delegate* unmanaged<AtkUnitBase*, AtkEventType, int, AtkEvent*, AtkEventData*, void>)Marshal.GetFunctionPointerForDelegate(receiveGlobalEventFunction);
 
         if (this is NativeChildAddon childAddon)
         {
@@ -135,6 +139,19 @@ public unsafe partial class NativeAddon
     private bool isFinalized;
 
     private bool isSetup;
+
+    /// <summary>
+    ///     Handles native events routed to this addon after component event processing.
+    /// </summary>
+    protected virtual void OnReceiveGlobalEvent
+    (
+        AtkUnitBase*  addon,
+        AtkEventType  eventType,
+        int           eventParam,
+        AtkEvent*     atkEvent,
+        AtkEventData* atkEventData
+    ) =>
+        originalVirtualTable->ReceiveGlobalEvent(addon, eventType, eventParam, atkEvent, atkEventData);
 
     /// <summary>
     ///     OnSetup Callback for an addon, this is called to attach and save references to created nodes.
