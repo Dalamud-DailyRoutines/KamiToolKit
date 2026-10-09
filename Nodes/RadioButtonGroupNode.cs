@@ -168,22 +168,9 @@ public class RadioButtonGroupNode : ResNode, IControllerNavigable
     }
 
     /// <summary>
-    ///     Gets or sets the vertical padding used between radio buttons.
+    ///     Gets or sets the spacing between radio buttons.
     /// </summary>
-    public float VerticalPadding
-    {
-        get;
-        set
-        {
-            field = value;
-            RecalculateLayout();
-        }
-    } = 2.0f;
-
-    /// <summary>
-    ///     Gets or sets the spacing between buttons in a horizontal layout.
-    /// </summary>
-    public float HorizontalPadding
+    public float ItemSpacing
     {
         get;
         set
@@ -419,10 +406,7 @@ public class RadioButtonGroupNode : ResNode, IControllerNavigable
 
         try
         {
-            var horizontal = LayoutOrientation is LayoutOrientation.Horizontal;
-            var spacing = horizontal ?
-                              HorizontalPadding :
-                              VerticalPadding;
+            var horizontal   = LayoutOrientation is LayoutOrientation.Horizontal;
             var contentSize  = Vector2.Zero;
             var visibleCount = 0;
 
@@ -449,9 +433,9 @@ public class RadioButtonGroupNode : ResNode, IControllerNavigable
             if (visibleCount > 1)
             {
                 if (horizontal)
-                    contentSize.X += (visibleCount - 1) * spacing;
+                    contentSize.X += (visibleCount - 1) * ItemSpacing;
                 else
-                    contentSize.Y += (visibleCount - 1) * spacing;
+                    contentSize.Y += (visibleCount - 1) * ItemSpacing;
             }
 
             ContentSize = contentSize + (Padding * 2.0f);
@@ -500,12 +484,12 @@ public class RadioButtonGroupNode : ResNode, IControllerNavigable
                     position.X += (fromRight ?
                                        -1.0f :
                                        1.0f) *
-                                  (buttonSize.X + spacing);
+                                  (buttonSize.X + ItemSpacing);
                 else
                     position.Y += (fromBottom ?
                                        -1.0f :
                                        1.0f) *
-                                  (buttonSize.Y + spacing);
+                                  (buttonSize.Y + ItemSpacing);
             }
 
             RecalculateNavigation();
