@@ -39,7 +39,7 @@ internal class ToggleableHeaderNode : SimpleComponentNode
         LabelTextNode = new TextNode
         {
             NodeFlags   = NodeFlags.AnchorLeft | NodeFlags.Visible | NodeFlags.Enabled,
-            TextColor   = ColorHelper.GetColor(7),
+            TextColor   = ColorHelper.GetColor(50),
             FontSize    = 14,
             LineSpacing = 14,
             Alpha       = 229.0f / 255.0f
