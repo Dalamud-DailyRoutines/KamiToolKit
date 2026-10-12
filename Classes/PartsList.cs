@@ -13,6 +13,8 @@ public unsafe class PartsList : IDisposable
     /// </summary>
     internal AtkUldPartsList* InternalPartsList;
 
+    private readonly List<nint> assetAddresses = [];
+
     private bool isDisposed;
     private uint partCapacity;
 
@@ -118,11 +120,10 @@ public unsafe class PartsList : IDisposable
 
     internal void ClearThemeBindings()
     {
-        if (InternalPartsList == null)
-            return;
+        foreach (var assetAddress in assetAddresses)
+            AtkUldPartExtensions.ThemeTexturePaths.Remove(assetAddress);
 
-        for (var i = 0; i < PartCount; i++)
-            AtkUldPartExtensions.ThemeTexturePaths.Remove((nint)InternalPartsList->Parts[i].UldAsset);
+        assetAddresses.Clear();
     }
 
     /// <summary>
@@ -202,7 +203,8 @@ public unsafe class PartsList : IDisposable
         newPart.U      = (ushort)item.U;
         newPart.V      = (ushort)item.V;
 
-        newPart.UldAsset     = IMemorySpace.GetUISpace()->MallocZeroed<AtkUldAsset>();
+        newPart.UldAsset = IMemorySpace.GetUISpace()->MallocZeroed<AtkUldAsset>();
+        assetAddresses.Add((nint)newPart.UldAsset);
         newPart.UldAsset->Id = item.Id;
         newPart.UldAsset->AtkTexture.Ctor();
         newPart.LoadTexture(item.TexturePath);
