@@ -1,7 +1,6 @@
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
-using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
@@ -43,13 +42,13 @@ public unsafe class RadioButtonNode : ComponentNode<AtkComponentRadioButton, Atk
 
         LabelNode = new TextNode
         {
-            NodeId           = 2,
-            Position         = new Vector2(20.0f, 0.0f),
-            Size             = new Vector2(98.0f, 16.0f),
-            FontSize         = 14,
-            TextColor        = ColorHelper.GetColor(8),
-            TextOutlineColor = ColorHelper.GetColor(7),
-            AlignmentType    = AlignmentType.Left
+            NodeId             = 2,
+            Position           = new Vector2(20.0f, 0.0f),
+            Size               = new Vector2(98.0f, 16.0f),
+            FontSize           = 14,
+            TextColorID        = 8,
+            TextOutlineColorID = 7,
+            AlignmentType      = AlignmentType.Left
         };
         LabelNode.AttachNode(this);
 

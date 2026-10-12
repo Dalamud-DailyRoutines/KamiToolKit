@@ -1,6 +1,5 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
 using Lumina.Text.ReadOnly;
@@ -39,14 +38,14 @@ public unsafe class ListButtonNode : ButtonBase
 
         LabelNode = new TextNode
         {
-            Position         = new Vector2(10.0f, 1.0f),
-            TextColor        = ColorHelper.GetColor(8),
-            TextOutlineColor = ColorHelper.GetColor(7),
-            FontType         = FontType.Axis,
-            FontSize         = 14,
-            AlignmentType    = AlignmentType.Left,
-            String           = "Label Not Set",
-            TextFlags        = TextFlags.Ellipsis
+            Position           = new Vector2(10.0f, 1.0f),
+            TextColorID        = 8,
+            TextOutlineColorID = 7,
+            FontType           = FontType.Axis,
+            FontSize           = 14,
+            AlignmentType      = AlignmentType.Left,
+            String             = "Label Not Set",
+            TextFlags          = TextFlags.Ellipsis
         };
         LabelNode.AttachNode(this);
 

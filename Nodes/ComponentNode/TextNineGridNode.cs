@@ -1,7 +1,6 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes.Simplified;
 using Lumina.Text.ReadOnly;
 
@@ -33,12 +32,12 @@ public unsafe class TextNineGridNode : ComponentNode<AtkComponentTextNineGrid, A
 
         TextNode = new TextNode
         {
-            TextOutlineColor = ColorHelper.GetColor(55),
-            Position         = new Vector2(4.0f, 1.0f),
-            FontSize         = 23,
-            AlignmentType    = AlignmentType.Right,
-            FontType         = FontType.TrumpGothic,
-            TextFlags        = TextFlags.Edge
+            TextOutlineColorID = 55,
+            Position           = new Vector2(4.0f, 1.0f),
+            FontSize           = 23,
+            AlignmentType      = AlignmentType.Right,
+            FontType           = FontType.TrumpGothic,
+            TextFlags          = TextFlags.Edge
         };
         TextNode.AttachNode(this);
 

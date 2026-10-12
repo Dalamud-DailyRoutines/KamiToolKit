@@ -1,6 +1,5 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
@@ -182,11 +181,11 @@ public unsafe class WindowNode : WindowNodeBase
                         NodeFlags.Visible    |
                         NodeFlags.Enabled    |
                         NodeFlags.EmitsEvents,
-            TextColor        = ColorHelper.GetColor(3),
-            TextOutlineColor = ColorHelper.GetColor(6),
-            BackgroundColor  = Vector4.Zero,
-            Size             = new Vector2(46.0f, 20.0f),
-            Position         = new Vector2(83.0f, 17.0f)
+            TextColorID        = 3,
+            TextOutlineColorID = 6,
+            BackgroundColor    = Vector4.Zero,
+            Size               = new Vector2(46.0f, 20.0f),
+            Position           = new Vector2(83.0f, 17.0f)
         };
         SubtitleNode.AttachNode(HeaderContainerNode);
 
@@ -203,11 +202,11 @@ public unsafe class WindowNode : WindowNodeBase
                         NodeFlags.Visible    |
                         NodeFlags.Enabled    |
                         NodeFlags.EmitsEvents,
-            TextColor        = ColorHelper.GetColor(2),
-            TextOutlineColor = ColorHelper.GetColor(7),
-            BackgroundColor  = Vector4.Zero,
-            Size             = new Vector2(86.0f, 31.0f),
-            Position         = new Vector2(12.0f, 7.0f)
+            TextColorID        = 2,
+            TextOutlineColorID = 7,
+            BackgroundColor    = Vector4.Zero,
+            Size               = new Vector2(86.0f, 31.0f),
+            Position           = new Vector2(12.0f, 7.0f)
         };
         TitleNode.AttachNode(HeaderContainerNode);
 

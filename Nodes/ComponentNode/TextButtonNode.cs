@@ -1,6 +1,5 @@
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes.Simplified;
 using Lumina.Data.Parsing.Uld;
@@ -25,7 +24,7 @@ public unsafe class TextButtonNode : ButtonBase
         {
             AlignmentType = AlignmentType.Center,
             Position      = new Vector2(16.0f, 3.0f),
-            TextColor     = ColorHelper.GetColor(50)
+            TextColorID   = 50
         };
         LabelNode.AttachNode(this);
 

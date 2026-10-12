@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+using System.Numerics;
+using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Classes;
@@ -12,6 +13,9 @@ namespace KamiToolKit.Nodes;
 /// </summary>
 public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, AtkUldComponentDataNumericInput>
 {
+    private ByteColor previousFocusColor;
+    private ByteColor previousDefaultColor;
+
     /// <summary>
     ///     Constructs a new <see cref="NumericInputNode" />.
     /// </summary>
@@ -56,7 +60,7 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             NodeId        = 5,
             Position      = new Vector2(6.0f, 6.0f),
             FontType      = FontType.Axis,
-            TextColor     = ColorHelper.GetColor(1),
+            TextColorID   = 1,
             FontSize      = 12,
             AlignmentType = AlignmentType.Top,
             String        = "999"
@@ -92,9 +96,12 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
         Data->Nodes[3] = AddButton.NodeId;
         Data->Nodes[4] = SubtractButton.NodeId;
 
-        Data->Max = int.MaxValue;
+        Data->Max        = int.MaxValue;
+        Data->FocusColor = ColorHelper.GetColor(67).ToByteColor();
 
         InitializeComponentEvents();
+        previousFocusColor   = Component->FocusColor;
+        previousDefaultColor = Component->DefaultTextColor;
 
         AddEvent(AtkEventType.ValueUpdate, ValueUpdateHandler);
     }
@@ -199,6 +206,25 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
         SubtractButton.X     = Width - 28.0f;
     }
 
+    /// <inheritdoc />
+    protected override void OnColorThemeChanged()
+    {
+        base.OnColorThemeChanged();
+
+        if (ValueTextNode.TextColorID is { } colorID)
+            ColorHelper.RefreshColor(ref Component->DefaultTextColor, colorID, ref previousDefaultColor);
+
+        if (Component->IsActive)
+            ColorHelper.RefreshColor(ref ValueTextNode.Node->TextColor, 67, ref previousFocusColor);
+
+        var focusColor = ColorHelper.GetColor(67).ToByteColor();
+        previousFocusColor                  = focusColor;
+        Component->FocusColor               = focusColor;
+        Component->InputDataBase.FocusColor = focusColor;
+        Component->Data.FocusColor          = focusColor;
+        Data->FocusColor                    = focusColor;
+    }
+
     private void ValueUpdateHandler() =>
         OnValueUpdate?.Invoke(Value);
 
@@ -239,11 +265,9 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
             new TimelineBuilder()
                 .BeginFrameSet(1, 19)
                 .AddFrame(1, alpha: 255)
-                .AddFrame(1, textColor: new Vector3(255.0f, 255.0f, 255.0f) * 255.0f)
                 .EndFrameSet()
                 .BeginFrameSet(20, 29)
                 .AddFrame(20, alpha: 127)
-                .AddFrame(20, textColor: new Vector3(255.0f, 255.0f, 255.0f) * 255.0f)
                 .EndFrameSet()
                 .Build()
         );

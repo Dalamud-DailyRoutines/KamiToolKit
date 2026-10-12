@@ -1,5 +1,4 @@
-﻿using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace KamiToolKit.Nodes;
 
@@ -14,14 +13,14 @@ public sealed class CategoryTextNode : TextNode
     /// </summary>
     public CategoryTextNode()
     {
-        Height           = 16.0f;
-        TextFlags        = TextFlags.AutoAdjustNodeSize;
-        TextColor        = ColorHelper.GetColor(2);
-        TextOutlineColor = ColorHelper.GetColor(7);
-        FontType         = FontType.Axis;
-        FontSize         = 14;
-        LineSpacing      = 24;
-        AlignmentType    = AlignmentType.Left;
+        Height             = 16.0f;
+        TextFlags          = TextFlags.AutoAdjustNodeSize;
+        TextColorID        = 2;
+        TextOutlineColorID = 7;
+        FontType           = FontType.Axis;
+        FontSize           = 14;
+        LineSpacing        = 24;
+        AlignmentType      = AlignmentType.Left;
     }
 
     /// <summary>

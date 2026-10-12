@@ -90,6 +90,13 @@ public unsafe class ImageNode : NodeBase<AtkImageNode>
         => PartsList.Add(parts);
 
     /// <inheritdoc />
+    protected override void OnColorThemeChanged()
+    {
+        base.OnColorThemeChanged();
+        PartsList.RefreshColorTheme();
+    }
+
+    /// <inheritdoc />
     protected override void Dispose
     (
         bool disposing,
@@ -103,6 +110,8 @@ public unsafe class ImageNode : NodeBase<AtkImageNode>
                 PartsList.Dispose();
                 Node->PartsList = null;
             }
+            else
+                PartsList.ClearThemeBindings();
 
             base.Dispose(disposing, isNativeDestructor);
         }

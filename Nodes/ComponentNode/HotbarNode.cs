@@ -45,13 +45,13 @@ public partial class HotbarNode : DragDropNode
 
         ItemCountTextNode = new TextNode
         {
-            NodeId           = 5,
-            Position         = new Vector2(4.0f,  34.0f),
-            Size             = new Vector2(40.0f, 12.0f),
-            TextColor        = KnownColor.White.Vector(),
-            TextOutlineColor = ColorHelper.GetColor(55),
-            AlignmentType    = AlignmentType.Right,
-            TextFlags        = TextFlags.Edge | (TextFlags)0x8000
+            NodeId             = 5,
+            Position           = new Vector2(4.0f,  34.0f),
+            Size               = new Vector2(40.0f, 12.0f),
+            TextColor          = KnownColor.White.Vector(),
+            TextOutlineColorID = 55,
+            AlignmentType      = AlignmentType.Right,
+            TextFlags          = TextFlags.Edge | (TextFlags)0x8000
         };
         ItemCountTextNode.AttachNode(this);
 

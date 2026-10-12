@@ -1,7 +1,6 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
-using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
@@ -45,15 +44,15 @@ public unsafe class CheckboxNode : ComponentNode<AtkComponentCheckBox, AtkUldCom
 
         Label = new TextNode
         {
-            Size             = new Vector2(0.0f,  20.0f),
-            Position         = new Vector2(20.0f, 0.0f),
-            FontType         = FontType.Axis,
-            AlignmentType    = AlignmentType.Left,
-            FontSize         = 14,
-            LineSpacing      = 14,
-            TextColor        = ColorHelper.GetColor(8),
-            TextOutlineColor = ColorHelper.GetColor(7),
-            TextFlags        = TextFlags.AutoAdjustNodeSize
+            Size               = new Vector2(0.0f,  20.0f),
+            Position           = new Vector2(20.0f, 0.0f),
+            FontType           = FontType.Axis,
+            AlignmentType      = AlignmentType.Left,
+            FontSize           = 14,
+            LineSpacing        = 14,
+            TextColorID        = 8,
+            TextOutlineColorID = 7,
+            TextFlags          = TextFlags.AutoAdjustNodeSize
         };
         Label.AttachNode(this);
 

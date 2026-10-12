@@ -2,7 +2,6 @@ using System.Numerics;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
-using KamiToolKit.Classes;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
@@ -59,7 +58,7 @@ public unsafe class HoldButtonNode : ComponentNode<AtkComponentHoldButton, AtkUl
             Size          = new Vector2(68.0f, 20.0f),
             AlignmentType = AlignmentType.Center,
             String        = IDataManager.Get().GetExcelSheet<Addon>().GetRow(1).Text,
-            TextColor     = ColorHelper.GetColor(50)
+            TextColorID   = 50
         };
         TextNode.AttachNode(this);
 

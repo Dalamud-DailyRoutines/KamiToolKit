@@ -259,7 +259,11 @@ public abstract unsafe partial class NodeBase
     public virtual Vector4 Color
     {
         get => ResNode->ColorVector;
-        set => ResNode->ColorVector = value;
+        set
+        {
+            ColorID              = null;
+            ResNode->ColorVector = value;
+        }
     }
 
     /// <summary>
@@ -271,7 +275,11 @@ public abstract unsafe partial class NodeBase
     public virtual ColorHelpers.HsvaColor ColorHsva
     {
         get => ResNode->ColorHsva;
-        set => ResNode->ColorHsva = value;
+        set
+        {
+            ColorID            = null;
+            ResNode->ColorHsva = value;
+        }
     }
 
     /// <summary>

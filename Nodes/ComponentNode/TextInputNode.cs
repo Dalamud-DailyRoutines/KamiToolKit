@@ -1,7 +1,5 @@
-using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
@@ -84,7 +82,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             Size          = new Vector2(132.0f, 18.0f),
             AlignmentType = AlignmentType.TopLeft,
             TextFlags     = TextFlags.OverflowHidden,
-            TextColor     = ColorHelper.GetColor(1)
+            TextColorID   = 1
         };
         CurrentTextNode.AttachNode(this);
 
@@ -111,7 +109,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             Size          = new Vector2(132.0f, 18.0f),
             AlignmentType = AlignmentType.TopLeft,
             TextFlags     = TextFlags.OverflowHidden,
-            TextColor     = ColorHelper.GetColor(3)
+            TextColorID   = 3
         };
         PlaceholderTextNode.AttachNode(this);
 
@@ -134,7 +132,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
 
         Data->CandidateColor = new ByteColor { R = 66 };
         Data->IMEColor       = new ByteColor { R = 67 };
-        Data->FocusColor     = KnownColor.Black.Vector().ToByteColor();
+        Data->FocusColor     = ColorHelper.GetColor(67).ToByteColor();
 
         Data->Flags1  = TextInputFlags1.EnableIME        | TextInputFlags1.AllowUpperCase | TextInputFlags1.AllowLowerCase;
         Data->Flags2  = TextInputFlags2.AllowNumberInput | TextInputFlags2.AllowSymbolInput;
@@ -174,6 +172,17 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
     ///     Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
     public NineGridNode BackgroundNode { get; }
+
+    /// <inheritdoc />
+    protected override void OnColorThemeChanged()
+    {
+        base.OnColorThemeChanged();
+
+        var focusColor = ColorHelper.GetColor(67).ToByteColor();
+        Component->InputDataBase.FocusColor     = focusColor;
+        Component->ComponentTextData.FocusColor = focusColor;
+        Data->FocusColor                        = focusColor;
+    }
 
     /// <summary>
     ///     Not intended for public use, but it's here if you absolutely need it.

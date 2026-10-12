@@ -197,9 +197,18 @@ public unsafe class CounterNode : NodeBase<AtkCounterNode>
                 PartsList.Dispose();
                 Node->PartsList = null;
             }
+            else
+                PartsList.ClearThemeBindings();
 
             base.Dispose(disposing, isNativeDestructor);
         }
+    }
+
+    /// <inheritdoc />
+    protected override void OnColorThemeChanged()
+    {
+        base.OnColorThemeChanged();
+        PartsList.RefreshColorTheme();
     }
 
     private static ReadOnlySeString ParseString

@@ -1,6 +1,5 @@
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes.Simplified;
 using Lumina.Text.ReadOnly;
 
@@ -32,11 +31,11 @@ public class BackgroundTextNode : ResNode
 
         TextNode = new TextNode
         {
-            AlignmentType    = AlignmentType.Center,
-            TextFlags        = TextFlags.Edge,
-            TextOutlineColor = ColorHelper.GetColor(55),
-            FontSize         = 23,
-            FontType         = FontType.TrumpGothic
+            AlignmentType      = AlignmentType.Center,
+            TextFlags          = TextFlags.Edge,
+            TextOutlineColorID = 55,
+            FontSize           = 23,
+            FontType           = FontType.TrumpGothic
         };
         TextNode.AttachNode(this);
     }

@@ -1,7 +1,6 @@
 using System.Numerics;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes.Simplified;
@@ -72,14 +71,14 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
 
         LabelNode = new TextNode
         {
-            Position         = new Vector2(20.0f,  0.0f),
-            Size             = new Vector2(218.0f, 21.0f),
-            FontType         = FontType.Axis,
-            FontSize         = 12,
-            AlignmentType    = AlignmentType.Left,
-            TextColor        = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(7),
-            TextFlags        = TextFlags.Ellipsis
+            Position           = new Vector2(20.0f,  0.0f),
+            Size               = new Vector2(218.0f, 21.0f),
+            FontType           = FontType.Axis,
+            FontSize           = 12,
+            AlignmentType      = AlignmentType.Left,
+            TextColorID        = 50,
+            TextOutlineColorID = 7,
+            TextFlags          = TextFlags.Ellipsis
         };
         LabelNode.AttachNode(this);
 

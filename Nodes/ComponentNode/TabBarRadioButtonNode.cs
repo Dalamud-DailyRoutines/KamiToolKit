@@ -1,7 +1,6 @@
-﻿using System.Numerics;
+using System.Numerics;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
 using Lumina.Data.Parsing.Uld;
@@ -48,7 +47,7 @@ public unsafe class TabBarRadioButtonNode : ComponentNode<AtkComponentRadioButto
         {
             Position      = new Vector2(13.0f, 2.0f),
             AlignmentType = AlignmentType.Center,
-            TextColor     = ColorHelper.GetColor(50)
+            TextColorID   = 50
         };
         LabelNode.AttachNode(this);
 

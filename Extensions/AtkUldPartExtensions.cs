@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Dalamud.Interface.Textures.TextureWraps;
@@ -14,7 +14,8 @@ namespace KamiToolKit.Extensions;
 /// </summary>
 public static unsafe class AtkUldPartExtensions
 {
-    private static readonly Dictionary<string, bool> FileExistsCache = [];
+    private static readonly  Dictionary<string, bool> FileExistsCache   = [];
+    internal static readonly Dictionary<nint, string> ThemeTexturePaths = [];
 
     extension
     (
@@ -59,6 +60,7 @@ public static unsafe class AtkUldPartExtensions
             {
                 if (part.UldAsset is null) return;
 
+                ThemeTexturePaths.Remove((nint)part.UldAsset);
                 part.TryUnloadTexture();
 
                 // Check for empty path after unloading, as setting empty
@@ -67,12 +69,23 @@ public static unsafe class AtkUldPartExtensions
 
                 var texturePath = path.Replace("_hr1", string.Empty);
 
-                var themedPath = texturePath.Replace("uld", GetThemePathModifier());
-                if (FileExists(themedPath) && resolveTheme)
-                    texturePath = themedPath;
+                if (resolveTheme                                                             &&
+                    texturePath.StartsWith("ui/uld/img", StringComparison.OrdinalIgnoreCase) &&
+                    texturePath.Length > 13                                                  &&
+                    texturePath[10] is >= '0' and <= '9'                                     &&
+                    texturePath[11] is >= '0' and <= '9'                                     &&
+                    texturePath[12] == '/')
+                    texturePath = texturePath.Remove(7, 6);
 
-                if (FileExists(texturePath))
-                    part.UldAsset->AtkTexture.LoadTextureWithDefaultVersion(texturePath);
+                var resolvedPath = ResolveTexturePath(texturePath, resolveTheme);
+
+                if (FileExists(resolvedPath))
+                {
+                    part.UldAsset->AtkTexture.LoadTextureWithDefaultVersion(resolvedPath);
+
+                    if (resolveTheme && texturePath.StartsWith("ui/uld/", StringComparison.OrdinalIgnoreCase))
+                        ThemeTexturePaths[(nint)part.UldAsset] = texturePath;
+                }
             }
             catch (Exception e)
             {
@@ -90,7 +103,10 @@ public static unsafe class AtkUldPartExtensions
         (
             uint iconId
         )
-            => part.UldAsset->AtkTexture.LoadIconTexture(iconId, GetIconSubFolder(iconId));
+        {
+            ThemeTexturePaths.Remove((nint)part.UldAsset);
+            part.UldAsset->AtkTexture.LoadIconTexture(iconId, GetIconSubFolder(iconId));
+        }
 
         /// <summary>
         ///     Load a texture from a Texture* directly.
@@ -109,6 +125,7 @@ public static unsafe class AtkUldPartExtensions
         {
             if (part.UldAsset is null) return;
 
+            ThemeTexturePaths.Remove((nint)part.UldAsset);
             part.TryUnloadTexture();
             part.UldAsset->AtkTexture.KernelTexture = texture;
             part.UldAsset->AtkTexture.TextureType   = TextureType.KernelTexture;
@@ -136,9 +153,9 @@ public static unsafe class AtkUldPartExtensions
         {
             if (part.UldAsset is null) return string.Empty;
             if (part.UldAsset->AtkTexture.Resource is null) return string.Empty;
-            if (part.UldAsset->AtkTexture.Resource->TexFileResourceHandle is null) return string.Empty;
-
-            return part.UldAsset->AtkTexture.Resource->TexFileResourceHandle->FileName.ToString();
+            return part.UldAsset->AtkTexture.Resource->TexFileResourceHandle is null ?
+                       string.Empty :
+                       part.UldAsset->AtkTexture.Resource->TexFileResourceHandle->FileName.ToString();
         }
 
         private void TryUnloadTexture()
@@ -189,11 +206,21 @@ public static unsafe class AtkUldPartExtensions
                    IconSubFolder.None;
     }
 
-    private static string GetThemePathModifier() => AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType switch
+    internal static string ResolveTexturePath
+    (
+        string path,
+        bool   resolveTheme
+    )
     {
-        not 0 => $"uld/img{AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType:00}",
-        _     => "uld"
-    };
+        var theme = AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType;
+        if (!resolveTheme || theme == 0 || !path.StartsWith("ui/uld/", StringComparison.OrdinalIgnoreCase))
+            return path;
+
+        var themedPath = path.Insert(7, $"img{theme:00}/");
+        return FileExists(themedPath) ?
+                   themedPath :
+                   path;
+    }
 
     private static bool FileExists
     (

@@ -57,6 +57,8 @@ public unsafe class PartsList : IDisposable
     {
         if (!isDisposed)
         {
+            ClearThemeBindings();
+
             foreach (var partIndex in Enumerable.Range(0, (int)PartCount))
             {
                 ref var part = ref InternalPartsList->Parts[partIndex];
@@ -84,6 +86,43 @@ public unsafe class PartsList : IDisposable
         }
 
         isDisposed = true;
+    }
+
+    internal void RefreshColorTheme()
+    {
+        if (isDisposed || InternalPartsList == null)
+            return;
+
+        for (var i = 0; i < PartCount; i++)
+        {
+            ref var part = ref InternalPartsList->Parts[i];
+            if (part.UldAsset == null ||
+                !AtkUldPartExtensions.ThemeTexturePaths.TryGetValue((nint)part.UldAsset, out var sourcePath))
+                continue;
+
+            var texture = &part.UldAsset->AtkTexture;
+            if (texture->TextureType                     != TextureType.Resource ||
+                texture->Resource                        == null                 ||
+                texture->Resource->TexFileResourceHandle == null)
+                continue;
+
+            var path    = AtkUldPartExtensions.ResolveTexturePath(sourcePath, true);
+            var version = texture->Resource->Version;
+            var targetPath = version == 1 ?
+                                 path :
+                                 path.Insert(path.LastIndexOf('.'), "_hr1");
+            if (!string.Equals(part.LoadedPath, targetPath, StringComparison.OrdinalIgnoreCase))
+                texture->LoadTexture(path, version);
+        }
+    }
+
+    internal void ClearThemeBindings()
+    {
+        if (InternalPartsList == null)
+            return;
+
+        for (var i = 0; i < PartCount; i++)
+            AtkUldPartExtensions.ThemeTexturePaths.Remove((nint)InternalPartsList->Parts[i].UldAsset);
     }
 
     /// <summary>

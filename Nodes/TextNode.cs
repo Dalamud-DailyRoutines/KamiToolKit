@@ -2,7 +2,6 @@ using System.Numerics;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
-using KamiToolKit.Classes;
 using KamiToolKit.Interfaces;
 using Lumina.Data.Parsing.Uld;
 using Lumina.Text.ReadOnly;
@@ -12,7 +11,7 @@ namespace KamiToolKit.Nodes;
 /// <summary>
 ///     Implementation of the games TextNode.
 /// </summary>
-public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
+public unsafe partial class TextNode : NodeBase<AtkTextNode>, ITextNode
 {
     /// <summary>
     ///     Constructs a new <see cref="TextNode" />
@@ -23,15 +22,17 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
     /// </remarks>
     public TextNode() : base(NodeType.Text)
     {
-        TextColor        = ColorHelper.GetColor(8);
-        TextOutlineColor = ColorHelper.GetColor(7);
-        FontSize         = 12;
-        FontType         = FontType.Axis;
-        LineSpacing      = 12;
-        AlignmentType    = AlignmentType.TopLeft;
+        TextColorID        = 8;
+        TextOutlineColorID = 7;
+        FontSize           = 12;
+        FontType           = FontType.Axis;
+        LineSpacing        = 12;
+        AlignmentType      = AlignmentType.TopLeft;
 
         if (AtkStage.Instance()->AtkUIColorHolder->ActiveColorThemeType is 0)
             AddTextFlags(TextFlags.Emboss);
+
+        UseThemeEmboss = true;
     }
 
     /// <inheritdoc />
@@ -49,21 +50,33 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
     public Vector4 TextColor
     {
         get => Node->TextColor.ToVector4();
-        set => Node->TextColor = value.ToByteColor();
+        set
+        {
+            TextColorID     = null;
+            Node->TextColor = value.ToByteColor();
+        }
     }
 
     /// <inheritdoc />
     public Vector4 TextOutlineColor
     {
         get => Node->EdgeColor.ToVector4();
-        set => Node->EdgeColor = value.ToByteColor();
+        set
+        {
+            TextOutlineColorID = null;
+            Node->EdgeColor    = value.ToByteColor();
+        }
     }
 
     /// <inheritdoc />
     public Vector4 BackgroundColor
     {
         get => Node->BackgroundColor.ToVector4();
-        set => Node->BackgroundColor = value.ToByteColor();
+        set
+        {
+            BackgroundColorID     = null;
+            Node->BackgroundColor = value.ToByteColor();
+        }
     }
 
     /// <inheritdoc />
@@ -109,6 +122,7 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
         set
         {
             Node->TextFlags = value;
+            UseThemeEmboss  = (value & TextFlags.Emboss) != 0;
             UpdateText();
         }
     }
@@ -184,7 +198,13 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
     )
     {
         foreach (var flag in flags)
-            TextFlags |= flag;
+        {
+            Node->TextFlags |= flag;
+            if ((flag & TextFlags.Emboss) != 0)
+                UseThemeEmboss = true;
+        }
+
+        UpdateText();
     }
 
     /// <inheritdoc />
@@ -194,7 +214,13 @@ public unsafe class TextNode : NodeBase<AtkTextNode>, ITextNode
     )
     {
         foreach (var flag in flags)
-            TextFlags &= ~flag;
+        {
+            Node->TextFlags &= ~flag;
+            if ((flag & TextFlags.Emboss) != 0)
+                UseThemeEmboss = false;
+        }
+
+        UpdateText();
     }
 
     /// <inheritdoc />
