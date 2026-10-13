@@ -546,7 +546,7 @@ public unsafe class TextInputNode : ComponentNode<AtkComponentTextInput, AtkUldC
             {
                 case InputCallbackType.Enter:
                     if (!AllowEnterToComplete)
-                        return InputCallbackResult.Unknown2;
+                        return InputCallbackResult.InsertLineBreak;
                     var completedString = String;
                     ClearFocus();
                     OnInputComplete?.Invoke(completedString);
