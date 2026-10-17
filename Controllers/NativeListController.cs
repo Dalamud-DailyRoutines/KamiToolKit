@@ -2,7 +2,6 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -113,9 +112,6 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
         if (node is null) return;
         if (attachedNodes.Any(entry => entry.Node == node)) return;
 
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("NativeListController must be modified on the game thread.");
-
         var renderer = listItem.TryGetListItemRenderer();
         if (renderer is null) return;
 
@@ -146,9 +142,6 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
     )
     {
         if (attachedNodes.FirstOrDefault(entry => entry.Node == node) is not { } listEntry) return;
-
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("NativeListController must be modified on the game thread.");
 
         var renderer = listEntry.Renderer;
 
