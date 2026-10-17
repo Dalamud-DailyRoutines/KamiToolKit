@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Controllers;
 using KamiToolKit.Internal.Classes;
@@ -326,9 +325,6 @@ public class NativeChildAddon : NativeAddon
     {
         if (isDisposed)
             return;
-
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("Native addon operations must run on the game thread.");
 
         isDisposed = true;
         Controller.Forget(this);

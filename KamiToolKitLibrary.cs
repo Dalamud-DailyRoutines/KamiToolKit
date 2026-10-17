@@ -6,7 +6,6 @@ using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Classes;
 using KamiToolKit.Debug;
@@ -146,12 +145,6 @@ public static class KamiToolKitLibrary
     /// </summary>
     public static void Dispose()
     {
-        if (!ThreadSafety.IsMainThread)
-        {
-            IPluginLog.Get().Error("Error, KamiToolKit tried to dispose while not on the main thread. Use DisposeAsync instead.");
-            return;
-        }
-
         if (debugMode)
         {
             PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;

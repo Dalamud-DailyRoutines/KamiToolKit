@@ -2,7 +2,6 @@ using System.Numerics;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
@@ -82,9 +81,6 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         NativeAddon parent
     )
     {
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("NativeAddonController must be created on the game thread.");
-
         ArgumentNullException.ThrowIfNull((object)parent, nameof(parent));
 
         var controller = KamiToolKitLibrary.Experimental.AddonControllers.FirstOrDefault
@@ -108,9 +104,6 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         NativeAddon parent
     )
     {
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("NativeAddonController must be created on the game thread.");
-
         ArgumentNullException.ThrowIfNull((object)parent, nameof(parent));
         ArgumentException.ThrowIfNullOrEmpty(parent.InternalName);
         if (parent.IsOverlayAddon)
@@ -313,12 +306,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         }
     }
 
-    internal void EnsureAccess()
-    {
-        ObjectDisposedException.ThrowIf(isDisposed, this);
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("Native addon operations must run on the game thread.");
-    }
+    internal void EnsureAccess() => ObjectDisposedException.ThrowIf(isDisposed, this);
 
     internal void Register
     (
@@ -408,6 +396,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
                     child.Info->PositionX = checked((short)position.X);
                     child.Info->PositionY = checked((short)position.Y);
+
                     if (!child.IsAttached)
                     {
                         functions.SetScale(addon, ParentAddon->Scale / AtkUnitBase.GetGlobalUIScale());
@@ -433,9 +422,6 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         NativeChildAddon child
     )
     {
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("Native addon operations must run on the game thread.");
-
         if (dispatchDepth != 0)
         {
             pendingOperations.Enqueue(() => CloseChild(child));
@@ -462,9 +448,6 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         NativeChildAddon child
     )
     {
-        if (!ThreadSafety.IsMainThread)
-            throw new InvalidOperationException("Native addon operations must run on the game thread.");
-
         if (dispatchDepth != 0)
         {
             pendingOperations.Enqueue(() => Forget(child));
