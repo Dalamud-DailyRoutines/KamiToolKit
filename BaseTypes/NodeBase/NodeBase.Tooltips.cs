@@ -24,6 +24,7 @@ public unsafe partial class NodeBase
         get;
         set
         {
+            if (field.IsEmpty && value.IsEmpty) return;
             if (field == value) return;
 
             if (!value.IsEmpty)

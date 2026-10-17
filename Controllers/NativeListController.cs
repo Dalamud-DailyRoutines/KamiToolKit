@@ -2,8 +2,11 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Classes;
 using KamiToolKit.Internal.Classes;
 
@@ -55,6 +58,8 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
         TU listItem
     );
 
+    private readonly List<ListNodeEntry> attachedNodes = [];
+
     private Hook<AtkComponentListItemPopulator.PopulateDelegate>?             onListPopulate;
     private Hook<AtkComponentListItemPopulator.PopulateWithRendererDelegate>? onRendererPopulate;
 
@@ -90,6 +95,83 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
     ///     List of modified node indexes.
     /// </summary>
     public List<uint> ModifiedIndexes { get; } = [];
+
+    /// <summary>
+    ///     Adds an attached node to the list item's collision list. Added nodes are owned by the controller.
+    /// </summary>
+    /// <param name="listItem">List item containing the node.</param>
+    /// <param name="node">Node to add.</param>
+    /// <remarks>
+    ///     Configure the node's events before adding it. This must be invoked from the main game thread.
+    /// </remarks>
+    public unsafe void AddNode
+    (
+        TU        listItem,
+        NodeBase? node
+    )
+    {
+        if (node is null) return;
+        if (attachedNodes.Any(entry => entry.Node == node)) return;
+
+        if (!ThreadSafety.IsMainThread)
+            throw new InvalidOperationException("NativeListController must be modified on the game thread.");
+
+        var renderer = listItem.TryGetListItemRenderer();
+        if (renderer is null) return;
+
+        var count  = renderer->CollisionNodeListCount;
+        var buffer = (AtkResNode**)IMemorySpace.GetUISpace()->Realloc<nint>(renderer->CollisionNodeList, count + 1);
+
+        for (var index = (int)count; index > 0; index--)
+            buffer[index] = buffer[index - 1];
+
+        buffer[0] = node;
+
+        renderer->CollisionNodeList = buffer;
+        renderer->CollisionNodeListCount++;
+
+        attachedNodes.Add(new ListNodeEntry(node, renderer));
+    }
+
+    /// <summary>
+    ///     Removes and disposes a node owned by this controller.
+    /// </summary>
+    /// <param name="node">Node to remove.</param>
+    /// <remarks>
+    ///     This must be invoked from the main game thread.
+    /// </remarks>
+    public unsafe void RemoveNode
+    (
+        NodeBase node
+    )
+    {
+        if (attachedNodes.FirstOrDefault(entry => entry.Node == node) is not { } listEntry) return;
+
+        if (!ThreadSafety.IsMainThread)
+            throw new InvalidOperationException("NativeListController must be modified on the game thread.");
+
+        var renderer = listEntry.Renderer;
+
+        for (var index = 0; index < renderer->CollisionNodeListCount; index++)
+        {
+            if (renderer->CollisionNodeList[index] != node.ResNode) continue;
+
+            renderer->CollisionNodeListCount--;
+
+            for (var next = index; next < renderer->CollisionNodeListCount; next++)
+                renderer->CollisionNodeList[next] = renderer->CollisionNodeList[next + 1];
+
+            renderer->CollisionNodeList[renderer->CollisionNodeListCount] = null;
+            break;
+        }
+
+        if (renderer->EventNode == node.ResNode)
+            renderer->EventNode = null;
+
+        node.Dispose();
+
+        attachedNodes.Remove(listEntry);
+    }
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
@@ -157,6 +239,8 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
 
         IAddonLifecycle.Get().UnregisterListener(OnAddonSetup, OnAddonFinalize);
 
+        RemoveNodes();
+
         onListPopulate?.Dispose();
         onListPopulate = null;
 
@@ -170,6 +254,8 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
     public async Task DisableAsync()
     {
         IAddonLifecycle.Get().UnregisterListener(OnAddonSetup, OnAddonFinalize);
+
+        await IFramework.Get().Run(RemoveNodes);
 
         await onListPopulate.DisposeAsync();
         onListPopulate = null;
@@ -193,6 +279,8 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
     {
         onListPopulate?.Disable();
         onRendererPopulate?.Disable();
+
+        RemoveNodes();
 
         ModifiedIndexes.Clear();
     }
@@ -245,14 +333,31 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
                 NodeId    = itemInfo->ListItem->Renderer->OwnerNode->NodeId
             };
 
-            var shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
+            var shouldModifyElement = false;
+
+            try
+            {
+                shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
+            }
+            catch (Exception e)
+            {
+                IPluginLog.Get().Exception(e);
+            }
 
             if (!shouldModifyElement)
             {
-                if (ModifiedIndexes.Contains(itemInfo->ListItem->Renderer->OwnerNode->NodeId))
+                if (ModifiedIndexes.Contains(listItemData.NodeId))
                 {
-                    ResetElement?.Invoke((T*)unitBase, listItemData);
-                    ModifiedIndexes.Remove(itemInfo->ListItem->Renderer->OwnerNode->NodeId);
+                    try
+                    {
+                        ResetElement?.Invoke((T*)unitBase, listItemData);
+                    }
+                    catch (Exception e)
+                    {
+                        IPluginLog.Get().Exception(e);
+                    }
+
+                    ModifiedIndexes.Remove(listItemData.NodeId);
                 }
             }
 
@@ -260,8 +365,16 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
 
             if (shouldModifyElement)
             {
-                UpdateElement?.Invoke((T*)unitBase, listItemData);
-                ModifiedIndexes.Add(itemInfo->ListItem->Renderer->OwnerNode->NodeId);
+                try
+                {
+                    UpdateElement?.Invoke((T*)unitBase, listItemData);
+                }
+                catch (Exception e)
+                {
+                    IPluginLog.Get().Exception(e);
+                }
+
+                ModifiedIndexes.Add(listItemData.NodeId);
             }
         }
         catch (Exception e)
@@ -298,14 +411,31 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
                 NodeId       = listItemRenderer->OwnerNode->NodeId
             };
 
-            var shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
+            var shouldModifyElement = false;
+
+            try
+            {
+                shouldModifyElement = ShouldModifyElement?.Invoke((T*)unitBase, listItemData) ?? true;
+            }
+            catch (Exception e)
+            {
+                IPluginLog.Get().Exception(e);
+            }
 
             if (!shouldModifyElement)
             {
-                if (ModifiedIndexes.Contains(listItemRenderer->OwnerNode->NodeId))
+                if (ModifiedIndexes.Contains(listItemData.NodeId))
                 {
-                    ResetElement?.Invoke((T*)unitBase, listItemData);
-                    ModifiedIndexes.Remove(listItemRenderer->OwnerNode->NodeId);
+                    try
+                    {
+                        ResetElement?.Invoke((T*)unitBase, listItemData);
+                    }
+                    catch (Exception e)
+                    {
+                        IPluginLog.Get().Exception(e);
+                    }
+
+                    ModifiedIndexes.Remove(listItemData.NodeId);
                 }
             }
 
@@ -313,13 +443,27 @@ public class NativeListController<T, TU> : IDisposable, IAsyncDisposable where T
 
             if (shouldModifyElement)
             {
-                UpdateElement?.Invoke((T*)unitBase, listItemData);
-                ModifiedIndexes.Add(listItemRenderer->OwnerNode->NodeId);
+                try
+                {
+                    UpdateElement?.Invoke((T*)unitBase, listItemData);
+                }
+                catch (Exception e)
+                {
+                    IPluginLog.Get().Exception(e);
+                }
+
+                ModifiedIndexes.Add(listItemData.NodeId);
             }
         }
         catch (Exception e)
         {
             IPluginLog.Get().Exception(e);
         }
+    }
+
+    private void RemoveNodes()
+    {
+        foreach (var entry in attachedNodes.ToArray())
+            RemoveNode(entry.Node);
     }
 }

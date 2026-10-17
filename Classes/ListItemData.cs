@@ -1,4 +1,4 @@
-﻿using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace KamiToolKit.Classes;
 
@@ -50,6 +50,19 @@ public unsafe class ListItemData
     ///     The NodeId for this list item. This is mostly used for tracking purposes.
     /// </summary>
     public uint NodeId { get; init; }
+
+    /// <summary>
+    ///     Gets the list item renderer for this entry. If this is the other kind of list item, fetches it from there instead.
+    /// </summary>
+    public AtkComponentListItemRenderer* TryGetListItemRenderer()
+    {
+        var renderer = ItemRenderer;
+
+        if (renderer is null && ItemInfo is not null)
+            renderer = ItemInfo->ListItem->Renderer;
+
+        return renderer;
+    }
 
     /// <summary>
     ///     Gets a number stored in the ItemInfo.
