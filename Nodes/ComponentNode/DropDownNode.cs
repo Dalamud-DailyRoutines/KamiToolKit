@@ -1,6 +1,7 @@
 using System.Numerics;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes.Simplified;
@@ -12,34 +13,27 @@ using Action = System.Action;
 namespace KamiToolKit.Nodes;
 
 /// <summary>
-///     Specialization of <see cref="DropDownNode{T}" /> for strings.
-/// </summary>
-public class StringDropDownNode : DropDownNode<string>
-{
-    /// <inheritdoc />
-    public StringDropDownNode()
-        => GetLabelFunction = entry => entry;
-}
-
-/// <summary>
-///     Specialization of <see cref="DropDownNode{T}" /> for enums.
-/// </summary>
-public class EnumDropDownNode<T> : DropDownNode<T> where T : Enum
-{
-    /// <inheritdoc />
-    public EnumDropDownNode()
-        => GetLabelFunction = entry => entry.Description;
-}
-
-/// <summary>
 ///     Custom implementation of a native DropDownNode.
 /// </summary>
 /// <typeparam name="T">Data type this dropdown node is representing.</typeparam>
 public unsafe class DropDownNode<T> : SimpleComponentNode
 {
-    private bool isFocusSet;
+    private readonly ReadOnlySeString     defaultPlaceholder;
+    private readonly List<ListButtonNode> popupButtons = [];
+
+    private bool hasSelection;
+
+    private bool isOpen;
+
+    private bool isViewportEventRegistered;
 
     private int scrollPosition;
+
+    private int selectedIndex = -1;
+
+    private T? selectedOption;
+
+    private ViewportEventListener? viewportListener;
 
     /// <summary>
     ///     Constructs a new <see cref="DropDownNode{T}" />.
@@ -82,17 +76,17 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         };
         LabelNode.AttachNode(this);
 
-        // Manually set the placeholder text string, as using textId will overwrite our placeholder on attach.
-        LabelNode.String = IDataManager.Get().GetExcelSheet<Addon>().GetRow(1818).Text;
+        defaultPlaceholder = IDataManager.Get().GetExcelSheet<Addon>().GetRow(1818).Text;
+        LabelNode.String   = defaultPlaceholder;
 
         PopupContainerNode = new SimpleComponentNode
         {
-            Position  = new Vector2(4.0f,   21.0f),
-            Size      = new Vector2(242.0f, 243.0f),
             IsVisible = false
         };
         PopupContainerNode.AttachNode(this);
-        PopupContainerNode.AddEvent(AtkEventType.MouseWheel, OnMouseWheel);
+        PopupContainerNode.IsEnabled = false;
+        PopupContainerNode.AddEvent(AtkEventType.MouseWheel,    OnMouseWheel);
+        PopupContainerNode.AddEvent(AtkEventType.InputReceived, OnInputReceived);
 
         PopupBackgroundNode = new SimpleNineGridNode
         {
@@ -109,7 +103,7 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         PopupScrollbarNode = new ScrollBarNode
         {
             OnValueChanged   = OnScrollUpdate,
-            ScrollSpeed      = 22,
+            ScrollSpeed      = (int)ITEM_HEIGHT,
             HideWhenDisabled = true
         };
         PopupScrollbarNode.AttachNode(PopupContainerNode);
@@ -119,12 +113,6 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
             FitWidth = true
         };
         PopupButtonListNode.AttachNode(PopupContainerNode);
-
-        DropDownFocusCollisionNode = new CollisionNode();
-        DropDownFocusCollisionNode.AttachNode(PopupContainerNode, NodePosition.AfterTarget);
-
-        DropDownFocusCollisionNode.AddEvent(AtkEventType.MouseDown,  () => Toggle());
-        DropDownFocusCollisionNode.AddEvent(AtkEventType.MouseWheel, () => Toggle());
 
         BuildTimelines();
 
@@ -151,10 +139,13 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
                     11
             )
         );
-        CollisionNode.AddEvent(AtkEventType.MouseClick, () => Toggle());
+        CollisionNode.AddEvent(AtkEventType.MouseClick,    () => Toggle());
+        CollisionNode.AddEvent(AtkEventType.InputReceived, OnInputReceived);
 
         Component->SoundEffectId = 1;
         Component->SetEnabledState(true);
+
+        RebuildPopupList();
     }
 
     /// <summary>
@@ -170,17 +161,13 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     /// <summary>
     ///     Not intended for public use, but it's here if you absolutely need it.
     /// </summary>
-    public CollisionNode DropDownFocusCollisionNode { get; }
-
-    /// <summary>
-    ///     Not intended for public use, but it's here if you absolutely need it.
-    /// </summary>
     public TextNode LabelNode { get; }
 
     /// <summary>
     ///     Gets whether this node is collapsed.
     /// </summary>
-    public bool IsCollapsed { get; private set; } = true;
+    public bool IsCollapsed
+        => !isOpen;
 
     /// <summary>
     ///     Gets or sets the maximum number of buttons to generate.
@@ -193,10 +180,10 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         get;
         set
         {
-            field = value;
+            field = Math.Max(1, value);
             RebuildPopupList();
         }
-    } = 5;
+    } = DEFAULT_MAX_LIST_OPTIONS;
 
     /// <summary>
     ///     Gets or sets the action that is invoked when an option is selected.
@@ -228,14 +215,22 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         {
             field = value;
 
-            if (Options.Count is 0)
-                LabelNode.String = PlaceholderString ?? "Empty Options, No Placeholder";
-            else
+            if (hasSelection)
             {
-                if (PlaceholderString is { } placeholder)
-                    LabelNode.String = placeholder;
-            }
+                selectedIndex = selectedOption is { } option ?
+                                    Options.IndexOf(option) :
+                                    -1;
 
+                if (selectedIndex < 0)
+                {
+                    selectedOption = default;
+                    hasSelection   = false;
+                }
+            }
+            else
+                selectedIndex = -1;
+
+            RefreshLabel();
             RebuildPopupList();
         }
     } = [];
@@ -249,16 +244,7 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         set
         {
             field = value;
-
-            if (Options.Count is 0)
-                LabelNode.String = PlaceholderString ?? "Empty Options, No Placeholder";
-            else
-            {
-                if (PlaceholderString is { } placeholder)
-                    LabelNode.String = placeholder;
-                else
-                    UpdateLabel(SelectedOption);
-            }
+            RefreshLabel();
         }
     }
 
@@ -267,23 +253,105 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     /// </summary>
     public T? SelectedOption
     {
-        get;
+        get => selectedOption;
         set
         {
-            field = value;
-            UpdateLabel(value);
+            selectedOption = value;
+            hasSelection   = value is not null;
+
+            if (value is null)
+                selectedIndex = -1;
+            else
+                selectedIndex = Options.IndexOf(value);
+
+            RefreshLabel();
+            RefreshSelection();
         }
     }
 
     /// <summary>
+    ///     Gets or sets the index of the selected option.
+    /// </summary>
+    public int SelectedIndex
+    {
+        get => selectedIndex;
+        set => SelectItem(value);
+    }
+
+    /// <summary>
+    ///     Gets or sets whether the selected option's label is shown in this node's label.
+    /// </summary>
+    public bool ShowPreview
+    {
+        get;
+        set
+        {
+            field = value;
+            RefreshLabel();
+        }
+    } = true;
+
+    /// <summary>
     ///     Function that is called to resolve an entries displayed label.
     /// </summary>
-    public Func<T, ReadOnlySeString>? GetLabelFunction { get; set; }
+    public Func<T, ReadOnlySeString>? GetLabelFunction
+    {
+        get;
+        set
+        {
+            field = value;
+            RefreshLabel();
+        }
+    }
 
     private SimpleComponentNode PopupContainerNode  { get; }
     private SimpleNineGridNode  PopupBackgroundNode { get; }
     private ScrollBarNode       PopupScrollbarNode  { get; }
     private VerticalListNode    PopupButtonListNode { get; }
+
+    /// <summary>
+    ///     Selects the option at the specified index.
+    /// </summary>
+    public void SelectItem
+    (
+        int index
+    )
+    {
+        if (index < 0 || index >= Options.Count)
+        {
+            DeselectItem();
+            return;
+        }
+
+        selectedOption = Options[index];
+        selectedIndex  = index;
+        hasSelection   = true;
+
+        RefreshLabel();
+        RefreshSelection();
+
+        if (isOpen)
+            EnsureSelectionVisible();
+    }
+
+    /// <summary>
+    ///     Clears the currently selected option.
+    /// </summary>
+    public void DeselectItem()
+    {
+        selectedOption = default;
+        selectedIndex  = -1;
+        hasSelection   = false;
+
+        RefreshLabel();
+        RefreshSelection();
+    }
+
+    /// <summary>
+    ///     Gets the index of the currently selected option.
+    /// </summary>
+    public int GetSelectedItemIndex()
+        => selectedIndex;
 
     /// <summary>
     ///     Collapses the button list.
@@ -293,32 +361,31 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         bool playSoundEffect = true
     )
     {
-        if (!IsEnabled) return;
-        if (IsCollapsed) return;
+        if (!isOpen) return;
 
-        IsCollapsed = true;
+        var restoreFocus = IsPopupFocused();
+
+        isOpen = false;
         Timeline?.PlayAnimation(4);
 
-        PopupContainerNode.IsVisible = false;
+        UnregisterViewportEvent();
 
+        PopupContainerNode.IsVisible = false;
+        PopupContainerNode.IsEnabled = false;
         PopupContainerNode.RemoveDrawFlags(DrawFlags.RenderOnTop);
 
-        if (ParentAddon is not null)
-            ClearFocusable(ParentAddon);
+        SetDropDownOwnerNode(false);
+
+        if (restoreFocus)
+            SetFocus();
 
         if (playSoundEffect && Component->SoundEffectId is not -1)
             Component->PlaySoundEffect();
 
-        DropDownFocusCollisionNode.ReattachNode(this);
-        PopupContainerNode.ReattachNode(this);
-
-        DropDownFocusCollisionNode.IsVisible = false;
-        DropDownFocusCollisionNode.Size      = new Vector2(0.0f, 0.0f);
-
-        // Need to reset position after reattaching, so screen position is recalculated correctly
-        PopupContainerNode.Position = Size with { X = 0.0f } + new Vector2(4.0f, -4.0f);
+        PopupContainerNode.Position = GetInitialPopupPosition();
 
         OnCollapsed?.Invoke();
+        OnCollapseToggled?.Invoke(true);
     }
 
     /// <summary>
@@ -330,38 +397,30 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     )
     {
         if (!IsEnabled) return;
-        if (!IsCollapsed) return;
+        if (isOpen) return;
 
-        IsCollapsed = false;
+        isOpen = true;
         Timeline?.PlayAnimation(11);
 
-        scrollPosition = 0;
-        PopulatePopupList();
-        PopupScrollbarNode.ScrollPosition = 0;
+        RebuildPopupList();
+        SetScrollPosition(0);
+        EnsureSelectionVisible();
 
         PopupContainerNode.IsVisible = true;
+        PopupContainerNode.IsEnabled = true;
         PopupContainerNode.AddDrawFlags(DrawFlags.RenderOnTop);
 
-        if (ParentAddon is not null)
-            SetFocusable(ParentAddon);
+        SetDropDownOwnerNode(true);
+        RegisterViewportEvent();
+
+        PositionPopup();
+        FocusSelectedItem();
 
         if (playSoundEffect && Component->SoundEffectId is not -1)
             Component->PlaySoundEffect();
 
-        if (ParentAddon is not null)
-        {
-            PopupContainerNode.Position = ((ScreenPosition - ParentAddon->Position) / ParentAddon->Scale) + Size with { X = 0.0f } + new Vector2(4.0f, -4.0f);
-            MoveListOnScreen();
-
-            DropDownFocusCollisionNode.IsVisible = true;
-            DropDownFocusCollisionNode.Position  = new Vector2(0.0f);
-            DropDownFocusCollisionNode.Size      = ParentAddon->RootSize;
-
-            DropDownFocusCollisionNode.ReattachNode(ParentAddon->RootNode);
-            PopupContainerNode.ReattachNode(ParentAddon->RootNode);
-        }
-
         OnUncollapsed?.Invoke();
+        OnCollapseToggled?.Invoke(false);
     }
 
     /// <summary>
@@ -374,12 +433,10 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     {
         if (!IsEnabled) return;
 
-        if (IsCollapsed)
-            Uncollapse(playSoundEffect);
-        else
+        if (isOpen)
             Collapse(playSoundEffect);
-
-        OnCollapseToggled?.Invoke(IsCollapsed);
+        else
+            Uncollapse(playSoundEffect);
     }
 
     /// <inheritdoc />
@@ -391,14 +448,34 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     {
         if (disposing)
         {
-            if (isFocusSet && !isNativeDestructor)
+            if (!isNativeDestructor)
             {
-                if (ParentAddon is not null)
-                    ClearFocusable(ParentAddon);
+                UnregisterViewportEvent();
+
+                if (AtkStage.Instance() is not null)
+                {
+                    viewportListener?.Dispose();
+                    viewportListener = null;
+                }
+
+                SetDropDownOwnerNode(false);
             }
 
             base.Dispose(disposing, isNativeDestructor);
         }
+    }
+
+    /// <inheritdoc />
+    protected override void OnSetEnabledState
+    (
+        AtkComponentBase* thisPtr,
+        bool              enabled
+    )
+    {
+        base.OnSetEnabledState(thisPtr, enabled);
+
+        if (!enabled && isOpen && !IsDisposed)
+            Collapse(false);
     }
 
     /// <inheritdoc />
@@ -408,105 +485,152 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
 
         BackgroundNode.Size = new Vector2(Width, Height - 1.0f);
         LabelNode.Size      = new Vector2(Width         - 32.0f, Height - 3.0f);
-        ResizePopupList();
+
         RebuildPopupList();
-    }
-
-    private void MoveListOnScreen()
-    {
-        if (ParentAddon is null) return;
-
-        var screenSize = AtkStage.Instance()->ScreenSize;
-
-        var scale          = ParentAddon->Scale;
-        var scaledListSize = PopupContainerNode.Size * scale;
-        if (ScreenPosition.X + scaledListSize.X > screenSize.Width)
-            PopupContainerNode.X += (screenSize.Width - PopupContainerNode.ScreenPosition.X - scaledListSize.X - 4f) / scale;
-        else if (ScreenPosition.X < 0)
-            PopupContainerNode.X -= PopupContainerNode.ScreenPosition.X / scale;
-
-        if (PopupContainerNode.ScreenPosition.Y + scaledListSize.Y > screenSize.Height)
-            PopupContainerNode.Y += (screenSize.Height - PopupContainerNode.ScreenPosition.Y - scaledListSize.Y) / scale;
     }
 
     private void RebuildPopupList()
     {
-        var popupHeight = GetPopupListHeight();
+        var buttonCount = Math.Min(MaxListOptions, Options.Count);
 
-        if (Math.Abs(PopupContainerNode.Height - popupHeight) > 0.1f)
+        if (popupButtons.Count != buttonCount)
         {
-            var buttonCount = Math.Min(MaxListOptions, Options.Count);
-
             PopupButtonListNode.Clear();
+            popupButtons.Clear();
 
-            foreach (var _ in Enumerable.Range(0, buttonCount))
+            for (var i = 0; i < buttonCount; i++)
             {
                 var buttonNode = new ListButtonNode
                 {
-                    Height = 22.0f,
-                    String = "DEBUG: Unset"
+                    Height = ITEM_HEIGHT
                 };
+                buttonNode.AddEvent(AtkEventType.MouseWheel,    OnMouseWheel);
+                buttonNode.AddEvent(AtkEventType.InputReceived, OnInputReceived);
 
                 PopupButtonListNode.AddNode(buttonNode);
+                popupButtons.Add(buttonNode);
             }
-
-            ResizePopupList();
         }
 
+        scrollPosition = Math.Clamp(scrollPosition, 0, GetMaxScrollPosition());
+
+        ResizePopupList();
         PopulatePopupList();
+
+        if (isOpen)
+            PositionPopup();
+        else
+            PopupContainerNode.Position = GetInitialPopupPosition();
     }
 
     private void ResizePopupList()
     {
-        PopupContainerNode.Size     = new Vector2(Width - 8.0f, GetPopupListHeight());
-        PopupContainerNode.Position = new Vector2(4.0f,         Height - 3.0f);
+        var popupWidth  = Math.Max(Width - (POPUP_HORIZONTAL_INSET * 2.0f), 0.0f);
+        var popupHeight = (popupButtons.Count * ITEM_HEIGHT) + POPUP_VERTICAL_PADDING;
 
-        PopupBackgroundNode.Size    = PopupContainerNode.Size;
-        PopupContainerNode.Position = new Vector2(0.0f, 0.0f);
+        PopupContainerNode.Size  = new Vector2(popupWidth, popupHeight);
+        PopupBackgroundNode.Size = new Vector2(popupWidth, popupHeight);
 
-        PopupScrollbarNode.Size     = new Vector2(8.0f, PopupContainerNode.Height - 18.0f);
-        PopupScrollbarNode.Position = new Vector2(PopupContainerNode.Width        - 14.0f, 4.5f);
-        PopupScrollbarNode.UpdateScrollParams(PopupScrollbarNode.Height, Options.Count * 22.0f);
+        PopupScrollbarNode.Size     = new Vector2(SCROLLBAR_WIDTH,                     Math.Max(popupHeight - POPUP_VERTICAL_PADDING, 0.0f));
+        PopupScrollbarNode.Position = new Vector2(popupWidth - SCROLLBAR_RIGHT_OFFSET, SCROLLBAR_TOP_OFFSET);
+        PopupScrollbarNode.UpdateScrollParams(PopupScrollbarNode.Height, Options.Count * ITEM_HEIGHT);
 
-        PopupButtonListNode.Size     = new Vector2(PopupBackgroundNode.Width - 24.0f, PopupBackgroundNode.Height - 18.0f);
-        PopupButtonListNode.Position = new Vector2(8.0f,                              6.0f);
+        PopupButtonListNode.Size = new Vector2(Math.Max(popupWidth - LIST_CONTENT_HORIZONTAL_PADDING, 0.0f), Math.Max(popupHeight - POPUP_VERTICAL_PADDING, 0.0f));
+        PopupButtonListNode.Position = new Vector2(LIST_CONTENT_OFFSET_X, LIST_CONTENT_OFFSET_Y);
         PopupButtonListNode.RecalculateLayout();
     }
 
     private void PopulatePopupList()
     {
-        var populateIndex = 0;
-        var buttonNodes   = PopupButtonListNode.GetNodes<ListButtonNode>().ToList();
-
-        foreach (var entry in Options.Skip(scrollPosition))
+        for (var i = 0; i < popupButtons.Count; i++)
         {
-            if (populateIndex >= buttonNodes.Count) break;
+            var optionIndex = scrollPosition + i;
+            var buttonNode  = popupButtons[i];
 
-            var buttonNode = buttonNodes[populateIndex++];
+            if (optionIndex >= Options.Count)
+            {
+                buttonNode.IsVisible = false;
+                continue;
+            }
 
-            buttonNode.String   = GetLabelFunction?.Invoke(entry) ?? "DropDownNode.GetLabelFunction was not set.";
-            buttonNode.Selected = SelectedOption?.Equals(entry)   ?? false;
-            buttonNode.OnClick  = () => OnPopupButtonClicked(entry);
+            buttonNode.IsVisible = true;
+
+            var option = Options[optionIndex];
+            buttonNode.String  = GetLabelFunction?.Invoke(option) ?? UNSET_LABEL;
+            buttonNode.OnClick = () => OnPopupButtonClicked(optionIndex);
         }
+
+        RefreshSelection();
+    }
+
+    private void RefreshSelection()
+    {
+        for (var i = 0; i < popupButtons.Count; i++)
+            popupButtons[i].Selected = scrollPosition + i == selectedIndex;
+    }
+
+    private void RefreshLabel()
+    {
+        if (!hasSelection)
+        {
+            LabelNode.String = PlaceholderString ?? defaultPlaceholder;
+            return;
+        }
+
+        if (!ShowPreview) return;
+
+        if (selectedOption is { } option)
+            LabelNode.String = GetLabelFunction?.Invoke(option) ?? UNSET_LABEL;
     }
 
     private void OnPopupButtonClicked
     (
-        T entry
+        int index
     )
     {
-        SelectedOption = entry;
-        OnOptionSelected?.Invoke(SelectedOption);
-        UpdateLabel(entry);
+        if (index < 0 || index >= Options.Count) return;
+
+        SelectItem(index);
+        OnOptionSelected?.Invoke(Options[index]);
         Collapse();
     }
+
+    private void SetScrollPosition
+    (
+        int itemOffset
+    )
+    {
+        scrollPosition = Math.Clamp(itemOffset, 0, GetMaxScrollPosition());
+
+        var targetPosition = scrollPosition * ITEM_HEIGHT;
+        if (Math.Abs(PopupScrollbarNode.ScrollPosition - targetPosition) > 0.1f)
+            PopupScrollbarNode.ScrollPosition = targetPosition;
+
+        PopulatePopupList();
+    }
+
+    private void EnsureSelectionVisible()
+    {
+        if (selectedIndex < 0 || popupButtons.Count is 0) return;
+
+        if (selectedIndex < scrollPosition)
+            SetScrollPosition(selectedIndex);
+        else if (selectedIndex >= scrollPosition + popupButtons.Count)
+            SetScrollPosition(selectedIndex - popupButtons.Count + 1);
+    }
+
+    private int GetMaxScrollPosition()
+        => Math.Max(0, Options.Count - popupButtons.Count);
 
     private void OnScrollUpdate
     (
         int newPosition
     )
     {
-        scrollPosition = (int)(newPosition / 22.0f);
+        var itemOffset = Math.Clamp((int)MathF.Round(newPosition / ITEM_HEIGHT), 0, GetMaxScrollPosition());
+        if (itemOffset == scrollPosition) return;
+
+        scrollPosition = itemOffset;
         PopulatePopupList();
     }
 
@@ -519,72 +643,196 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         AtkEventData*     atkEventData
     )
     {
-        scrollPosition += atkEventData->IsScrollUp ?
-                              -1 :
-                              1;
-        scrollPosition = Math.Clamp(scrollPosition, 0, Math.Max(0, Options.Count - PopupButtonListNode.Nodes.Count));
+        if (!isOpen) return;
+        if (Options.Count <= popupButtons.Count) return;
+        if (atkEventData is null) return;
 
-        PopupScrollbarNode.ScrollPosition = (int)(scrollPosition * 22.0f);
-        PopulatePopupList();
+        SetScrollPosition
+        (
+            scrollPosition +
+            (atkEventData->IsScrollUp ?
+                 -1 :
+                 1)
+        );
 
         atkEvent->SetEventIsHandled();
     }
 
-    private void UpdateLabel
+    private void OnInputReceived
     (
-        T? entry
+        AtkEventListener* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
     )
     {
-        if (entry is null)
-            LabelNode.String = PlaceholderString ?? IDataManager.Get().GetExcelSheet<Addon>().GetRow(1818).Text;
+        if (!isOpen) return;
+        if (atkEventData is null) return;
+
+        var inputId = atkEventData->InputData.InputId;
+        if (inputId is not (2 or 3)) return;
+
+        Collapse();
+
+        atkEvent->SetEventIsHandled();
+    }
+
+    private void OnViewportMouseDown
+    (
+        AtkEventListener* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
+    )
+    {
+        if (!isOpen) return;
+        if (atkEventData is null) return;
+
+        var mouseData = atkEventData->MouseData;
+
+        if (mouseData.ButtonId is not 1)
+        {
+            Collapse(false);
+            return;
+        }
+
+        if (PopupContainerNode.CollisionNode.CheckCollision(mouseData.PosX, mouseData.PosY, false)) return;
+        if (CollisionNode.CheckCollision(mouseData.PosX, mouseData.PosY, false)) return;
+
+        Collapse(false);
+    }
+
+    private void PositionPopup()
+    {
+        var initialPosition = GetInitialPopupPosition();
+
+        PopupContainerNode.Position = initialPosition;
+
+        if (ParentAddon is null) return;
+
+        var stage = AtkStage.Instance();
+        if (stage is null) return;
+
+        var screenWidth  = stage->ScreenSize.Width;
+        var screenHeight = stage->ScreenSize.Height;
+
+        if (stage->IsScreenSizeScaled)
+        {
+            screenWidth  = (int)(screenWidth  * stage->ScreenSizeScale);
+            screenHeight = (int)(screenHeight * stage->ScreenSizeScale);
+        }
+
+        if (screenWidth is 0 || screenHeight is 0) return;
+
+        var transform = CollisionNode.ResNode->Transform;
+
+        var scaleX = MathF.Sqrt((transform.M11 * transform.M11) + (transform.M12 * transform.M12));
+        var scaleY = MathF.Sqrt((transform.M21 * transform.M21) + (transform.M22 * transform.M22));
+
+        if (scaleX <= 0.0f || scaleY <= 0.0f) return;
+
+        var anchor = CollisionNode.ScreenPosition;
+
+        var screenX = anchor.X + (initialPosition.X * transform.M11) + (initialPosition.Y * transform.M21);
+        var screenY = anchor.Y + (initialPosition.X * transform.M12) + (initialPosition.Y * transform.M22);
+
+        var scaledWidth  = PopupContainerNode.Width  * scaleX;
+        var scaledHeight = PopupContainerNode.Height * scaleY;
+
+        if (scaledWidth <= 0.0f || scaledHeight <= 0.0f) return;
+
+        var inverseScale = PopupContainerNode.Width / scaledWidth;
+
+        var x = initialPosition.X;
+        var y = initialPosition.Y;
+
+        if (screenX + scaledWidth > screenWidth)
+            x += (screenWidth - screenX - scaledWidth) * inverseScale;
+        else if (screenX < 0.0f)
+            x -= screenX;
+
+        if (screenY + scaledHeight > screenHeight)
+            y += (screenHeight - screenY - scaledHeight) * inverseScale;
+        else if (screenY < 0.0f)
+            y -= screenY;
+
+        PopupContainerNode.Position = new Vector2((int)x, (int)y);
+    }
+
+    private Vector2 GetInitialPopupPosition()
+        => new(POPUP_HORIZONTAL_INSET, Math.Max(Height - POPUP_VERTICAL_OFFSET, 0.0f));
+
+    private void RegisterViewportEvent()
+    {
+        if (isViewportEventRegistered) return;
+
+        var stage = AtkStage.Instance();
+        if (stage is null) return;
+
+        viewportListener ??= new ViewportEventListener(OnViewportMouseDown);
+
+        stage->ViewportEventManager.RegisterEvent(AtkEventType.MouseDown, 2, null, null, viewportListener, false);
+
+        isViewportEventRegistered = true;
+    }
+
+    private void UnregisterViewportEvent()
+    {
+        if (!isViewportEventRegistered) return;
+
+        var stage = AtkStage.Instance();
+        if (stage is not null && viewportListener is not null)
+            stage->ViewportEventManager.UnregisterEvent(AtkEventType.MouseDown, 2, viewportListener, false);
+
+        isViewportEventRegistered = false;
+    }
+
+    private void FocusSelectedItem()
+    {
+        if (!isOpen) return;
+
+        var visibleIndex = selectedIndex - scrollPosition;
+        if (visibleIndex >= 0 && visibleIndex < popupButtons.Count)
+            popupButtons[visibleIndex].SetFocus();
         else
-            LabelNode.String = GetLabelFunction?.Invoke(entry) ?? "DropDownNode.GetLabelFunction was not set.";
+            PopupContainerNode.SetFocus();
     }
 
-    private float GetPopupListHeight()
+    private bool IsPopupFocused()
     {
-        var buttonCount = Math.Min(MaxListOptions, Options.Count);
-        return (buttonCount * 22.0f) + 18.0f;
+        var stage = AtkStage.Instance();
+        if (stage is null) return false;
+
+        var inputManager = stage->AtkInputManager;
+        if (inputManager is null) return false;
+
+        var focusedNode = inputManager->FocusedNode;
+
+        while (focusedNode is not null)
+        {
+            if (focusedNode == PopupContainerNode.ResNode) return true;
+
+            focusedNode = focusedNode->ParentNode;
+        }
+
+        return false;
     }
 
-    /// <summary>
-    ///     Sets this node as being interactable outside the bounds of the target window.
-    /// </summary>
-    /// <remarks>
-    ///     If the addon already has two additional focusable nodes set, this will do nothing.
-    /// </remarks>
-    public void SetFocusable
+    private void SetDropDownOwnerNode
     (
-        AtkUnitBase* addon
+        bool isOwner
     )
     {
-        foreach (ref var focusableNode in addon->AdditionalFocusableNodes)
-        {
-            if (focusableNode.Value is null)
-            {
-                focusableNode = PopupContainerNode.ResNode;
-                isFocusSet    = true;
-            }
-        }
-    }
+        if (ParentAddon is null) return;
 
-    /// <summary>
-    ///     Clears this node as being interactable outside the bounds of the target window.
-    /// </summary>
-    /// <param name="addon"></param>
-    public void ClearFocusable
-    (
-        AtkUnitBase* addon
-    )
-    {
-        foreach (ref var focusableNode in addon->AdditionalFocusableNodes)
-        {
-            if (focusableNode.Value == PopupContainerNode.ResNode)
-            {
-                focusableNode = null;
-                isFocusSet    = false;
-            }
-        }
+        var componentNode = (AtkComponentNode*)ResNode;
+
+        if (isOwner)
+            ParentAddon->CurrentDropDownOwnerNode = componentNode;
+        else if (ParentAddon->CurrentDropDownOwnerNode == componentNode)
+            ParentAddon->CurrentDropDownOwnerNode = null;
     }
 
     private void BuildTimelines()
@@ -754,4 +1002,21 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
                 .Build()
         );
     }
+
+    #region 常量
+
+    private const int    DEFAULT_MAX_LIST_OPTIONS        = 5;
+    private const float  ITEM_HEIGHT                     = 22.0f;
+    private const float  LIST_CONTENT_HORIZONTAL_PADDING = 24.0f;
+    private const float  LIST_CONTENT_OFFSET_X           = 8.0f;
+    private const float  LIST_CONTENT_OFFSET_Y           = 6.0f;
+    private const float  POPUP_HORIZONTAL_INSET          = 4.0f;
+    private const float  POPUP_VERTICAL_OFFSET           = 3.0f;
+    private const float  POPUP_VERTICAL_PADDING          = 18.0f;
+    private const float  SCROLLBAR_RIGHT_OFFSET          = 14.0f;
+    private const float  SCROLLBAR_TOP_OFFSET            = 4.5f;
+    private const float  SCROLLBAR_WIDTH                 = 8.0f;
+    private const string UNSET_LABEL                     = "DropDownNode.GetLabelFunction was not set.";
+
+    #endregion
 }
