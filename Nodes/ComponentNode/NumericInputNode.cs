@@ -1,5 +1,6 @@
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes.ComponentNode;
 using KamiToolKit.Classes;
@@ -13,8 +14,12 @@ namespace KamiToolKit.Nodes;
 /// </summary>
 public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, AtkUldComponentDataNumericInput>
 {
-    private ByteColor previousFocusColor;
-    private ByteColor previousDefaultColor;
+    private AllowedEntities previousInputSanitizationFlags;
+    private bool            isInputSanitizationFlagsOverridden;
+    private string?         pendingInputText;
+    private int             pendingPreviousValue;
+    private ByteColor       previousFocusColor;
+    private ByteColor       previousDefaultColor;
 
     /// <summary>
     ///     Constructs a new <see cref="NumericInputNode" />.
@@ -225,8 +230,165 @@ public unsafe class NumericInputNode : ComponentNode<AtkComponentNumericInput, A
         Data->FocusColor                    = focusColor;
     }
 
-    private void ValueUpdateHandler() =>
+    /// <inheritdoc />
+    protected override void OnReceiveEvent
+    (
+        AtkComponentBase* thisPtr,
+        AtkEventType      eventType,
+        int               eventParam,
+        AtkEvent*         atkEvent,
+        AtkEventData*     atkEventData
+    )
+    {
+        switch (eventType)
+        {
+            case AtkEventType.FocusStart:
+            {
+                var textInput = AtkStage.Instance()->AtkInputManager->TextInput;
+
+                if (!isInputSanitizationFlagsOverridden)
+                {
+                    previousInputSanitizationFlags     = textInput->InputSanitizationFlags;
+                    isInputSanitizationFlagsOverridden = true;
+                }
+
+                base.OnReceiveEvent(thisPtr, eventType, eventParam, atkEvent, atkEventData);
+
+                textInput->InputSanitizationFlags |= AllowedEntities.Numbers | AllowedEntities.SpecialCharacters;
+
+                return;
+            }
+            case AtkEventType.FocusStop:
+            {
+                pendingInputText     = ValueTextNode.Node->NodeText.ToString();
+                pendingPreviousValue = Component->Value;
+
+                base.OnReceiveEvent(thisPtr, eventType, eventParam, atkEvent, atkEventData);
+
+                if (isInputSanitizationFlagsOverridden)
+                {
+                    AtkStage.Instance()->AtkInputManager->TextInput->InputSanitizationFlags = previousInputSanitizationFlags;
+                    isInputSanitizationFlagsOverridden                                      = false;
+                }
+
+                ApplyCommittedValue();
+
+                return;
+            }
+            case AtkEventType.InputReceived:
+                pendingInputText     = ValueTextNode.Node->NodeText.ToString();
+                pendingPreviousValue = Component->Value;
+                break;
+        }
+
+        base.OnReceiveEvent(thisPtr, eventType, eventParam, atkEvent, atkEventData);
+
+        ApplyCommittedValue();
+    }
+
+    private void ApplyCommittedValue()
+    {
+        if (pendingInputText is not { } inputText)
+            return;
+
+        pendingInputText = null;
+
+        if (GetCommittedValue(inputText) is { } value && value != Component->Value)
+            Component->InnerSetValue(value, true, false);
+    }
+
+    private void ValueUpdateHandler()
+    {
+        if (pendingInputText is { } inputText)
+        {
+            pendingInputText = null;
+
+            if (GetCommittedValue(inputText) is { } value)
+            {
+                if (value == pendingPreviousValue)
+                {
+                    Component->Value = value;
+
+                    return;
+                }
+
+                if (value != Component->Value)
+                {
+                    Component->InnerSetValue(value, true, false);
+
+                    return;
+                }
+            }
+        }
+
         OnValueUpdate?.Invoke(Value);
+    }
+
+    private int? GetCommittedValue
+    (
+        string text
+    )
+    {
+        if (ClampValue(ParseDigitValue(text)) != Component->Value)
+            return null;
+
+        return ClampValue(ParseSignedValue(text));
+    }
+
+    private int ClampValue
+    (
+        int value
+    )
+    {
+        if (value < Min)
+            value = Min;
+
+        return value > Max ?
+                   Max :
+                   value;
+    }
+
+    private static int ParseDigitValue
+    (
+        string text
+    )
+    {
+        var value = 0;
+
+        foreach (var character in text)
+            if (character is >= '0' and <= '9')
+                value = unchecked((value * 10) + (character - '0'));
+
+        return value;
+    }
+
+    private static int ParseSignedValue
+    (
+        string text
+    )
+    {
+        var value    = 0L;
+        var negative = false;
+
+        foreach (var character in text)
+        {
+            switch (character)
+            {
+                case '-':
+                    negative = true;
+
+                    break;
+                case >= '0' and <= '9':
+                    value = Math.Min((value * 10) + (character - '0'), int.MaxValue);
+
+                    break;
+            }
+        }
+
+        return (int)(negative ?
+                         -value :
+                         value);
+    }
 
     private void BuildTimelines()
     {
