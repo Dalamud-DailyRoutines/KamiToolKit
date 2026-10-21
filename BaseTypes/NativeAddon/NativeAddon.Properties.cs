@@ -28,13 +28,12 @@ public unsafe partial class NativeAddon
         set
         {
             field = value;
-            WindowNode?.SetTitle(value.ToString(), Subtitle?.ToString() ?? KamiToolKitLibrary.DefaultWindowSubtitle);
+            WindowNode?.SetTitle(value.ToString(), Subtitle?.ToString() ?? string.Empty);
         }
     }
 
     /// <summary>
-    ///     Gets or sets the addons subtitle string, defaults to <see cref="KamiToolKitLibrary.DefaultWindowSubtitle" /> set
-    ///     via <see cref="KamiToolKitLibrary.InitializeAsync" />.
+    ///     Gets or sets the addons subtitle string />.
     /// </summary>
     /// <remarks>
     ///     It is recommended to only change this if your windows main title is already representative of your plugins name.
@@ -45,7 +44,7 @@ public unsafe partial class NativeAddon
         set
         {
             field = value;
-            WindowNode?.SetTitle(Title.ToString(), value?.ToString() ?? KamiToolKitLibrary.DefaultWindowSubtitle);
+            WindowNode?.SetTitle(Title.ToString(), value?.ToString() ?? string.Empty);
         }
     }
 

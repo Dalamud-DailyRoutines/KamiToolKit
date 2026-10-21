@@ -22,9 +22,7 @@ public static class KamiToolKitLibrary
     private const string NodeDataShareKey = "TypeMappedCustomNodes";
 
     internal static ConcurrentDictionary<nint, Type>? AllocatedNodes;
-
-    internal static string? DefaultWindowSubtitle;
-
+    
     internal static Experimental Experimental = new();
 
     internal static ResourceManager? ResourceManager;
@@ -49,11 +47,9 @@ public static class KamiToolKitLibrary
     /// </summary>
     public static async Task InitializeAsync
     (
-        IDalamudPluginInterface pluginInterface,
-        string?                 defaultWindowSubtitle = null
+        IDalamudPluginInterface pluginInterface
     )
     {
-        DefaultWindowSubtitle = defaultWindowSubtitle;
         PluginInterface       = pluginInterface;
 
         // Inject non-Experimental Properties
@@ -68,7 +64,7 @@ public static class KamiToolKitLibrary
         // Force enable Verbose so that users are able to get advanced logging information on request.
         IPluginLog.Get().MinimumLogLevel = LogEventLevel.Verbose;
 
-        IPluginLog.Get().Info($"KamiToolKit initialized for {PluginInterface.InternalName} Default SubTitle: '{defaultWindowSubtitle}'");
+        IPluginLog.Get().Info($"KamiToolKit initialized for {PluginInterface.InternalName}");
 
         AddonConfigFile = await LoadAddonConfigFileAsync();
 
