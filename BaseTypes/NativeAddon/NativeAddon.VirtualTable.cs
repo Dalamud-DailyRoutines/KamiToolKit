@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Timelines;
+using ExpandedAtkUnitBase = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkUnitBase;
 
 namespace KamiToolKit.BaseTypes;
 
@@ -18,17 +19,18 @@ public unsafe partial class NativeAddon
     private AtkUnitBase.Delegates.Initialize         initializeFunction         = null!;
     private AtkUnitBase.Delegates.ReceiveGlobalEvent receiveGlobalEventFunction = null!;
 
-    private AtkUnitBase.AtkUnitBaseVirtualTable*        modifiedVirtualTable;
-    private AtkUnitBase.Delegates.OnRefresh             onRefreshFunction           = null!;
-    private AtkUnitBase.Delegates.OnRequestedUpdate     onRequestedUpdateFunction   = null!;
-    private AtkUnitBase.Delegates.OnScreenSizeChange    onScreenSizeChangedFunction = null!;
-    private AtkUnitBase.Delegates.OnSetup               onSetupFunction             = null!;
-    private AtkUnitBase.AtkUnitBaseVirtualTable*        originalVirtualTable;
-    private AtkUnitBase.Delegates.Show                  showFunction                  = null!;
-    private AtkUnitBase.Delegates.Hide2                 softHideFunction              = null!;
-    private AtkUnitBase.Delegates.Update                updateFunction                = null!;
-    private AtkUnitBase.Delegates.ShouldIgnoreInputs    shouldIgnoreInputsFunction    = null!;
-    private AtkUnitBase.Delegates.HandleBackButtonInput handleBackButtonInputFunction = null!;
+    private AtkUnitBase.AtkUnitBaseVirtualTable*          modifiedVirtualTable;
+    private AtkUnitBase.Delegates.OnRefresh               onRefreshFunction           = null!;
+    private AtkUnitBase.Delegates.OnRequestedUpdate       onRequestedUpdateFunction   = null!;
+    private AtkUnitBase.Delegates.OnScreenSizeChange      onScreenSizeChangedFunction = null!;
+    private AtkUnitBase.Delegates.OnSetup                 onSetupFunction             = null!;
+    private ExpandedAtkUnitBase.Delegates.OnSetupComplete onSetupCompleteFunction     = null!;
+    private AtkUnitBase.AtkUnitBaseVirtualTable*          originalVirtualTable;
+    private AtkUnitBase.Delegates.Show                    showFunction                  = null!;
+    private AtkUnitBase.Delegates.Hide2                   softHideFunction              = null!;
+    private AtkUnitBase.Delegates.Update                  updateFunction                = null!;
+    private AtkUnitBase.Delegates.ShouldIgnoreInputs      shouldIgnoreInputsFunction    = null!;
+    private AtkUnitBase.Delegates.HandleBackButtonInput   handleBackButtonInputFunction = null!;
 
     private static void ClearTimelineManager
     (
@@ -49,6 +51,7 @@ public unsafe partial class NativeAddon
 
         initializeFunction          = Initialize;
         onSetupFunction             = Setup;
+        onSetupCompleteFunction     = SetupComplete;
         showFunction                = Show;
         updateFunction              = Update;
         drawFunction                = Draw;
@@ -63,13 +66,15 @@ public unsafe partial class NativeAddon
 
         modifiedVirtualTable->Initialize = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(initializeFunction);
         modifiedVirtualTable->OnSetup    = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, void>)Marshal.GetFunctionPointerForDelegate(onSetupFunction);
-        modifiedVirtualTable->Show       = (delegate* unmanaged<AtkUnitBase*, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(showFunction);
-        modifiedVirtualTable->Update     = (delegate* unmanaged<AtkUnitBase*, float, void>)Marshal.GetFunctionPointerForDelegate(updateFunction);
-        modifiedVirtualTable->Draw       = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(drawFunction);
-        modifiedVirtualTable->Hide       = (delegate* unmanaged<AtkUnitBase*, bool, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(hideFunction);
-        modifiedVirtualTable->Hide2      = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(softHideFunction);
-        modifiedVirtualTable->Finalizer  = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(finalizerFunction);
-        modifiedVirtualTable->Dtor       = (delegate* unmanaged<AtkUnitBase*, byte, AtkEventListener*>)Marshal.GetFunctionPointerForDelegate(destructorFunction);
+        ((ExpandedAtkUnitBase.AtkUnitBaseVirtualTable*)modifiedVirtualTable)->OnSetupComplete =
+            (delegate* unmanaged<ExpandedAtkUnitBase*, uint, AtkValue*, void>)Marshal.GetFunctionPointerForDelegate(onSetupCompleteFunction);
+        modifiedVirtualTable->Show      = (delegate* unmanaged<AtkUnitBase*, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(showFunction);
+        modifiedVirtualTable->Update    = (delegate* unmanaged<AtkUnitBase*, float, void>)Marshal.GetFunctionPointerForDelegate(updateFunction);
+        modifiedVirtualTable->Draw      = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(drawFunction);
+        modifiedVirtualTable->Hide      = (delegate* unmanaged<AtkUnitBase*, bool, bool, uint, void>)Marshal.GetFunctionPointerForDelegate(hideFunction);
+        modifiedVirtualTable->Hide2     = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(softHideFunction);
+        modifiedVirtualTable->Finalizer = (delegate* unmanaged<AtkUnitBase*, void>)Marshal.GetFunctionPointerForDelegate(finalizerFunction);
+        modifiedVirtualTable->Dtor      = (delegate* unmanaged<AtkUnitBase*, byte, AtkEventListener*>)Marshal.GetFunctionPointerForDelegate(destructorFunction);
         modifiedVirtualTable->OnRequestedUpdate =
             (delegate* unmanaged<AtkUnitBase*, NumberArrayData**, StringArrayData**, void>)Marshal.GetFunctionPointerForDelegate(onRequestedUpdateFunction);
         modifiedVirtualTable->OnRefresh = (delegate* unmanaged<AtkUnitBase*, uint, AtkValue*, bool>)Marshal.GetFunctionPointerForDelegate(onRefreshFunction);
@@ -351,6 +356,36 @@ public unsafe partial class NativeAddon
         addon->UldManager.SetupTextRecursive();
 
         isSetup = true;
+    }
+
+    /// <summary>
+    ///     在原生界面完成初始化定位后、开始显示过渡前执行一次。
+    /// </summary>
+    /// <param name="addon">已完成初始化的原生界面。</param>
+    protected virtual void OnSetupComplete
+    (
+        AtkUnitBase* addon
+    )
+    {
+    }
+
+    private void SetupComplete
+    (
+        ExpandedAtkUnitBase* addon,
+        uint                 valueCount,
+        AtkValue*            values
+    )
+    {
+        ((ExpandedAtkUnitBase.AtkUnitBaseVirtualTable*)originalVirtualTable)->OnSetupComplete(addon, valueCount, values);
+
+        try
+        {
+            OnSetupComplete((AtkUnitBase*)addon);
+        }
+        catch (Exception e)
+        {
+            IPluginLog.Get().Exception(e);
+        }
     }
 
     private void Show
