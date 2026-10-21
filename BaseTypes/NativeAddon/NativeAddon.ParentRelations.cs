@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Internal.Classes;
+using AtkUnitManager = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkUnitManager;
 
 namespace KamiToolKit.BaseTypes;
 
@@ -24,6 +23,6 @@ public unsafe partial class NativeAddon
         if (BlockedParentAddonId is 0) return;
 
         InternalAddon->BlockedParentId = (ushort)BlockedParentAddonId;
-        AtkUnitManagerFunctions.SetAddonBlocking((AtkUnitManager*)RaptureAtkUnitManager.Instance(), (ushort)BlockedParentAddonId, true);
+        ((AtkUnitManager*)RaptureAtkUnitManager.Instance())->SetAddonBlocking((ushort)BlockedParentAddonId, true);
     }
 }

@@ -6,6 +6,8 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Internal.Classes;
+using AtkAddonControl = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkAddonControl;
+using ExpansionAtkUnitBase = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkUnitBase;
 
 namespace KamiToolKit.Controllers;
 
@@ -18,9 +20,8 @@ namespace KamiToolKit.Controllers;
 /// </remarks>
 public class NativeAddonController : IDisposable, IAsyncDisposable
 {
-    private readonly NativeAddonControlFunctions functions;
-    private readonly List<NativeChildAddon>      children          = [];
-    private readonly Queue<Action>               pendingOperations = [];
+    private readonly List<NativeChildAddon> children          = [];
+    private readonly Queue<Action>          pendingOperations = [];
     private readonly AddonEvent[] parentEvents =
     [
         AddonEvent.PostSetup,
@@ -83,7 +84,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull((object)parent, nameof(parent));
 
-        var controller = KamiToolKitLibrary.Experimental.AddonControllers.FirstOrDefault
+        var controller = KamiToolKitLibrary.AddonControllers.FirstOrDefault
             (existing => existing.Parent == parent);
 
         return controller ??
@@ -111,11 +112,10 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
         Parent = parent;
 
-        var controllers = KamiToolKitLibrary.Experimental.AddonControllers;
+        var controllers = KamiToolKitLibrary.AddonControllers;
         if (controllers.Any(controller => controller.Parent == parent))
             throw new InvalidOperationException("This parent addon already has a NativeAddonController.");
 
-        functions = KamiToolKitLibrary.Experimental.AddonControlFunctions;
         foreach (var addonEvent in parentEvents)
             IAddonLifecycle.Get().RegisterListener(addonEvent, ParentAddonName, OnParentEvent);
 
@@ -136,7 +136,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         EnsureAccess();
         isDisposed = true;
         IAddonLifecycle.Get().UnregisterListener(OnParentEvent);
-        KamiToolKitLibrary.Experimental.AddonControllers.Remove(this);
+        KamiToolKitLibrary.AddonControllers.Remove(this);
 
         if (dispatchDepth != 0)
         {
@@ -181,7 +181,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("The parent addon is not allocated.");
 
         var selected = uint.MaxValue;
-        Dispatch(() => selected = functions.SelectTab(NativeControl, tabIndex));
+        Dispatch(() => selected = NativeControl->SelectTab(tabIndex));
         return selected;
     }
 
@@ -200,16 +200,11 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("The parent addon is not allocated.");
 
         Dispatch
-        (() => functions.ActivateGroup
+        (() => NativeControl->ActivateGroup
          (
-             NativeControl,
              groupID,
-             deactivateOtherGroups ?
-                 (byte)1 :
-                 (byte)0,
-             focus ?
-                 (byte)1 :
-                 (byte)0
+             deactivateOtherGroups,
+             focus
          )
         );
     }
@@ -261,7 +256,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
     )
     {
         EnsureAccess();
-        return NativeControl is not null && NativeControl->EventManager.UnregisterEvent(eventType, eventParam, listener, false);
+        return NativeControl is not null && NativeControl->UnregisterEvent(eventType, eventParam, listener);
     }
 
     /// <summary>
@@ -273,16 +268,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
     )
     {
         EnsureAccess();
-        if (NativeControl is null)
-            return false;
-
-        for (var currentEvent = NativeControl->EventManager.Event; currentEvent is not null; currentEvent = currentEvent->NextEvent)
-        {
-            if (currentEvent->State.EventType == eventType)
-                return true;
-        }
-
-        return false;
+        return NativeControl is not null && NativeControl->IsEventRegistered(eventType);
     }
 
     /// <summary>
@@ -301,7 +287,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         {
             var handled      = false;
             var eventAddress = (nint)eventPointer;
-            Dispatch(() => handled = functions.DispatchEvent(NativeControl, (AtkEventDispatcher.Event*)eventAddress) != 0);
+            Dispatch(() => handled = NativeControl->DispatchEvent((AtkEventDispatcher.Event*)eventAddress));
             return handled;
         }
     }
@@ -368,23 +354,16 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
                     addon->DisableShowHideSoundEffects = true;
                     addon->Open(ParentAddon->DepthLayer);
 
-                    child.Info = functions.RegisterChild
+                    child.Info = NativeControl->RegisterChildAddon
                     (
-                        NativeControl,
                         addon->Id,
-                        child.InitiallyActive ?
-                            (byte)1 :
-                            (byte)0,
-                        child.AllowDetach ?
-                            (byte)1 :
-                            (byte)0,
+                        child.InitiallyActive,
+                        child.AllowDetach,
                         child.TabIndex,
                         child.GroupID,
                         0,
-                        child.IsAttached ?
-                            (byte)1 :
-                            (byte)0,
-                        0,
+                        child.IsAttached,
+                        false,
                         0
                     );
 
@@ -399,7 +378,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
                     if (!child.IsAttached)
                     {
-                        functions.SetScale(addon, ParentAddon->Scale / AtkUnitBase.GetGlobalUIScale());
+                        ((ExpansionAtkUnitBase*)addon)->SetScaleWithoutConfiguration(ParentAddon->Scale / AtkUnitBase.GetGlobalUIScale());
                         addon->SetPosition(checked((short)child.DetachedPosition.X), checked((short)child.DetachedPosition.Y));
                     }
 
@@ -440,7 +419,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         child.Info      = null;
         child.IsClosing = true;
         CancelDrag(info);
-        Dispatch(() => functions.RemoveChild(NativeControl, addon));
+        Dispatch(() => NativeControl->RemoveChildAddon((ExpansionAtkUnitBase*)addon));
     }
 
     internal void Forget
@@ -469,7 +448,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
         if (info is not null && NativeControl is not null)
         {
-            var addon            = info->Addon;
+            var addon            = info->AtkUnitBase;
             var allocatedControl = NativeControl;
             info->AddonID   = 0;
             child.IsClosing = true;
@@ -482,11 +461,11 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
                 (() =>
                     {
                         if (NativeControl == allocatedControl)
-                            functions.RemoveChild(NativeControl, addon);
+                            NativeControl->RemoveChildAddon(addon);
                     }
                 );
             else
-                Dispatch(() => functions.RemoveChild(NativeControl, addon));
+                Dispatch(() => NativeControl->RemoveChildAddon(addon));
         }
         else
             child.Released();
@@ -515,9 +494,9 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
             {
                 CancelDrag(child.Info);
                 if (attached)
-                    functions.Attach(NativeControl, child.Info);
+                    NativeControl->AttachChildAddon(child.Info);
                 else
-                    functions.Detach(NativeControl, child.Info);
+                    NativeControl->DetachChildAddon(child.Info);
 
                 UpdateVisibility(child);
                 child.SynchronizeState();
@@ -530,7 +509,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         NativeChildAddon child
     )
     {
-        if (child.Info is null || NativeControl is null || (child.Info->Flags1 & 1) == 0)
+        if (child.Info is null || NativeControl is null || !child.Info->IsSetupComplete)
             return;
 
         var addon = child.InternalAddon;
@@ -550,7 +529,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         addon->WindowHeaderCollisionNode = header;
         child.Info->CollisionNode        = addon->WindowHeaderCollisionNode;
         if (handle is not null)
-            functions.BindDragHandle(NativeControl, child.Info, handle);
+            NativeControl->BindDragHandle(child.Info, handle);
     }
 
     internal unsafe void UpdateAttachmentHiddenNode
@@ -620,9 +599,8 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         parentClosing             = false;
         originalParentGroupFlag   = (byte)(parent->Flags1A3 & 1);
         originalParentControlFlag = parent->Flags1C8 & 8;
-        NativeControl             = NativeMemoryHelper.UiAlloc<AtkAddonControl>();
-        functions.Construct(NativeControl);
-        functions.Initialize(NativeControl, parent);
+        NativeControl             = NativeMemoryHelper.Create<AtkAddonControl>();
+        NativeControl->Initialize((ExpansionAtkUnitBase*)parent);
         Dispatch(() => ParentReady?.Invoke());
     }
 
@@ -652,11 +630,11 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
                 break;
 
             case AddonEvent.PostDraw:
-                Dispatch(() => functions.Draw(NativeControl));
+                Dispatch(() => NativeControl->Draw());
                 break;
 
             case AddonEvent.PostShow when args is AddonShowArgs showArgs:
-                Dispatch(() => functions.ShowChildren(NativeControl, showArgs.UnsetShowHideFlags));
+                Dispatch(() => NativeControl->ShowAllChildren(showArgs.UnsetShowHideFlags));
 
                 foreach (var child in children.ToArray())
                 {
@@ -668,15 +646,10 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
             case AddonEvent.PostHide when args is AddonHideArgs hideArgs:
                 Dispatch
-                (() => functions.HideChildren
+                (() => NativeControl->HideAllChildren
                  (
-                     NativeControl,
-                     hideArgs.CallHideCallback ?
-                         (byte)1 :
-                         (byte)0,
-                     (parent->VisibilityState & AtkUnitBaseVisibilityState.TransitionComplete) != 0 ?
-                         (byte)1 :
-                         (byte)0,
+                     hideArgs.CallHideCallback,
+                     (parent->VisibilityState & AtkUnitBaseVisibilityState.TransitionComplete) != 0,
                      hideArgs.SetShowHideFlags
                  )
                 );
@@ -701,7 +674,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         foreach (var child in children)
             OpenChild(child);
 
-        functions.Update(NativeControl, Framework.Instance()->FrameDeltaTime);
+        NativeControl->Update(Framework.Instance()->FrameDeltaTime);
 
         foreach (var child in children)
         {
@@ -735,19 +708,18 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
     private unsafe void CancelDrag
     (
-        NativeChildAddonInfo* child = null
+        AtkAddonControl.ChildAddonInfo* child = null
     )
     {
         if (NativeControl is null)
             return;
 
-        var state = (NativeAddonControlState*)NativeControl;
-        if (child is not null && state->DraggingChild != child && state->AttachingChild != child)
+        if (child is not null && NativeControl->DraggingChildAddon != child && NativeControl->AttachingChildAddon != child)
             return;
 
-        functions.CancelDrag(NativeControl);
-        state->DraggingChild  = null;
-        state->AttachingChild = null;
+        NativeControl->CancelDragListeners();
+        NativeControl->DraggingChildAddon  = null;
+        NativeControl->AttachingChildAddon = null;
     }
 
     private unsafe void ReleaseControl()
@@ -774,7 +746,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
                     child.ParentClosing();
                 }
 
-                functions.Destroy(releasedControl, 0);
+                releasedControl->Destructor();
                 NativeMemoryHelper.UiFree(releasedControl);
             }
         );

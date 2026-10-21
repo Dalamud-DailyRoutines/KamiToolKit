@@ -8,6 +8,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Classes;
+using KamiToolKit.Controllers;
 using KamiToolKit.Debug;
 using KamiToolKit.Internal.Classes;
 using Serilog.Events;
@@ -22,8 +23,8 @@ public static class KamiToolKitLibrary
     private const string NodeDataShareKey = "TypeMappedCustomNodes";
 
     internal static ConcurrentDictionary<nint, Type>? AllocatedNodes;
-    
-    internal static Experimental Experimental = new();
+
+    internal static readonly List<NativeAddonController> AddonControllers = [];
 
     internal static ResourceManager? ResourceManager;
     internal static CultureInfo?     CurrentCulture;
@@ -50,13 +51,9 @@ public static class KamiToolKitLibrary
         IDalamudPluginInterface pluginInterface
     )
     {
-        PluginInterface       = pluginInterface;
+        PluginInterface = pluginInterface;
 
-        // Inject non-Experimental Properties
         PluginInterface.Create<Services>();
-        IGameInteropProvider.Get().InitializeFromAttributes(Experimental);
-
-        AtkUnitManagerFunctions.Initialize();
 
         // Create node data share
         AllocatedNodes = PluginInterface.GetOrCreateData(NodeDataShareKey, () => new ConcurrentDictionary<nint, Type>());
@@ -150,7 +147,7 @@ public static class KamiToolKitLibrary
 
         NativeAddon.DisposeCloseCallback();
 
-        foreach (var controller in Experimental.AddonControllers.ToArray())
+        foreach (var controller in AddonControllers.ToArray())
             controller.Dispose();
 
         NodeBase.WarnLeakedNodes();
@@ -179,7 +176,7 @@ public static class KamiToolKitLibrary
         await IFramework.Get().Run
         (() =>
             {
-                foreach (var controller in Experimental.AddonControllers.ToArray())
+                foreach (var controller in AddonControllers.ToArray())
                     controller.Dispose();
             }
         );

@@ -5,6 +5,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Controllers;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes;
+using AtkAddonControl = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkAddonControl;
 
 namespace KamiToolKit.BaseTypes;
 
@@ -33,7 +34,7 @@ public class NativeChildAddon : NativeAddon
     /// <summary>
     ///     Gets or sets the native registration for the current addon allocation.
     /// </summary>
-    internal unsafe NativeChildAddonInfo* Info { get; set; }
+    internal unsafe AtkAddonControl.ChildAddonInfo* Info { get; set; }
 
     /// <summary>
     ///     Gets or sets whether the current addon allocation has started closing.
@@ -68,12 +69,12 @@ public class NativeChildAddon : NativeAddon
     /// </summary>
     public unsafe bool IsAttached => Info is null ?
                                          attached :
-                                         (Info->Flags1 & 8) != 0;
+                                         Info->IsAttached;
 
     /// <summary>
     ///     Gets whether the native registration currently marks the child active.
     /// </summary>
-    public unsafe bool IsActive => Info is not null && (Info->Flags2 & 2) != 0;
+    public unsafe bool IsActive => Info is not null && Info->IsActive;
 
     /// <summary>
     ///     Gets or sets the offset from the parent root in unscaled child coordinates.
@@ -140,10 +141,7 @@ public class NativeChildAddon : NativeAddon
             Controller.EnsureAccess();
             field = value;
             if (Info is not null)
-                Info->Flags1 = (byte)((Info->Flags1 & ~4) |
-                                      (value ?
-                                           4 :
-                                           0));
+                Info->AllowDetach = value;
         }
     }
 
@@ -408,13 +406,13 @@ public class NativeChildAddon : NativeAddon
         if (Info is null)
             return;
 
-        var currentAttached = (Info->Flags1 & 8) != 0;
-        var changed         = attached           != currentAttached;
+        var currentAttached = Info->IsAttached;
+        var changed         = attached != currentAttached;
         attached = currentAttached;
         if (!attached && InternalAddon is not null)
             DetachedPosition = new Vector2(InternalAddon->X, InternalAddon->Y);
 
-        if ((Info->Flags1 & 1) != 0)
+        if (Info->IsSetupComplete)
             openCompletion.TrySetResult();
 
         if (changed)

@@ -14,7 +14,7 @@
 
     <!-- Assets -->
     <ItemGroup>
-        <Content Include="Assets\**\*.png" CopyToOutputDirectory="Always" />
+        <Content Include="Assets\**\*.png" CopyToOutputDirectory="Always"/>
     </ItemGroup>
 
     <!-- FFXIVClientStructs -->
@@ -23,11 +23,15 @@
     </PropertyGroup>
 
     <ItemGroup Condition="Exists('..\FFXIVClientStructs')">
-        <ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="True" />
-        <ProjectReference Include="..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="True" />
+        <ProjectReference Include="..\FFXIVClientStructs\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="True"/>
+        <ProjectReference Include="..\FFXIVClientStructs\InteropGenerator.Runtime\InteropGenerator.Runtime.csproj" Private="True"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="DotNet.ReproducibleBuilds" Version="2.0.5" />
+        <ProjectReference Include="..\FFXIVClientStructs.Expansion\FFXIVClientStructs.Expansion\FFXIVClientStructs.Expansion.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Update="DotNet.ReproducibleBuilds" Version="2.0.5"/>
     </ItemGroup>
 </Project>
