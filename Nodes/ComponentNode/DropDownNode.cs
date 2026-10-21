@@ -40,6 +40,8 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     /// </summary>
     public DropDownNode()
     {
+        AddNodeFlags(NodeFlags.HasCollision, NodeFlags.RespondToMouse);
+
         BackgroundNode = new SimpleNineGridNode
         {
             TexturePath        = "ui/uld/DropDownA.tex",
@@ -399,6 +401,8 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         if (!IsEnabled) return;
         if (isOpen) return;
 
+        SetDropDownOwnerNode(true);
+
         isOpen = true;
         Timeline?.PlayAnimation(11);
 
@@ -410,7 +414,6 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         PopupContainerNode.IsEnabled = true;
         PopupContainerNode.AddDrawFlags(DrawFlags.RenderOnTop);
 
-        SetDropDownOwnerNode(true);
         RegisterViewportEvent();
 
         PositionPopup();
@@ -487,6 +490,35 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         LabelNode.Size      = new Vector2(Width         - 32.0f, Height - 3.0f);
 
         RebuildPopupList();
+    }
+
+    /// <inheritdoc />
+    protected override AtkResNode* OnGetCollisionNodeAtCoords
+    (
+        AtkComponentBase* thisPtr,
+        short             x,
+        short             y
+    )
+    {
+        if (!isOpen || !IsEnabled || !IsVisible) return null;
+        if (!PopupContainerNode.CollisionNode.CheckCollision(x, y, false)) return null;
+
+        if (PopupScrollbarNode is { IsVisible: true, IsEnabled: true })
+        {
+            var foreground = PopupScrollbarNode.ForegroundButtonNode.CollisionNode;
+            if (foreground.CheckCollision(x, y, false)) return foreground.ResNode;
+
+            var background = PopupScrollbarNode.BackgroundButtonNode.CollisionNode;
+            if (background.CheckCollision(x, y, false)) return background.ResNode;
+        }
+
+        foreach (var button in popupButtons)
+        {
+            if (!button.IsVisible || !button.IsEnabled) continue;
+            if (button.CollisionNode.CheckCollision(x, y, false)) return button.CollisionNode.ResNode;
+        }
+
+        return PopupContainerNode.CollisionNode.ResNode;
     }
 
     private void RebuildPopupList()
@@ -588,11 +620,12 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
         int index
     )
     {
-        if (index < 0 || index >= Options.Count) return;
+        if (!isOpen || index < 0 || index >= Options.Count) return;
 
         SelectItem(index);
-        OnOptionSelected?.Invoke(Options[index]);
+        var option = Options[index];
         Collapse();
+        OnOptionSelected?.Invoke(option);
     }
 
     private void SetScrollPosition
@@ -692,7 +725,7 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
 
         var mouseData = atkEventData->MouseData;
 
-        if (mouseData.ButtonId is not 1)
+        if (!atkEventData->IsLeftClick)
         {
             Collapse(false);
             return;
@@ -829,9 +862,29 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
 
         var componentNode = (AtkComponentNode*)ResNode;
 
+        var inputRegions = ParentAddon->AdditionalFocusableNodes;
+
         if (isOwner)
-            ParentAddon->CurrentDropDownOwnerNode = componentNode;
-        else if (ParentAddon->CurrentDropDownOwnerNode == componentNode)
+        {
+            for (var i = 0; i < inputRegions.Length; i++)
+            {
+                if (inputRegions[i].Value is not null && inputRegions[i].Value != PopupContainerNode.ResNode) continue;
+
+                inputRegions[i]                       = PopupContainerNode.ResNode;
+                ParentAddon->CurrentDropDownOwnerNode = componentNode;
+                return;
+            }
+
+            throw new InvalidOperationException("下拉列表无法登记输入区域，所属窗口的附加焦点区域均已占用。");
+        }
+
+        for (var i = 0; i < inputRegions.Length; i++)
+        {
+            if (inputRegions[i].Value == PopupContainerNode.ResNode)
+                inputRegions[i] = null;
+        }
+
+        if (ParentAddon->CurrentDropDownOwnerNode == componentNode)
             ParentAddon->CurrentDropDownOwnerNode = null;
     }
 

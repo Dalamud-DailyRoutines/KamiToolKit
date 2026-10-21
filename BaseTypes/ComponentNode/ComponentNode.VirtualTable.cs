@@ -10,12 +10,13 @@ public abstract unsafe partial class ComponentNode
     private const int                                     VirtualTableEntryCount = 100;
     private       AtkComponentBase.Delegates.Deinitialize deinitializeFunction   = null!;
 
-    private AtkComponentBase.Delegates.Dtor                        destructorFunction          = null!;
-    private AtkComponentBase.Delegates.Draw                        drawFunction                = null!;
-    private AtkComponentBase.Delegates.GetAtkResNode               getAtkResNodeFunction       = null!;
-    private AtkComponentBase.Delegates.GetFocusNode                getFocusNodeFunction        = null!;
-    private AtkComponentBase.Delegates.InitializeFromComponentData initializeFromComponentData = null!;
-    private AtkComponentBase.Delegates.Initialize                  initializeFunction          = null!;
+    private AtkComponentBase.Delegates.Dtor                        destructorFunction               = null!;
+    private AtkComponentBase.Delegates.Draw                        drawFunction                     = null!;
+    private AtkComponentBase.Delegates.GetAtkResNode               getAtkResNodeFunction            = null!;
+    private AtkComponentBase.Delegates.GetCollisionNodeAtCoords    getCollisionNodeAtCoordsFunction = null!;
+    private AtkComponentBase.Delegates.GetFocusNode                getFocusNodeFunction             = null!;
+    private AtkComponentBase.Delegates.InitializeFromComponentData initializeFromComponentData      = null!;
+    private AtkComponentBase.Delegates.Initialize                  initializeFunction               = null!;
 
     private AtkComponentBase.AtkComponentBaseVirtualTable* modifiedVirtualTable;
     private AtkComponentBase.AtkComponentBaseVirtualTable* originalVirtualTable;
@@ -37,19 +38,20 @@ public abstract unsafe partial class ComponentNode
         NativeMemory.Copy(ComponentBase->VirtualTable, modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
         ComponentBase->VirtualTable = modifiedVirtualTable;
 
-        destructorFunction          = Destructor;
-        receiveGlobalEventFunction  = OnReceiveGlobalEvent;
-        receiveEventFunction        = OnReceiveEvent;
-        initializeFunction          = OnInitialize;
-        deinitializeFunction        = OnDeinitialize;
-        updateFunction              = OnUpdate;
-        drawFunction                = OnDraw;
-        setupFunction               = OnSetup;
-        setEnabledStateFunction     = OnSetEnabledState;
-        playSoundEffectFunction     = OnPlaySoundEffect;
-        getAtkResNodeFunction       = OnGetAtkResNode;
-        getFocusNodeFunction        = OnGetFocusNode;
-        initializeFromComponentData = OnInitializeFromComponentData;
+        destructorFunction               = Destructor;
+        receiveGlobalEventFunction       = OnReceiveGlobalEvent;
+        receiveEventFunction             = OnReceiveEvent;
+        initializeFunction               = OnInitialize;
+        deinitializeFunction             = OnDeinitialize;
+        updateFunction                   = OnUpdate;
+        drawFunction                     = OnDraw;
+        setupFunction                    = OnSetup;
+        setEnabledStateFunction          = OnSetEnabledState;
+        playSoundEffectFunction          = OnPlaySoundEffect;
+        getAtkResNodeFunction            = OnGetAtkResNode;
+        getFocusNodeFunction             = OnGetFocusNode;
+        initializeFromComponentData      = OnInitializeFromComponentData;
+        getCollisionNodeAtCoordsFunction = OnGetCollisionNodeAtCoords;
 
         modifiedVirtualTable->Dtor = (delegate* unmanaged<AtkComponentBase*, byte, AtkEventListener*>)Marshal.GetFunctionPointerForDelegate(destructorFunction);
         modifiedVirtualTable->ReceiveGlobalEvent =
@@ -68,6 +70,8 @@ public abstract unsafe partial class ComponentNode
         modifiedVirtualTable->GetFocusNode    = (delegate* unmanaged<AtkComponentBase*, AtkResNode*>)Marshal.GetFunctionPointerForDelegate(getFocusNodeFunction);
         modifiedVirtualTable->InitializeFromComponentData = (delegate* unmanaged<AtkComponentBase*, void*, void>)Marshal.GetFunctionPointerForDelegate
             (initializeFromComponentData);
+        modifiedVirtualTable->GetCollisionNodeAtCoords = (delegate* unmanaged<AtkComponentBase*, short, short, AtkResNode*>)Marshal.GetFunctionPointerForDelegate
+            (getCollisionNodeAtCoordsFunction);
     }
 
     internal void RestoreComponentVirtualTable()
@@ -224,6 +228,21 @@ public abstract unsafe partial class ComponentNode
         void*             data
     ) =>
         originalVirtualTable->InitializeFromComponentData(thisPtr, data);
+
+    /// <summary>
+    ///     获取指定屏幕坐标命中的节点，默认使用组件原生的碰撞检测。
+    /// </summary>
+    /// <param name="thisPtr">接受碰撞检测的原生组件。</param>
+    /// <param name="x">鼠标的屏幕横坐标。</param>
+    /// <param name="y">鼠标的屏幕纵坐标。</param>
+    /// <returns>命中的节点；没有命中时返回空指针。</returns>
+    protected virtual AtkResNode* OnGetCollisionNodeAtCoords
+    (
+        AtkComponentBase* thisPtr,
+        short             x,
+        short             y
+    ) =>
+        originalVirtualTable->GetCollisionNodeAtCoords(thisPtr, x, y);
 
     private AtkEventListener* Destructor
     (
