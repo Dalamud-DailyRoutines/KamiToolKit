@@ -87,7 +87,10 @@ public class AddonController<T> : IAddonEventController<T>, IAsyncDisposable, ID
             IAddonLifecycle.Get().RegisterListener(AddonEvent.PreDraw, AddonName, OnAddonEvent);
 
         if (AddonPointer is not null)
+        {
             OnSetup?.Invoke(AddonPointer);
+            OnRefresh?.Invoke(AddonPointer);
+        }
 
         IsEnabled = true;
     }

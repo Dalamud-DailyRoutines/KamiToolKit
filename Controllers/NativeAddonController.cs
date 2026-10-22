@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Internal.Classes;
 using AtkAddonControl = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkAddonControl;
+using ExpansionAtkResNode = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkResNode;
 using ExpansionAtkUnitBase = FFXIVClientStructs.Expansion.FFXIV.Component.GUI.AtkUnitBase;
 
 namespace KamiToolKit.Controllers;
@@ -517,7 +518,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
         var header = child.DragHandle is null ?
                          child.OriginalHeaderCollisionNode :
                          (AtkCollisionNode*)child.DragHandle.ResNode;
-        var handle = (AtkResNode*)header;
+        var handle = (ExpansionAtkResNode*)header;
         if (child.Info->DragHandle == handle)
             return;
 
@@ -548,7 +549,7 @@ public class NativeAddonController : IDisposable, IAsyncDisposable
 
         child.Info->AttachmentHiddenNode = child.AttachmentHiddenNode is null ?
                                                null :
-                                               child.AttachmentHiddenNode.ResNode;
+                                               (ExpansionAtkResNode*)child.AttachmentHiddenNode.ResNode;
         var node = child.Info->AttachmentHiddenNode;
 
         if (node is not null)
