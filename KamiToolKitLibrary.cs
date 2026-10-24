@@ -61,7 +61,7 @@ public static class KamiToolKitLibrary
         // Force enable Verbose so that users are able to get advanced logging information on request.
         IPluginLog.Get().MinimumLogLevel = LogEventLevel.Verbose;
 
-        IPluginLog.Get().Info($"KamiToolKit initialized for {PluginInterface.InternalName}");
+        IPluginLog.Get().Info($"[KamiToolKit] 为插件“{PluginInterface.InternalName}”初始化成功。");
 
         AddonConfigFile = await LoadAddonConfigFileAsync();
 
@@ -111,7 +111,7 @@ public static class KamiToolKitLibrary
             $"/ktkdebug_{PluginInterface.InternalName}",
             new CommandInfo(CommandHandler)
             {
-                HelpMessage = "Plugin was built in debug mode, enabling debug command."
+                HelpMessage = "开启或关闭 KamiToolKit 调试界面。"
             }
         );
 
@@ -129,7 +129,6 @@ public static class KamiToolKitLibrary
     {
         if (command != $"/ktkdebug_{PluginInterface.InternalName}") return;
 
-        IPluginLog.Get().Debug($"Command Received, opening KTK Debug Window for {PluginInterface.InternalName}");
         debugWindow?.IsOpen = !debugWindow.IsOpen;
     }
 
@@ -164,35 +163,107 @@ public static class KamiToolKitLibrary
     /// </summary>
     public static async Task DisposeAsync()
     {
-        if (debugMode)
-        {
-            PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;
-            ICommandManager.Get().RemoveHandler($"/ktkdebug_{PluginInterface.InternalName}");
-            debugWindowSystem.RemoveAllWindows();
-        }
+        var framework = IFramework.Get();
 
-        await IFramework.Get().Run(NativeAddon.DisposeCloseCallback);
-
-        await IFramework.Get().Run
-        (() =>
+        await framework.Run
+        (
+            () =>
             {
-                foreach (var controller in AddonControllers.ToArray())
-                    controller.Dispose();
-            }
-        );
+                if (debugMode)
+                {
+                    PluginInterface.UiBuilder.Draw -= debugWindowSystem!.Draw;
+                    ICommandManager.Get().RemoveHandler($"/ktkdebug_{PluginInterface.InternalName}");
+                    debugWindowSystem.RemoveAllWindows();
+                }
 
-        NodeBase.WarnLeakedNodes();
-        NativeAddon.WarnLeakedAddons();
+                NativeAddon.DisposeCloseCallback();
+            }
+        ).ConfigureAwait(false);
+
+        var controllers = await framework.Run(() => AddonControllers.ToArray()).ConfigureAwait(false);
+        await DisposeObjectsAsync(controllers, static controller => controller.Dispose()).ConfigureAwait(false);
+
+        await framework.Run
+        (
+            () =>
+            {
+                NodeBase.WarnLeakedNodes();
+                NativeAddon.WarnLeakedAddons();
+            }
+        ).ConfigureAwait(false);
 
         try
         {
-            NativeAddon.DisposeAddons();
-            NodeBase.DisposeNodes();
+            var addons = await framework.Run(() => NativeAddon.CreatedAddons.ToArray()).ConfigureAwait(false);
+
+            await DisposeObjectsAsync
+            (
+                addons,
+                static addon =>
+                {
+                    if (!addon.IsOverlayAddon)
+                        addon.Dispose();
+                }
+            ).ConfigureAwait(false);
+
+            await DisposeObjectsAsync(addons, static addon => addon.RestoreVirtualTable()).ConfigureAwait(false);
+            await framework.Run(NativeAddon.CreatedAddons.Clear).ConfigureAwait(false);
+
+            var nodes = await framework.Run(() => NodeBase.CreatedNodes.ToArray()).ConfigureAwait(false);
+            await DisposeObjectsAsync(nodes, DisposeDetachedNode).ConfigureAwait(false);
         }
         finally
         {
-            NodeBase.RestoreAllNodeVirtualTables();
-            PluginInterface.RelinquishData(NodeDataShareKey);
+            var nodes = await framework.Run(() => NodeBase.CreatedNodes.ToArray()).ConfigureAwait(false);
+            await DisposeObjectsAsync(nodes, static node => node.RestoreNodeVirtualTable()).ConfigureAwait(false);
+            await framework.Run(() => PluginInterface.RelinquishData(NodeDataShareKey)).ConfigureAwait(false);
         }
+    }
+
+    private static async Task DisposeObjectsAsync<T>
+    (
+        IReadOnlyList<T> objects,
+        Action<T>        dispose
+    )
+    {
+        var framework = IFramework.Get();
+        var index     = 0;
+
+        while (index < objects.Count)
+        {
+            await framework.Run
+            (
+                () =>
+                {
+                    var startedAt = Stopwatch.GetTimestamp();
+
+                    do
+                    {
+                        try
+                        {
+                            dispose(objects[index++]);
+                        }
+                        catch (Exception ex)
+                        {
+                            IPluginLog.Get().Exception(ex);
+                        }
+                    }
+                    while (index < objects.Count && Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds < 1);
+                }
+            ).ConfigureAwait(false);
+        }
+    }
+
+    private static unsafe void DisposeDetachedNode
+    (
+        NodeBase node
+    )
+    {
+        if (node.ResNode is null                 ||
+            node.ResNode->ParentNode is not null ||
+            node.IsAddonRootNode)
+            return;
+
+        node.Dispose();
     }
 }
