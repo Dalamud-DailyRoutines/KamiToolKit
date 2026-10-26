@@ -1,3 +1,5 @@
+using Dalamud.Game.Addon.Events;
+using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Plugin.Services;
@@ -18,6 +20,8 @@ public unsafe class OverlayController : IDisposable
     private readonly Dictionary<OverlayLayer, OverlayAddonState> addonState = [];
 
     private readonly Dictionary<OverlayLayer, List<OverlayNode>> overlayNodes = [];
+
+    private readonly Dictionary<OverlayLayer, IAddonEventHandle> scaleEventHandles = [];
 
     private ControllerState controllerState = ControllerState.WaitForNameplate;
 
@@ -46,6 +50,11 @@ public unsafe class OverlayController : IDisposable
     {
         IAddonLifecycle.Get().UnregisterListener(AddonEvent.PreFinalize, "NamePlate");
         IAddonLifecycle.Get().UnregisterListener(OnOverlayAddonFinalize, OnOverlayAddonUpdate);
+
+        foreach (var handle in scaleEventHandles.Values)
+            IAddonEventManager.Get().RemoveEvent(handle);
+
+        scaleEventHandles.Clear();
 
         foreach (var (overlayLayer, nodes) in overlayNodes)
         {
@@ -80,6 +89,7 @@ public unsafe class OverlayController : IDisposable
         if (overlayNodes[node.OverlayLayer].Contains(node)) return;
 
         overlayNodes[node.OverlayLayer].Add(node);
+        node.UpdateGlobalScale();
 
         if (addonState[node.OverlayLayer] is not OverlayAddonState.Ready) return;
 
@@ -198,6 +208,20 @@ public unsafe class OverlayController : IDisposable
 
             if (addonState[overlayLayer] is OverlayAddonState.WaitForReady)
             {
+                if (!scaleEventHandles.ContainsKey(overlayLayer))
+                {
+                    var handle = IAddonEventManager.Get().AddEvent
+                    (
+                        (nint)addon,
+                        (nint)addon->RootNode,
+                        (AddonEventType)AtkEventType.WindowChangeScale,
+                        OnOverlayAddonScaleChange
+                    );
+
+                    if (handle is not null)
+                        scaleEventHandles[overlayLayer] = handle;
+                }
+
                 AttachAllNodes(overlayLayer);
                 addonState[overlayLayer] = OverlayAddonState.Ready;
             }
@@ -221,7 +245,10 @@ public unsafe class OverlayController : IDisposable
         if (overlayAddon is not null)
         {
             foreach (var node in list)
+            {
+                node.UpdateGlobalScale();
                 node.AttachNode(overlayAddon);
+            }
         }
 
         UpdateNodeListsForOverlay(layer);
@@ -261,6 +288,9 @@ public unsafe class OverlayController : IDisposable
         var addon        = (AtkUnitBase*)args.Addon.Address;
         var overlayLayer = addon->DepthLayer.GetOverlayLayer();
 
+        if (scaleEventHandles.Remove(overlayLayer, out var handle))
+            IAddonEventManager.Get().RemoveEvent(handle);
+
         if (overlayNodes.TryGetValue(overlayLayer, out var list))
         {
             foreach (var node in list)
@@ -288,6 +318,19 @@ public unsafe class OverlayController : IDisposable
             node.Update();
     }
 
+    private void OnOverlayAddonScaleChange
+    (
+        AddonEventType type,
+        AddonEventData data
+    )
+    {
+        var addon = (AtkUnitBase*)data.AddonPointer;
+        if (!overlayNodes.TryGetValue(addon->DepthLayer.GetOverlayLayer(), out var list)) return;
+
+        foreach (var node in list)
+            node.UpdateGlobalScale();
+    }
+
     //
     // Helpers
     //
@@ -303,7 +346,7 @@ public unsafe class OverlayController : IDisposable
         IsOverlayAddon = true
     };
 
-    private void UpdateNodeListsForOverlay
+    private static void UpdateNodeListsForOverlay
     (
         OverlayLayer layer
     )
