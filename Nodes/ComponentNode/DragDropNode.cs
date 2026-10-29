@@ -26,9 +26,9 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         DragDropBackgroundNode = new SimpleImageNode
         {
             NodeId             = 3,
-            Size               = new Vector2(44.0f, 44.0f),
-            TextureCoordinates = new Vector2(0.0f,  0.0f),
-            TextureSize        = new Vector2(44.0f, 44.0f),
+            Size               = new Vector2(DRAG_DROP_SIZE),
+            TextureCoordinates = new Vector2(0.0f, 0.0f),
+            TextureSize        = new Vector2(DRAG_DROP_SIZE),
             WrapMode           = WrapMode.Tile,
             NodeFlags          = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents
         };
@@ -38,8 +38,6 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         IconNode = new IconNode
         {
             NodeId    = 2,
-            Size      = new Vector2(44.0f, 48.0f),
-            Scale     = Vector2.One,
             NodeFlags = NodeFlags.Visible | NodeFlags.Enabled | NodeFlags.EmitsEvents
         };
         IconNode.AttachNode(this);
@@ -62,6 +60,8 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
         AddEvent(AtkEventType.DragDropClick,    DragDropClickHandler);
         AddEvent(AtkEventType.DragDropRollOver, DragDropRollOverHandler);
         AddEvent(AtkEventType.DragDropRollOut,  DragDropRollOutHandler);
+
+        Size = new Vector2(DRAG_DROP_SIZE);
     }
 
     /// <summary>
@@ -261,6 +261,15 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
     }
 
     /// <inheritdoc />
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+
+        IconNode.Size                = Size;
+        DragDropBackgroundNode.Scale = Size / DRAG_DROP_SIZE;
+    }
+
+    /// <inheritdoc />
     protected override void OnReceiveEvent
     (
         AtkComponentBase* thisPtr,
@@ -395,4 +404,10 @@ public unsafe class DragDropNode : ComponentNode<AtkComponentDragDrop, AtkUldCom
             .EndFrameSet()
             .Build()
     );
+
+    #region 常量
+
+    private const float DRAG_DROP_SIZE = 44.0f;
+
+    #endregion
 }
