@@ -11,7 +11,7 @@ namespace KamiToolKit.Nodes;
 ///     Implementation of the games IconNode and associated component.
 ///     This is often used as a part in a <see cref="DragDropNode" />, but is not required to be used as a part can be used
 ///     by itself. <br/>
-///     Setting <see cref="Size" /> scales the whole icon, the layout it is scaled from is (60, 60).
+///     设置 Size、Width 或 Height 时，所有图标内容按照主贴图的原始尺寸统一缩放。
 /// </summary>
 public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDataIcon>
 {
@@ -25,8 +25,8 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
         IconImage = new IconImageNode
         {
             NodeId         = 20,
-            Size           = new Vector2(40.0f, 40.0f),
-            Position       = new Vector2(2.0f,  3.0f),
+            Size           = new Vector2(ICON_IMAGE_SIZE),
+            Position       = new Vector2(0.0f, 0.0f),
             WrapMode       = WrapMode.Tile,
             ImageNodeFlags = ImageNodeFlags.AutoFit
         };
@@ -68,17 +68,8 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
         Data->Nodes[7] = IconIndicator2.IconNode.NodeId;
 
         InitializeComponentEvents();
-    }
 
-    /// <inheritdoc />
-    public override Vector2 Size
-    {
-        get => base.Size;
-        set
-        {
-            base.Size = value;
-            Scale     = value / 60.0f;
-        }
+        Size = new Vector2(60.0f);
     }
 
     /// <summary>
@@ -144,7 +135,9 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
             if (Component->Flags.HasFlag(IconComponentFlags.ComboLevel2))
                 return 2;
 
-            return Component->Flags.HasFlag(IconComponentFlags.ComboLevel1) ? (byte)1 : (byte)0;
+            return Component->Flags.HasFlag(IconComponentFlags.ComboLevel1) ?
+                       (byte)1 :
+                       (byte)0;
         }
         set => Component->SetComboLevel(value is >= 1 and <= 3, (byte)(value - 1));
     }
@@ -340,6 +333,25 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
         set => IconExtras.IsAnts = value;
     }
 
+    /// <inheritdoc />
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+
+        var scale = Size / ICON_IMAGE_SIZE;
+
+        IconImage.Scale = scale;
+
+        IconExtras.Scale    = scale;
+        IconExtras.Position = new Vector2(-4.0f, -3.0f) * scale;
+
+        IconIndicator1.Scale    = scale;
+        IconIndicator1.Position = new Vector2(25.0f, 8.0f) * scale;
+
+        IconIndicator2.Scale    = scale;
+        IconIndicator2.Position = new Vector2(25.0f, -5.0f) * scale;
+    }
+
     private void BuildTimeline()
     {
         IconExtras.AddTimeline
@@ -376,4 +388,10 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
         IconIndicator1.AddTimeline(iconIndicatorTimeline.Build());
         IconIndicator2.AddTimeline(iconIndicatorTimeline.Build());
     }
+
+    #region 常量
+
+    private const float ICON_IMAGE_SIZE = 40.0f;
+
+    #endregion
 }
