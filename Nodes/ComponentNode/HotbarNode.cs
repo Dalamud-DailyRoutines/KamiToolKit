@@ -29,6 +29,7 @@ public partial class HotbarNode : DragDropNode
     private readonly unsafe RaptureHotbarModule.HotbarSlot*           hotbarData;
     private readonly unsafe RaptureHotbarModule.HotbarUIIntermediate* hotbarState;
     private                 DateTime?                                 lastClickTime;
+    private                 bool                                      isLayoutInitialized;
 
     /// <inheritdoc />
     public HotbarNode()
@@ -56,6 +57,9 @@ public partial class HotbarNode : DragDropNode
             TextFlags          = TextFlags.Edge | (TextFlags)0x8000
         };
         ItemCountTextNode.AttachNode(this);
+
+        isLayoutInitialized = true;
+        OnSizeChanged();
 
         OnRollOver        = OnHotbarNodeRollOver;
         OnRollOut         = OnHotbarNodeRollOut;
@@ -112,6 +116,23 @@ public partial class HotbarNode : DragDropNode
             IconNode.IconExtras.Timeline?.PlayAnimation(4);
             lastClickTime = null;
         }
+    }
+
+    /// <inheritdoc />
+    protected override void OnSizeChanged()
+    {
+        base.OnSizeChanged();
+
+        if (!isLayoutInitialized)
+            return;
+
+        var scale = IconNode.IconImage.Scale;
+
+        KeybindTextNode.Scale    = scale;
+        KeybindTextNode.Position = new Vector2(-1.0f, -9.0f) * scale;
+
+        ItemCountTextNode.Scale    = scale;
+        ItemCountTextNode.Position = new Vector2(2.0f, 31.0f) * scale;
     }
 
     /// <inheritdoc />
