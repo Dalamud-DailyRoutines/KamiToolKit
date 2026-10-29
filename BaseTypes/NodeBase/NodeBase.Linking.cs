@@ -3,6 +3,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Enums;
+using KamiToolKit.Interfaces;
 using KamiToolKit.Internal.Classes;
 using KamiToolKit.Nodes;
 
@@ -208,13 +209,6 @@ public abstract unsafe partial class NodeBase
             // then we don't ever wanna be a child of the ComponentNode itself,
             // we will want to be a sibling of the root node.
             // Therefore, redirect the target position to be siblings.
-            targetPosition = targetPosition switch
-            {
-                NodePosition.AsLastChild  => NodePosition.AfterAllSiblings,
-                NodePosition.AsFirstChild => NodePosition.BeforeAllSiblings,
-                _                         => targetPosition
-            };
-
             // If however, we are using BeforeTarget or AfterTarget,
             // then we do want to attach to the ComponentNode
             // else, attach to its root node.
@@ -224,11 +218,10 @@ public abstract unsafe partial class NodeBase
             {
                 targetNode = targetPosition switch
                 {
-                    NodePosition.AfterTarget       => targetNode,
-                    NodePosition.BeforeTarget      => targetNode,
-                    NodePosition.AfterAllSiblings  => componentNode->Component->UldManager.RootNode,
-                    NodePosition.BeforeAllSiblings => componentNode->Component->UldManager.RootNode,
-                    _                              => throw new ArgumentOutOfRangeException(nameof(targetPosition), targetPosition, null)
+                    NodePosition.AfterTarget or NodePosition.BeforeTarget => targetNode,
+                    NodePosition.AfterAllSiblings or NodePosition.AsLastChild => componentNode->Component->UldManager.RootNode,
+                    NodePosition.BeforeAllSiblings or NodePosition.AsFirstChild => componentNode->Component->UldManager.RootNode,
+                    _ => throw new ArgumentOutOfRangeException(nameof(targetPosition), targetPosition, null)
                 };
             }
         }
@@ -237,6 +230,9 @@ public abstract unsafe partial class NodeBase
         NodeLinker.AttachNode(this, targetNode, targetPosition);
         UpdateParentAddon(targetNode);
         UpdateNative();
+
+        if (this is ILayoutListNode layoutNode)
+            layoutNode.RecalculateLayout();
     }
 
     private void EnsureDefaultAnchors()
@@ -287,8 +283,9 @@ public abstract unsafe partial class NodeBase
 
     private void RemoveParentAddonReferences()
     {
-        if (ParentAddon is null)
-            ParentAddon = RaptureAtkUnitManager.Instance()->GetAddonByNode(this);
+        ParentAddon = ParentAddon is null ?
+                          RaptureAtkUnitManager.Instance()->GetAddonByNode(this) :
+                          ParentAddon;
 
         if (ParentAddon is not null)
         {
@@ -342,8 +339,9 @@ public abstract unsafe partial class NodeBase
         // game recalc their visible location.
         MarkDirty();
 
-        if (ParentUldManager is null)
-            ParentUldManager = GetUldManagerForNode(this);
+        ParentUldManager = ParentUldManager is null ?
+                               GetUldManagerForNode(this) :
+                               ParentUldManager;
 
         if (ParentUldManager is not null)
         {
