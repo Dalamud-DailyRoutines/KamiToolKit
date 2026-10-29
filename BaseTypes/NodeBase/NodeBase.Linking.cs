@@ -223,6 +223,13 @@ public abstract unsafe partial class NodeBase
                     NodePosition.BeforeAllSiblings or NodePosition.AsFirstChild => componentNode->Component->UldManager.RootNode,
                     _ => throw new ArgumentOutOfRangeException(nameof(targetPosition), targetPosition, null)
                 };
+
+                targetPosition = targetPosition switch
+                {
+                    NodePosition.AsLastChild  => NodePosition.AfterAllSiblings,
+                    NodePosition.AsFirstChild => NodePosition.AfterTarget,
+                    _                         => targetPosition
+                };
             }
         }
 
