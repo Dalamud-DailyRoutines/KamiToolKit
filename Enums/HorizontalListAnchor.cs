@@ -13,6 +13,9 @@ public enum HorizontalListAnchor
     [Description("Left")]
     Left,
 
+    /// <summary>
+    ///     将内容的水平中心对齐至节点矩形范围的水平中心。
+    /// </summary>
     [Description("Center")]
     Center,
 

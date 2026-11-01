@@ -113,7 +113,7 @@ public class HorizontalListNode : LayoutListNode
         {
             HorizontalListAnchor.Left   => FirstItemSpacing,
             HorizontalListAnchor.Right  => -FirstItemSpacing,
-            HorizontalListAnchor.Center => -contentWidth / 2.0f,
+            HorizontalListAnchor.Center => (Width - contentWidth) / 2.0f,
             _                           => 0.0f
         };
 
