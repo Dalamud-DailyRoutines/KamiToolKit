@@ -142,6 +142,21 @@ public unsafe class CheckboxNode : ComponentNode<AtkComponentCheckBox, AtkUldCom
         }
     }
 
+    /// <summary>
+    ///     获取或设置原生组件是否根据标签文本自动调整宽度。
+    /// </summary>
+    public bool IsAutoResizeWidthEnabled
+    {
+        get => (Component->Flags & AUTO_RESIZE_WIDTH_FLAG) != 0;
+        set
+        {
+            if (value)
+                Component->Flags |= AUTO_RESIZE_WIDTH_FLAG;
+            else
+                Component->Flags &= ~AUTO_RESIZE_WIDTH_FLAG;
+        }
+    }
+
     /// <inheritdoc />
     protected override void OnSizeChanged()
     {
@@ -285,4 +300,10 @@ public unsafe class CheckboxNode : ComponentNode<AtkComponentCheckBox, AtkUldCom
                 .Build()
         );
     }
+
+    #region 常量
+
+    private const uint AUTO_RESIZE_WIDTH_FLAG = 0x80000u;
+
+    #endregion
 }
