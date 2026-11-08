@@ -33,7 +33,7 @@ public unsafe class ColorRingWithSquareNode : SimpleComponentNode
 
         ColorRingNode = new ImGuiImageNode
         {
-            TexturePath    = Services.GetAssetPath("color_ring.png"),
+            TexturePath    = Services.GetAssetPath("color_ring.webp"),
             FitTexture     = true,
             ImageNodeFlags = ImageNodeFlags.FlipV
         };
@@ -41,7 +41,7 @@ public unsafe class ColorRingWithSquareNode : SimpleComponentNode
 
         ColorRingSelectorNode = new ImGuiImageNode
         {
-            TexturePath   = Services.GetAssetPath("color_ring_selector.png"),
+            TexturePath   = Services.GetAssetPath("color_ring_selector.webp"),
             FitTexture    = true,
             MultiplyColor = new Vector3(1.0f, 0.0f, 0.0f)
         };
@@ -288,14 +288,17 @@ public unsafe class ColorRingWithSquareNode : SimpleComponentNode
         AtkEventData*     atkEventData
     )
     {
-        if (eventType is AtkEventType.MouseMove && isSquareDrag && !isRingDrag)
-            UpdateSquareColor(new Vector2(atkEventData->MouseData.PosX, atkEventData->MouseData.PosY));
-
-        if (eventType is AtkEventType.MouseUp)
+        switch (eventType)
         {
-            isSquareDrag = false;
-            eventListener.RemoveEvent(AtkEventType.MouseMove);
-            eventListener.RemoveEvent(AtkEventType.MouseUp);
+            case AtkEventType.MouseMove when isSquareDrag && !isRingDrag:
+                UpdateSquareColor(new Vector2(atkEventData->MouseData.PosX, atkEventData->MouseData.PosY));
+                break;
+
+            case AtkEventType.MouseUp:
+                isSquareDrag = false;
+                eventListener.RemoveEvent(AtkEventType.MouseMove);
+                eventListener.RemoveEvent(AtkEventType.MouseUp);
+                break;
         }
     }
 

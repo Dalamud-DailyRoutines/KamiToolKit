@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Numerics;
 using Dalamud.Interface;
 using KamiToolKit.Enums;
@@ -24,7 +24,7 @@ public class ColorSquareNode : ResNode
 
         AlphaLayerPreviewNode = new ImGuiImageNode
         {
-            TexturePath = Services.GetAssetPath("alpha_background.png"),
+            TexturePath = Services.GetAssetPath("alpha_background.webp"),
             WrapMode    = WrapMode.Tile
         };
         AlphaLayerPreviewNode.AttachNode(this);

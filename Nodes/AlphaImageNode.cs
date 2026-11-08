@@ -1,4 +1,4 @@
-﻿using KamiToolKit.Enums;
+using KamiToolKit.Enums;
 using KamiToolKit.Internal.Classes;
 
 namespace KamiToolKit.Nodes;
@@ -13,7 +13,7 @@ public sealed class AlphaImageNode : ImGuiImageNode
     /// </summary>
     public AlphaImageNode()
     {
-        TexturePath = Services.GetAssetPath("alpha_background.png");
+        TexturePath = Services.GetAssetPath("alpha_background.webp");
         WrapMode    = WrapMode.Tile;
     }
 }

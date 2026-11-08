@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Internal.Classes;
@@ -18,14 +18,14 @@ public class ColorGradientSquare : ResNode
     {
         WhiteGradientNode = new ImGuiImageNode
         {
-            TexturePath = Services.GetAssetPath("HorizontalGradient_WhiteToAlpha.png"),
+            TexturePath = Services.GetAssetPath("HorizontalGradient_WhiteToAlpha.webp"),
             FitTexture  = true
         };
         WhiteGradientNode.AttachNode(this);
 
         ColorGradientNode = new ImGuiImageNode
         {
-            TexturePath    = Services.GetAssetPath("HorizontalGradient_WhiteToAlpha.png"),
+            TexturePath    = Services.GetAssetPath("HorizontalGradient_WhiteToAlpha.webp"),
             FitTexture     = true,
             ImageNodeFlags = ImageNodeFlags.FlipH
         };
@@ -33,14 +33,14 @@ public class ColorGradientSquare : ResNode
 
         BlackGradientNode = new ImGuiImageNode
         {
-            TexturePath = Services.GetAssetPath("VerticalGradient_AlphaToBlack.png"),
+            TexturePath = Services.GetAssetPath("VerticalGradient_AlphaToBlack.webp"),
             FitTexture  = true
         };
         BlackGradientNode.AttachNode(this);
 
         ColorDotNode = new ImGuiImageNode
         {
-            TexturePath = Services.GetAssetPath("color_select_dot.png"),
+            TexturePath = Services.GetAssetPath("color_select_dot.webp"),
             FitTexture  = true
         };
         ColorDotNode.AttachNode(this);

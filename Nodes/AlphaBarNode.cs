@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
@@ -26,7 +26,7 @@ public unsafe class AlphaBarNode : ResNode
 
         AlphaBarGradientNode = new ImGuiImageNode
         {
-            TexturePath = Services.GetAssetPath("VerticalGradient_WhiteToAlpha.png"),
+            TexturePath = Services.GetAssetPath("VerticalGradient_WhiteToAlpha.webp"),
             FitTexture  = true
         };
         AlphaBarGradientNode.AttachNode(this);
@@ -34,7 +34,7 @@ public unsafe class AlphaBarNode : ResNode
 
         AlphaBarSelectorNode = new ImGuiImageNode
         {
-            TexturePath = Services.GetAssetPath("alpha_selector.png"),
+            TexturePath = Services.GetAssetPath("alpha_selector.webp"),
             FitTexture  = true
         };
         AlphaBarSelectorNode.AttachNode(this);
