@@ -39,6 +39,7 @@ public unsafe partial class NodeBase
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
+            UpdateTooltip();
         }
     }
 
@@ -67,6 +68,7 @@ public unsafe partial class NodeBase
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
+            UpdateTooltip();
         }
     }
 
@@ -95,6 +97,7 @@ public unsafe partial class NodeBase
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
+            UpdateTooltip();
         }
     }
 
@@ -124,6 +127,7 @@ public unsafe partial class NodeBase
                 ParentAddon->UpdateCollisionNodeList(false);
 
             field = value;
+            UpdateTooltip();
         }
     }
 
@@ -243,5 +247,14 @@ public unsafe partial class NodeBase
             AddNodeFlags(NodeFlags.HasCollision);
         else
             RemoveNodeFlags(NodeFlags.HasCollision);
+    }
+
+    private void UpdateTooltip()
+    {
+        if (AtkStage.Instance()->TooltipManager.TargetNode != ResNode)
+            return;
+        
+        HideTooltip();
+        ShowTooltip();
     }
 }
