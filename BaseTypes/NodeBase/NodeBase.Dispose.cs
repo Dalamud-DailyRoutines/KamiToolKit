@@ -74,6 +74,8 @@ public abstract unsafe partial class NodeBase : IDisposable
                 return;
             }
 
+            OnBeforeDisposeChildren();
+
             LogIndented("Disposing Children", EnableFullLogging);
 
             foreach (var child in ChildNodes.ToList())
@@ -123,6 +125,13 @@ public abstract unsafe partial class NodeBase : IDisposable
             LogIndented("Dispose Complete", true);
             logIndent--;
         }
+    }
+
+    /// <summary>
+    ///     手动销毁节点时，在释放子节点之前调用。可在此解除对仍然存活的子节点及其资源的引用。
+    /// </summary>
+    protected virtual void OnBeforeDisposeChildren()
+    {
     }
 
     /// <summary>
