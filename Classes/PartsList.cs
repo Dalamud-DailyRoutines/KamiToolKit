@@ -27,7 +27,7 @@ public unsafe class PartsList : IDisposable
 
         InternalPartsList->Parts     = null;
         InternalPartsList->PartCount = 0;
-        InternalPartsList->Id        = 0;
+        InternalPartsList->Id        = MANAGED_PARTS_LIST_ID;
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public unsafe class PartsList : IDisposable
             {
                 ref var part = ref InternalPartsList->Parts[partIndex];
 
-                if (part.UldAsset is not null && part.UldAsset->AtkTexture.IsTextureReady())
+                if (part.UldAsset is not null)
                 {
                     part.UldAsset->AtkTexture.ReleaseTexture();
                     part.UldAsset->AtkTexture.KernelTexture = null;
@@ -88,6 +88,7 @@ public unsafe class PartsList : IDisposable
         }
 
         isDisposed = true;
+        GC.SuppressFinalize(this);
     }
 
     internal void RefreshColorTheme()
@@ -211,4 +212,10 @@ public unsafe class PartsList : IDisposable
 
         return &InternalPartsList->Parts[PartCount++];
     }
+
+    #region 常量
+
+    private const uint MANAGED_PARTS_LIST_ID = uint.MaxValue;
+
+    #endregion
 }

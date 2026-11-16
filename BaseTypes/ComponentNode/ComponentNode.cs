@@ -199,31 +199,8 @@ public abstract unsafe class ComponentNode<T, TU> : ComponentNode where T : unma
             {
                 if (!isNativeDestructor && Node is not null && Node->Component is not null)
                 {
-                    ref var uldManager = ref Node->Component->UldManager;
-
-                    if (uldManager.Objects is not null)
-                    {
-                        if (uldManager.Objects->NodeList is not null)
-                        {
-                            NativeMemoryHelper.Free(uldManager.Objects->NodeList, (ulong)(8 * uldManager.Objects->NodeCount));
-                            uldManager.Objects->NodeList = null;
-                        }
-
-                        uldManager.Objects->NodeCount = 0;
-                        NativeMemoryHelper.UiFree(uldManager.Objects);
-                        uldManager.Objects     = null;
-                        uldManager.ObjectCount = 0;
-                    }
-
-                    if (uldManager.ComponentData is not null)
-                    {
-                        NativeMemoryHelper.UiFree(uldManager.ComponentData);
-                        uldManager.ComponentData = null;
-                    }
-
                     Node->Component->Deinitialize();
                     Node->Component->Dtor(1);
-                    Node->Component = null;
                 }
             }
             catch (Exception e)

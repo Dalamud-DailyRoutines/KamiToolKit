@@ -184,8 +184,10 @@ public abstract unsafe partial class NodeBase
 
         PerformNativeAttach(targetNode, targetPosition);
 
-        parentNode = targetNode;
-        parentNode.ChildNodes.Add(this);
+        parentNode = targetPosition is NodePosition.AsFirstChild or NodePosition.AsLastChild ?
+                         targetNode :
+                         targetNode.parentNode;
+        parentNode?.ChildNodes.Add(this);
     }
 
     private void PerformNativeAttach
@@ -354,7 +356,7 @@ public abstract unsafe partial class NodeBase
         {
             ParentUldManager->AddNodeToObjectList(this);
 
-            foreach (var child in GetAllChildren(this))
+            foreach (var child in GetLocalChildren(this))
                 child.ParentUldManager = ParentUldManager;
 
             if (this is TextNode { TextId: not 0 })

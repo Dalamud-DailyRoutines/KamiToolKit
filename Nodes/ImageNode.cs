@@ -105,13 +105,8 @@ public unsafe class ImageNode : NodeBase<AtkImageNode>
     {
         if (disposing)
         {
-            if (!isNativeDestructor)
-            {
-                PartsList.Dispose();
-                Node->PartsList = null;
-            }
-            else
-                PartsList.ClearThemeBindings();
+            PartsList.Dispose();
+            Node->PartsList = null;
 
             base.Dispose(disposing, isNativeDestructor);
         }

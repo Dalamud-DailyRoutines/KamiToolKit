@@ -60,11 +60,8 @@ public unsafe class ClippingMaskNode : NodeBase<AtkClippingMaskNode>
     {
         if (disposing)
         {
-            if (!isNativeDestructor)
-            {
-                PartsList.Dispose();
-                Node->PartsList = null;
-            }
+            PartsList.Dispose();
+            Node->PartsList = null;
 
             base.Dispose(disposing, isNativeDestructor);
         }

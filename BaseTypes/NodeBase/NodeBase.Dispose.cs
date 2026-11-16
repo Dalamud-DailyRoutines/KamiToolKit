@@ -74,19 +74,6 @@ public abstract unsafe partial class NodeBase : IDisposable
                 return;
             }
 
-            OnBeforeDisposeChildren();
-
-            LogIndented("Disposing Children", EnableFullLogging);
-
-            foreach (var child in ChildNodes.ToList())
-            {
-                child.SuppressNativeUpdate = true;
-                child.Dispose();
-            }
-
-            LogIndented("Children Disposed", EnableFullLogging);
-            ChildNodes.Clear();
-
             LogIndented("Disposing Tooltip Events", EnableFullLogging);
             UnregisterTooltipEvents();
 
@@ -121,17 +108,11 @@ public abstract unsafe partial class NodeBase : IDisposable
         {
             if (disposeState is DisposeState.Disposing)
                 disposeState = DisposeState.Disposed;
+            GC.SuppressFinalize(this);
             logIndent--;
             LogIndented("Dispose Complete", true);
             logIndent--;
         }
-    }
-
-    /// <summary>
-    ///     手动销毁节点时，在释放子节点之前调用。可在此解除对仍然存活的子节点及其资源的引用。
-    /// </summary>
-    protected virtual void OnBeforeDisposeChildren()
-    {
     }
 
     /// <summary>
@@ -225,12 +206,12 @@ public abstract unsafe partial class NodeBase : IDisposable
     }
 
     /// <summary>
-    ///     Dispose associated resources. If a resource modifies native state directly guard it with isNativeDestructor
+    ///     释放本节点持有的资源，并清除托管归属关系。
     /// </summary>
+    /// <param name="disposing">是否释放节点资源。</param>
     /// <param name="isNativeDestructor">
-    ///     Indicates if the dispose call should try to completely clean up all resources,
-    ///     or if it should only clean up managed resources. When false, be sure to only dispose
-    ///     resources that exist in managed spaces, as the game has already cleaned up everything else.
+    ///     是否由原生节点析构回调触发。为真时，原生 ULD 正在遍历所属节点表，不得摘除节点、修改节点表或递归销毁子节点；
+    ///     本节点自行分配的资源仍由本节点释放。组件内部节点由组件反初始化时的 ULD 最终释放流程销毁。
     /// </param>
     protected virtual void Dispose
     (
@@ -239,18 +220,34 @@ public abstract unsafe partial class NodeBase : IDisposable
     )
     {
 
-        // Dispose of managed resources that must be disposed regardless of how dispose is invoked
+        UnregisterTooltipEvents();
         DisposeEvents();
+
+        if (isNativeDestructor)
+            overlayNode = null;
+
         DisableEditMode(NodeEditMode.Move | NodeEditMode.Resize);
+
+        if (!isNativeDestructor)
+        {
+            foreach (var child in ChildNodes.ToArray())
+            {
+                child.SuppressNativeUpdate = true;
+                child.Dispose();
+            }
+        }
+
+        ChildNodes.Clear();
+        RemoveParentNodeReferences();
+        ParentUldManager = null;
+        ParentAddon      = null;
     }
 
     private bool IsNodeValid()
     {
         if (ResNode is null) return false;
         if (ResNode->VirtualTable is null) return false;
-        if (ResNode->VirtualTable == AtkEventTarget.StaticVirtualTablePointer) return false;
-
-        return true;
+        return ResNode->VirtualTable != AtkEventTarget.StaticVirtualTablePointer;
     }
 
     /// <summary>
@@ -324,23 +321,21 @@ public abstract unsafe partial class NodeBase : IDisposable
             IPluginLog.Get().Exception(e);
         }
 
-        Dispose(true, true);
-
-        thisPtr->VirtualTable = originalVirtualTable;
-
-        originalVirtualTable->Destroy(thisPtr, free);
-
-        if (modifiedVirtualTable is not null)
+        try
         {
-            NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * 4);
-            modifiedVirtualTable = null;
+            Dispose(true, true);
+        }
+        catch (Exception e)
+        {
+            IPluginLog.Get().Exception(e);
+        }
+        finally
+        {
+            OriginalDestroy(thisPtr, free);
+            disposeState = DisposeState.Disposed;
         }
 
         IPluginLog.Get().Verbose($"Native has disposed node {GetType()}");
-        GC.SuppressFinalize(this);
-        CreatedNodes.Remove(this);
-
-        disposeState = DisposeState.Disposed;
     }
 
     // To be invoked from NodeBase.Dispose(bool, bool).
@@ -366,7 +361,6 @@ public abstract unsafe partial class NodeBase : IDisposable
             modifiedVirtualTable = null;
         }
 
-        GC.SuppressFinalize(this);
         CreatedNodes.Remove(this);
     }
 

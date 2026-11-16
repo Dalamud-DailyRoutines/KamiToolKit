@@ -192,13 +192,8 @@ public unsafe class CounterNode : NodeBase<AtkCounterNode>
     {
         if (disposing)
         {
-            if (!isNativeDestructor)
-            {
-                PartsList.Dispose();
-                Node->PartsList = null;
-            }
-            else
-                PartsList.ClearThemeBindings();
+            PartsList.Dispose();
+            Node->PartsList = null;
 
             base.Dispose(disposing, isNativeDestructor);
         }
@@ -217,7 +212,7 @@ public unsafe class CounterNode : NodeBase<AtkCounterNode>
     )
     {
         using var builder = new RentedSeStringBuilder();
-        return builder.Append(value).GetViewAsSpan();
+        return builder.Append(value.Data.Span).GetViewAsSpan();
     }
 
     private static ReadOnlySeString ParseNumber

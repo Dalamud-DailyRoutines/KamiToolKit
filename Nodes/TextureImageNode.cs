@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes.Simplified;
@@ -40,12 +40,9 @@ public unsafe class TextureImageNode : SimpleImageNode
     {
         if (disposing)
         {
-            if (!isNativeDestructor)
-            {
-                var asset = PartsList[0]->UldAsset;
-                asset->AtkTexture.KernelTexture = null;
-                asset->AtkTexture.TextureType   = 0;
-            }
+            var asset = PartsList[0]->UldAsset;
+            asset->AtkTexture.KernelTexture = null;
+            asset->AtkTexture.TextureType   = 0;
 
             base.Dispose(disposing, isNativeDestructor);
         }

@@ -451,18 +451,16 @@ public unsafe class DropDownNode<T> : SimpleComponentNode
     {
         if (disposing)
         {
-            if (!isNativeDestructor)
+            UnregisterViewportEvent();
+
+            if (AtkStage.Instance() is not null)
             {
-                UnregisterViewportEvent();
-
-                if (AtkStage.Instance() is not null)
-                {
-                    viewportListener?.Dispose();
-                    viewportListener = null;
-                }
-
-                SetDropDownOwnerNode(false);
+                viewportListener?.Dispose();
+                viewportListener = null;
             }
+
+            if (!isNativeDestructor)
+                SetDropDownOwnerNode(false);
 
             base.Dispose(disposing, isNativeDestructor);
         }

@@ -142,7 +142,7 @@ public partial class HotbarNode : DragDropNode
         bool isNativeDestructor
     )
     {
-        if (IsDisposed) return;
+        if (!disposing) return;
 
         base.Dispose(disposing, isNativeDestructor);
 

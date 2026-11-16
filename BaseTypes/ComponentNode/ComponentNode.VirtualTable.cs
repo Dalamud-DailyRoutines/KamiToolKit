@@ -250,15 +250,18 @@ public abstract unsafe partial class ComponentNode
         byte              freeFlags
     )
     {
-        var result = originalVirtualTable->Dtor(thisPtr, freeFlags);
+        thisPtr->VirtualTable = originalVirtualTable;
 
-        if ((freeFlags & 1) != 0 && modifiedVirtualTable is not null)
+        if (Node is not null)
+            Node->Component = null;
+
+        try
         {
-            // Free our custom virtual table, the game doesn't know this exists and won't clear it on its own.
-            NativeMemoryHelper.Free(modifiedVirtualTable, 0x8 * VirtualTableEntryCount);
-            modifiedVirtualTable = null;
+            return originalVirtualTable->Dtor(thisPtr, freeFlags);
         }
-
-        return result;
+        finally
+        {
+            RestoreComponentVirtualTable();
+        }
     }
 }

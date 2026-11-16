@@ -334,18 +334,6 @@ public unsafe class IconNode : ComponentNode<AtkComponentIcon, AtkUldComponentDa
     }
 
     /// <inheritdoc />
-    protected override void OnBeforeDisposeChildren()
-    {
-        base.OnBeforeDisposeChildren();
-
-        var component = Component;
-        if (component is null) return;
-
-        component->Texture   = null;
-        component->IconImage = null;
-    }
-
-    /// <inheritdoc />
     protected override void OnSizeChanged()
     {
         base.OnSizeChanged();
